@@ -27,6 +27,7 @@ module.exports = {
         input: "hsl(214.3, 31.8%, 91.4%)",
         ring: "hsl(221.2, 83.2%, 53.3%)",
         text: "hsl(0, 0%, 0%)",
+        textGray: "#71717a",
 
         // Chart colors
         "chart-1": "hsl(12, 76%, 61%)",

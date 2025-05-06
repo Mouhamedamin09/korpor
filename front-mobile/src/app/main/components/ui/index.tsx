@@ -11,6 +11,8 @@ import ShoppingCart from "./shoppingCart";
 import GrayContainer from "./grayContainer";
 import BorderContainer from "./borderContainer";
 import TimeLine from "./timeline";
+import Button from "./button";
+import Document from "./document";
 export {
   DropdownMenu,
   Bookmarks,
@@ -25,4 +27,6 @@ export {
   GrayContainer,
   BorderContainer,
   TimeLine,
+  Button,
+  Document,
 };

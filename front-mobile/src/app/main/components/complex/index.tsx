@@ -7,6 +7,7 @@ import Calculator from "./calculator";
 import AboutProperty from "./about";
 import Leasing from "./leasing";
 import TimelineComp from "./timelineComponent";
+import BuildingInfo from "./buildingInfo";
 export {
   TopMenu,
   PropertyCard,
@@ -17,4 +18,5 @@ export {
   AboutProperty,
   Leasing,
   TimelineComp,
+  BuildingInfo,
 };

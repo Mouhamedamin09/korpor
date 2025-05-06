@@ -10,6 +10,7 @@ import {
   AboutProperty,
   Leasing,
   TimelineComp,
+  BuildingInfo,
 } from "@main/components/complex/index";
 import * as Progress from "react-native-progress";
 const Investors = require("@assets/user-salary.png");
@@ -95,7 +96,7 @@ const PropertyPage = () => {
   return (
     <View className="bg-white flex-1">
       <Header />
-      <ScrollView className="pb-4">
+      <ScrollView className="pb-2">
         <Carousel
           images={property.images ?? []}
           currentIndex={currentIndex}
@@ -226,6 +227,24 @@ const PropertyPage = () => {
               fee={property.annual_fee ?? 0}
             />
             <TimelineComp step={2} />
+            <BuildingInfo
+              propertyAge="3 years"
+              developerName="Korpor Inc."
+              developerSite="https://korpor.com"
+              address="Monastir Reserves"
+              locationQuery="Marina Monastir"
+              documents={[
+                {
+                  text: "Boñatica Tower 7 — projections.pdf",
+                  url: "https://www.orimi.com/pdf-test.pdf",
+                },
+                {
+                  text: "Sales-Deck.pdf",
+                  url: "https://example.com/sales.pdf",
+                },
+              ]}
+            />
+            <View className="h-40" />
           </View>
         </View>
       </ScrollView>

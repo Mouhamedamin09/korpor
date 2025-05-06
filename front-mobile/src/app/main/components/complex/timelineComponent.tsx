@@ -1,5 +1,5 @@
 import { View, Text, Image, Pressable } from "react-native";
-import { BorderContainer, TimeLine } from "@main/components/ui/index";
+import { TimeLine } from "@main/components/ui/index";
 const Rent = require("@assets/rent.png");
 const Status = require("@assets/clipboard-black.png");
 const Tags = require("@assets/tags-black.png");
