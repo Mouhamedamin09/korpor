@@ -12,7 +12,7 @@ interface SignupData {
 
 export const signupUser = async (data: SignupData) => {
   // No phone in the payload
-  const response = await axios.post(`${API_URL}/auth/sign-up`, data, {
+  const response = await axios.post(`${API_URL}/api/auth/sign-up`, data, {
     headers: {
       "Content-Type": "application/json",
     },

@@ -8,11 +8,15 @@ export const signin = async (credentials: {
   password: string;
 }) => {
   try {
-    const response = await axios.post(`${API_URL}/auth/sign-in`, credentials, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await axios.post(
+      `${API_URL}/api/auth/sign-in`,
+      credentials,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     const responseData = response.data;
 

@@ -18,11 +18,12 @@ export default function App() {
       </View>
       <View className="w-[90%]">
         <SolidButtonLg
-          title="Signup"
+          title="main app(temp)"
           onPress={() => {
             router.push("main/screens/properties");
           }}
         />
+        <View className="mt-3" />
         <SolidButtonLg
           title="Signup"
           onPress={() => {

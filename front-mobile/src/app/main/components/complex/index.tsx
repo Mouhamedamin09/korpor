@@ -8,6 +8,8 @@ import AboutProperty from "./about";
 import Leasing from "./leasing";
 import TimelineComp from "./timelineComponent";
 import BuildingInfo from "./buildingInfo";
+import Notification from "./notification";
+import AdjustableHeader from "./adjustableHeader";
 export {
   TopMenu,
   PropertyCard,
@@ -19,4 +21,6 @@ export {
   Leasing,
   TimelineComp,
   BuildingInfo,
+  Notification,
+  AdjustableHeader,
 };

@@ -1,47 +1,57 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { View, Animated } from "react-native";
 import type { NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+
 import { TopMenu, PropertyCard } from "@main/components/complex/index";
-import { getAllProperties } from "@main/services/getListings"; // same file as above
-import { Property } from "@shared/types/property"; // adjust this type if needed
+import { getAllProperties } from "@main/services/getListings";
+import {
+  filterByCategory,
+  PropertyCategory,
+} from "@main/services/propertyUtils";
+import { Property } from "@shared/types/property";
+
+/* enforce category is required here */
+type CategorizedProperty = Property & { category: PropertyCategory };
 
 export default function MainApp() {
-  const [propertyData, setPropertyData] = useState<Property[]>([]);
+  const [propertyData, setPropertyData] = useState<CategorizedProperty[]>([]);
+  const [selectedCategory, setSelectedCategory] =
+    useState<PropertyCategory>("Available");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setPropertyData((await getAllProperties()) as CategorizedProperty[]);
+      } catch (err) {
+        console.error("Failed to fetch projects:", err);
+      }
+    })();
+  }, []);
+
+  const filtered = useMemo(
+    () => filterByCategory(propertyData, selectedCategory),
+    [propertyData, selectedCategory]
+  );
+
   const scrollY = useRef(new Animated.Value(0)).current;
   const lastScrollY = useRef(0);
   const headerVisible = useRef(true);
   const translateY = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const projects = await getAllProperties();
-        setPropertyData(projects); // ✅ only real data
-      } catch (err) {
-        console.error("Failed to fetch projects:", err);
-        setPropertyData([]); // fallback = empty list
-      }
-    })();
-  }, []);
-
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
     {
       useNativeDriver: true,
-      listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const currentY = event.nativeEvent.contentOffset.y;
-
-        if (currentY > lastScrollY.current + 5 && headerVisible.current) {
+      listener: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const y = e.nativeEvent.contentOffset.y;
+        if (y > lastScrollY.current + 5 && headerVisible.current) {
           Animated.timing(translateY, {
             toValue: -100,
             duration: 200,
             useNativeDriver: true,
           }).start();
           headerVisible.current = false;
-        } else if (
-          currentY < lastScrollY.current - 15 &&
-          !headerVisible.current
-        ) {
+        } else if (y < lastScrollY.current - 15 && !headerVisible.current) {
           Animated.timing(translateY, {
             toValue: 0,
             duration: 200,
@@ -49,19 +59,22 @@ export default function MainApp() {
           }).start();
           headerVisible.current = true;
         }
-
-        lastScrollY.current = currentY;
+        lastScrollY.current = y;
       },
     }
   );
 
   return (
-    <View className="bg-background flex-1">
-      <TopMenu translateY={translateY} />
-
+    <View className="bg-primary-foreground flex-1">
+      <TopMenu
+        translateY={translateY}
+        selectedCategory={selectedCategory}
+        onChangeCategory={setSelectedCategory}
+      />
+      <View className="h-6" />
       <Animated.FlatList
-        data={propertyData}
-        keyExtractor={(item) => String(item.id)} // id is numeric in API
+        data={filtered}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => <PropertyCard data={item} />}
         contentContainerStyle={{ paddingTop: 80, paddingBottom: 40 }}
         scrollEventThrottle={16}

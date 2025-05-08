@@ -13,6 +13,7 @@ import BorderContainer from "./borderContainer";
 import TimeLine from "./timeline";
 import Button from "./button";
 import Document from "./document";
+import NotificationDropdownMenu from "./notificationDropDownMenu";
 export {
   DropdownMenu,
   Bookmarks,
@@ -29,4 +30,5 @@ export {
   TimeLine,
   Button,
   Document,
+  NotificationDropdownMenu,
 };

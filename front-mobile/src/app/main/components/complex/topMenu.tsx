@@ -1,31 +1,38 @@
 import React from "react";
-import { View, Text, Animated, StyleSheet } from "react-native";
+import { View, Animated, StyleSheet, Image } from "react-native";
 import {
   DropdownMenu,
   Bookmarks,
   NotificationBell,
   ShoppingCart,
 } from "../ui/index";
+import { PropertyCategory } from "@main/services/propertyUtils";
+const Logo = require("@assets/korporBlack.png");
 
-interface TopMenuProps {
+interface Props {
   translateY: Animated.Value;
+  selectedCategory: PropertyCategory;
+  onChangeCategory: (c: PropertyCategory) => void;
 }
 
-export default function TopMenu({ translateY }: TopMenuProps) {
+export default function TopMenu({
+  translateY,
+  selectedCategory,
+  onChangeCategory,
+}: Props) {
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          transform: [{ translateY }],
-        },
-      ]}
-    >
-      <View className="mx-4 mt-2 flex-row items-center">
-        <Text className="text-2xl font-semibold">Korpor</Text>
+    <Animated.View style={[styles.container, { transform: [{ translateY }] }]}>
+      <View className="mx-4 flex-row items-center mb-[-10]">
+        <Image
+          source={Logo}
+          className="w-20 h-20"
+          style={{ resizeMode: "contain" }}
+        />
       </View>
-      <View className="mt-2 ml-2 flex-row">
-        <DropdownMenu />
+
+      <View className="ml-2 flex-row">
+        <DropdownMenu selected={selectedCategory} onChange={onChangeCategory} />
+
         <View className="flex-row items-center ml-auto mr-6">
           <Bookmarks onPress={() => console.log("Bookmarks pressed")} />
           <View className="w-3" />
@@ -36,6 +43,7 @@ export default function TopMenu({ translateY }: TopMenuProps) {
           />
         </View>
       </View>
+
       <View className="w-full h-0.5 bg-[#f1f1f3] mt-2" />
     </Animated.View>
   );

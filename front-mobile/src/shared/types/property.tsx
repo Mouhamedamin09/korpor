@@ -1,37 +1,44 @@
-export interface Property {
-  id: string | number;
-  /* basic identity */
-  name: string;
-  description?: string;
+// @shared/types/property.ts
 
-  /* location / status */
+import { PropertyCategory } from "@main/services/propertyUtils";
+
+export interface Property {
+  /* identity & meta */
+  id: number | string;
+  name: string;
   location: string;
   status: string;
+  category?: PropertyCategory; // optional here, only used in listing
   upload_date: string;
 
-  /* financials */
-  annual_return_rate: number; // % per year
-  expected_roi: number; // final ROI %
-  total_needed: number; // funding goal
-  current_funded: number; // funded so far
-  funding_percentage: number; // 0-100
-  current_value: number; // latest appraisal / asking price
-  min_investment: number; // absolute DT
-  investment_period?: number; // months
-  rental_yield?: number; // % per year
+  /* money */
+  annual_return_rate: number;
+  expected_roi: number;
+  total_needed: number;
+  current_funded: number;
+  funding_percentage: number;
+  min_investment: number;
+  current_value: number;
 
-  /* property details */
-  type: string; // residential | commercial | …
+  /* additional finance (optional in card, shown in detail page) */
+  investment_period?: number;
+  rental_yield?: number;
+
+  /* specification */
+  type: string;
   rooms: number | null;
-  bathrooms?: number | null;
-  area?: number | null; // m²
-  construction_year?: number;
+  bathrooms: number | null;
+  area: number | null; // in m²
+  construction_year: number | null;
+  description: string;
+
+  /* amenities (optional for future use) */
   amenities?: {
     gym?: boolean;
     pool?: boolean;
     parking?: boolean;
     security?: boolean;
-    [key: string]: boolean | undefined;
+    [key: string]: any;
   };
 
   /* media */
