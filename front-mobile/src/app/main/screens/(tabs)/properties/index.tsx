@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect, useMemo } from "react";
 import { View, Animated } from "react-native";
 import type { NativeSyntheticEvent, NativeScrollEvent } from "react-native";
-
 import { TopMenu, PropertyCard } from "@main/components/complex/index";
 import { getAllProperties } from "@main/services/getListings";
 import {
@@ -71,7 +70,6 @@ export default function MainApp() {
         selectedCategory={selectedCategory}
         onChangeCategory={setSelectedCategory}
       />
-      <View className="h-6" />
       <Animated.FlatList
         data={filtered}
         keyExtractor={(item) => item.id.toString()}

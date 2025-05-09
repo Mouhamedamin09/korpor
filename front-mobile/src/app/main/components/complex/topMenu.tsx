@@ -22,7 +22,7 @@ export default function TopMenu({
 }: Props) {
   return (
     <Animated.View style={[styles.container, { transform: [{ translateY }] }]}>
-      <View className="mx-4 flex-row items-center mb-[-10]">
+      <View className="mx-4 flex-row items-center h-12">
         <Image
           source={Logo}
           className="w-20 h-20"

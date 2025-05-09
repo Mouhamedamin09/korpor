@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { View, ScrollView, Text, TouchableOpacity } from "react-native";
 import { Notification, AdjustableHeader } from "@main/components/complex/index";
 import type { NotificationItem } from "@/shared/types/notification";
-
 type Option = "All" | "Unread";
 
 // -------- dummy data --------
