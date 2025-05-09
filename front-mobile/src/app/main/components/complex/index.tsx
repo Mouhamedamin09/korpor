@@ -10,6 +10,8 @@ import TimelineComp from "./timelineComponent";
 import BuildingInfo from "./buildingInfo";
 import Notification from "./notification";
 import AdjustableHeader from "./adjustableHeader";
+import PropertyCardSkeleton from "./propertyCardSkeleton";
+import NotificationSkeleton from "./notificationSkeleton";
 export {
   TopMenu,
   PropertyCard,
@@ -23,4 +25,6 @@ export {
   BuildingInfo,
   Notification,
   AdjustableHeader,
+  PropertyCardSkeleton,
+  NotificationSkeleton,
 };

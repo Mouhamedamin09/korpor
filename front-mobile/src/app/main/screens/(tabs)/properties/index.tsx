@@ -1,7 +1,11 @@
 import React, { useRef, useState, useEffect, useMemo } from "react";
 import { View, Animated } from "react-native";
 import type { NativeSyntheticEvent, NativeScrollEvent } from "react-native";
-import { TopMenu, PropertyCard } from "@main/components/complex/index";
+import {
+  TopMenu,
+  PropertyCard,
+  PropertyCardSkeleton,
+} from "@main/components/complex/index";
 import { getAllProperties } from "@main/services/getListings";
 import {
   filterByCategory,
@@ -9,20 +13,23 @@ import {
 } from "@main/services/propertyUtils";
 import { Property } from "@shared/types/property";
 
-/* enforce category is required here */
 type CategorizedProperty = Property & { category: PropertyCategory };
 
 export default function MainApp() {
   const [propertyData, setPropertyData] = useState<CategorizedProperty[]>([]);
   const [selectedCategory, setSelectedCategory] =
     useState<PropertyCategory>("Available");
+  const [loading, setLoading] = useState(true); // <== Add loading state
 
   useEffect(() => {
     (async () => {
       try {
-        setPropertyData((await getAllProperties()) as CategorizedProperty[]);
+        const data = await getAllProperties();
+        setPropertyData(data as CategorizedProperty[]);
       } catch (err) {
         console.error("Failed to fetch projects:", err);
+      } finally {
+        setLoading(false); // <== Mark loading complete
       }
     })();
   }, []);
@@ -70,14 +77,27 @@ export default function MainApp() {
         selectedCategory={selectedCategory}
         onChangeCategory={setSelectedCategory}
       />
-      <Animated.FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <PropertyCard data={item} />}
-        contentContainerStyle={{ paddingTop: 80, paddingBottom: 40 }}
-        scrollEventThrottle={16}
-        onScroll={handleScroll}
-      />
+
+      {loading ? (
+        <Animated.ScrollView
+          contentContainerStyle={{ paddingTop: 80, paddingBottom: 40 }}
+          scrollEventThrottle={16}
+          onScroll={handleScroll}
+        >
+          {Array.from({ length: 6 }).map((_, i) => (
+            <PropertyCardSkeleton key={i} />
+          ))}
+        </Animated.ScrollView>
+      ) : (
+        <Animated.FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => <PropertyCard data={item} />}
+          contentContainerStyle={{ paddingTop: 80, paddingBottom: 40 }}
+          scrollEventThrottle={16}
+          onScroll={handleScroll}
+        />
+      )}
     </View>
   );
 }

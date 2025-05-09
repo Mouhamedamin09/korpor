@@ -1,10 +1,14 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { View, ScrollView, Text, TouchableOpacity } from "react-native";
-import { Notification, AdjustableHeader } from "@main/components/complex/index";
+import {
+  Notification,
+  AdjustableHeader,
+  NotificationSkeleton,
+} from "@main/components/complex/index";
 import type { NotificationItem } from "@/shared/types/notification";
+
 type Option = "All" | "Unread";
 
-// -------- dummy data --------
 const sampleNotifications: NotificationItem[] = [
   {
     id: 1,
@@ -103,24 +107,25 @@ const sampleNotifications: NotificationItem[] = [
     propertyId: 1,
   },
 ];
-
-// -------- helpers --------
 const isSameDay = (d1: Date, d2: Date) =>
   d1.toDateString() === d2.toDateString();
-
 const msInDay = 86_400_000;
 
 export default function NotificationsMenu() {
   const [selectedCategory, setSelectedCategory] = useState<Option>("All");
+  const [loading, setLoading] = useState(true);
 
-  // Filter for unread vs all
+  useEffect(() => {
+    const timeout = setTimeout(() => setLoading(false), 3000); // 3s delay
+    return () => clearTimeout(timeout);
+  }, []);
+
   const filtered = useMemo(() => {
     return selectedCategory === "Unread"
       ? sampleNotifications.filter((n) => !n.read)
       : sampleNotifications;
   }, [selectedCategory]);
 
-  // Sort newest → oldest, then bucket into Today / This week / Earlier
   const { today, week, earlier } = useMemo(() => {
     const todayArr: NotificationItem[] = [];
     const weekArr: NotificationItem[] = [];
@@ -143,7 +148,6 @@ export default function NotificationsMenu() {
     return { today: todayArr, week: weekArr, earlier: earlierArr };
   }, [filtered]);
 
-  // -------- render --------
   const renderGroup = (
     title: string,
     list: NotificationItem[],
@@ -160,22 +164,34 @@ export default function NotificationsMenu() {
 
   return (
     <View className="bg-primary-foreground flex-1">
-      <AdjustableHeader
-        selectedCategory={selectedCategory}
-        onChangeCategory={setSelectedCategory}
-      />
+      <View style={{ zIndex: 20, position: "relative" }}>
+        <AdjustableHeader
+          selectedCategory={selectedCategory}
+          onChangeCategory={setSelectedCategory}
+        />
+      </View>
 
-      <ScrollView
-        contentContainerStyle={{ paddingVertical: 8 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <TouchableOpacity className="self-end mr-6 p-1">
-          <Text className="text-primary font-semibold">Mark All as Read</Text>
-        </TouchableOpacity>
-        {renderGroup("Today", today, "time")}
-        {renderGroup("This week", week, "date")}
-        {renderGroup("Earlier", earlier, "date")}
-      </ScrollView>
+      <View style={{ zIndex: 1, flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={{ paddingVertical: 8 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {loading ? (
+            [...Array(6)].map((_, i) => <NotificationSkeleton key={i} />)
+          ) : (
+            <>
+              <TouchableOpacity className="self-end mr-6 p-1">
+                <Text className="text-primary font-semibold">
+                  Mark All as Read
+                </Text>
+              </TouchableOpacity>
+              {renderGroup("Today", today, "time")}
+              {renderGroup("This week", week, "date")}
+              {renderGroup("Earlier", earlier, "date")}
+            </>
+          )}
+        </ScrollView>
+      </View>
     </View>
   );
 }
