@@ -19,20 +19,23 @@ export default function Stepper() {
   };
 
   return (
-    <View className="flex-row justify-between py-2 px-10 items-center bg-white rounded-xl border border-zinc-200 w-[94%] self-center">
-      <Minus onPress={() => setValue((prev) => clampValue(prev - 10))} />
+    <View className="flex-row bg-white w-36 mt-4">
+      <View className="flex-1">
+        <Minus onPress={() => setValue((prev) => clampValue(prev - 10))} />
+      </View>
 
-      <View className="items-center">
+      <View className="items-center flex-1 mx-auto">
         <TextInput
           value={value.toString()}
           onChangeText={handleChange}
           keyboardType="numeric"
-          className="text-7xl font-bold text-center mb-[-12]"
+          className="text-xl font-bold flex-1"
         />
-        <Text className="text-zinc-500">Tunisian Dinar</Text>
+        <Text className="text-zinc-500 text-xs">TND</Text>
       </View>
-
-      <Plus onPress={() => setValue((prev) => clampValue(prev + 10))} />
+      <View className="flex-1 items-end">
+        <Plus onPress={() => setValue((prev) => clampValue(prev + 10))} />
+      </View>
     </View>
   );
 }

@@ -45,51 +45,65 @@ export default function PropertyCard({ data }: { data: any }) {
         <Text className="text-2xl font-medium">{name}</Text>
 
         <View className="flex-row justify-between pr-6">
-          <View>
-            <View className="flex-row">
-              <Image className="h-5 w-5 self-center" source={Status} />
-              <Text className="text-zinc-500 text-lg"> :</Text>
-              <View className="px-0.5" />
-              <Text className="font-medium text-lg">{status}</Text>
+          <View className="flex-1">
+            <View className="flex-1">
+              <View className="flex-row">
+                <Image className="h-5 w-5 self-center" source={Status} />
+                <Text className="text-zinc-500 text-lg"> :</Text>
+                <View className="px-0.5" />
+                <Text className="font-medium text-lg">{status}</Text>
+              </View>
             </View>
-            <View className="flex-row">
-              <Image className="h-5 w-5 self-center" source={Bed} />
-              <Text className="text-zinc-500 text-lg"> :</Text>
-              <View className="px-0.5" />
-              <Text className="font-medium text-lg">{rooms ?? "—"}</Text>
-            </View>
-          </View>
-
-          <View>
-            <View className="flex-row">
-              <Image className="h-5 w-5 self-center" source={Marker} />
-              <Text className="text-zinc-500 text-lg"> :</Text>
-              <View className="px-0.5" />
-              <Text className="font-medium text-lg">{location}</Text>
-            </View>
-            <View className="flex-row">
-              <Image className="h-5 w-5 self-center" source={Investors} />
-              <Text className="text-zinc-500 text-lg"> :</Text>
-              <View className="px-0.5" />
-              {/* backend doesn’t send investor count yet → placeholder */}
-              <Text className="font-medium text-lg">N/A</Text>
+            <View className="flex-1">
+              <View className="flex-row">
+                <Image className="h-5 w-5 self-center" source={Bed} />
+                <Text className="text-zinc-500 text-lg"> :</Text>
+                <View className="px-0.5" />
+                <Text className="font-medium text-lg">{rooms ?? "—"}</Text>
+              </View>
             </View>
           </View>
 
-          <View>
-            <View className="flex-row">
-              <Image className="h-5 w-5 self-center" source={Calendar} />
-              <Text className="text-zinc-500 text-lg"> :</Text>
-              <View className="px-0.5" />
-              <Text className="font-medium text-lg">{upload_date}</Text>
+          <View className="flex-1">
+            <View className="flex-1">
+              <View className="flex-row">
+                <Image className="h-5 w-5 self-center" source={Marker} />
+                <Text className="text-zinc-500 text-lg"> :</Text>
+                <View className="px-0.5" />
+                <Text className="font-medium text-lg">{location}</Text>
+              </View>
             </View>
-            <View className="flex-row">
-              <Image className="h-5 w-5 self-center" source={Tags} />
-              <Text className="text-zinc-500 text-lg"> :</Text>
-              <View className="px-0.5" />
-              <Text className="font-medium text-lg">
-                {total_needed.toLocaleString()} DT
-              </Text>
+
+            <View className="flex-1">
+              <View className="flex-row">
+                <Image className="h-5 w-5 self-center" source={Investors} />
+                <Text className="text-zinc-500 text-lg"> :</Text>
+                <View className="px-0.5" />
+                {/* backend doesn’t send investor count yet → placeholder */}
+                <Text className="font-medium text-lg">N/A</Text>
+              </View>
+            </View>
+          </View>
+
+          <View className="flex-1">
+            <View className="flex-1">
+              <View className="flex-row">
+                <Image className="h-5 w-5 self-center" source={Calendar} />
+                <Text className="text-zinc-500 text-lg"> :</Text>
+                <View className="px-0.5" />
+                <Text className="font-medium text-lg">{upload_date}</Text>
+              </View>
+            </View>
+
+            <View className="flex-1">
+              <View className="flex-row">
+                <Image className="h-5 w-5 self-center" source={Tags} />
+                <Text className="text-zinc-500 text-lg"> :</Text>
+                <View className="px-0.5" />
+                <Text className="font-medium text-lg">
+                  {total_needed.toLocaleString()} DT
+                </Text>
+              </View>
             </View>
           </View>
         </View>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, ActivityIndicator, Image } from "react-native";
+import { View, Text, ScrollView, Image } from "react-native";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import * as Progress from "react-native-progress";
 
@@ -16,6 +16,7 @@ import {
   Leasing,
   TimelineComp,
   BuildingInfo,
+  PropertyPageSkeleton, // <-- imported skeleton
 } from "@main/components/complex/index";
 
 // assets
@@ -58,8 +59,9 @@ const PropertyPage = () => {
   }, [id]);
 
   if (loading) {
-    return <ActivityIndicator size="large" style={{ marginTop: 60 }} />;
+    return <PropertyPageSkeleton />;
   }
+
   if (!property) {
     return (
       <View className="p-6">
@@ -201,8 +203,8 @@ const PropertyPage = () => {
               documents={[]}
             />
 
-            {/* bottom padding so the last widget isn’t glued to the nav bar */}
-            <View className="h-40" />
+            {/* bottom padding */}
+            <View className="h-10" />
           </View>
         </View>
       </ScrollView>

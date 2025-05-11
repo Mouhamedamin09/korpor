@@ -37,7 +37,16 @@
     "react-native-svg": "15.8.0",
     "react-native-timeline-flatlist": "^0.8.0",
     "react-native-web": "^0.19.13",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^3.4.17",
+    "@react-native-community/blur": "^4.4.1",
+    "dayjs": "^1.11.13",
+    "expo-av": "~15.0.2",
+    "expo-image-picker": "~16.0.6",
+    "install": "^0.13.0",
+    "react-native-country-flag": "^2.0.2",
+    "react-native-document-scanner-plugin": "^1.0.1",
+    "react-native-haptic-feedback": "^2.3.3",
+    "react-native-vector-icons": "^10.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -45,7 +54,13 @@
     "@types/react": "~18.3.12",
     "babel-plugin-module-resolver": "^5.0.2",
     "react-native-svg-transformer": "^1.5.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "husky": "^9.1.7"
   },
-  "private": true
+  "private": true,
+  "expo": {
+    "router": {
+      "appRoot": "app"
+    }
+  }
 }

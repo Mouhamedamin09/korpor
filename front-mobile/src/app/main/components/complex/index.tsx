@@ -9,9 +9,12 @@ import Leasing from "./leasing";
 import TimelineComp from "./timelineComponent";
 import BuildingInfo from "./buildingInfo";
 import Notification from "./notification";
-import AdjustableHeader from "./adjustableHeader";
+import AdjustableHeader from "./notificationsHeader";
 import PropertyCardSkeleton from "./propertyCardSkeleton";
 import NotificationSkeleton from "./notificationSkeleton";
+import PropertyPageSkeleton from "./propertyPageSkeleton";
+import CartHeader from "./cartHeader";
+import CartItem from "./cartItem";
 export {
   TopMenu,
   PropertyCard,
@@ -27,4 +30,7 @@ export {
   AdjustableHeader,
   PropertyCardSkeleton,
   NotificationSkeleton,
+  PropertyPageSkeleton,
+  CartHeader,
+  CartItem,
 };
