@@ -1,13 +1,14 @@
-// ../../screens/main/components/profileScreens/profile/SettingsScreen.tsx
+// screens/main/components/profileScreens/profile/SettingsScreen.tsx
 import React, { useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import TopBar from "@main/components/profileScreens/components/ui/TopBar";
-import Card from "@main/components/profileScreens/components/ui/card";
-import SwitchItem from "@main/components/profileScreens/components/ui/SwitchItem";
+import {
+  TopBar,
+  Card,
+  SwitchItem,
+} from "@main/components/profileScreens/components/ui";
 import { useRouter, useFocusEffect } from "expo-router";
-
 import {
   fetchAccountData,
   fetchUserSettings,
@@ -17,14 +18,9 @@ import {
 
 const SettingsScreen: React.FC = () => {
   const router = useRouter();
-
-  /* who is the user? */
   const [account, setAccount] = useState<{ email: string } | null>(null);
-
-  /* user settings */
   const [settings, setSettings] = useState<UserSettings | null>(null);
 
-  /* load once (get email) */
   useFocusEffect(
     useCallback(() => {
       let mounted = true;
@@ -39,7 +35,6 @@ const SettingsScreen: React.FC = () => {
     }, [])
   );
 
-  /* refresh settings each time screen comes into focus */
   useFocusEffect(
     useCallback(() => {
       if (!account) return;
@@ -49,13 +44,12 @@ const SettingsScreen: React.FC = () => {
 
   if (!settings) {
     return (
-      <View className="flex-1 bg-gray-50 items-center justify-center">
-        <Text>Loading settings…</Text>
+      <View className="flex-1 bg-background items-center justify-center">
+        <Text className="text-mutedText">Loading settings…</Text>
       </View>
     );
   }
 
-  /* helpers */
   const openCurrency = () => {
     if (settings.currencyIntroSeen) {
       router.push("/main/components/profileScreens/profile/Currency");
@@ -73,7 +67,7 @@ const SettingsScreen: React.FC = () => {
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-background">
       <TopBar title="Settings" onBackPress={() => router.back()} />
       <ScrollView className="px-4 py-4">
         {/* Language */}
@@ -86,12 +80,12 @@ const SettingsScreen: React.FC = () => {
               )
             }
           >
-            <Ionicons name="globe-outline" size={20} color="#000" />
+            <Ionicons name="globe-outline" size={20} color="#000000" />
             <View className="flex-1 ml-3">
-              <Text className="text-base text-black">Language</Text>
+              <Text className="text-base text-surfaceText">Language</Text>
             </View>
-            <Text className="text-sm text-gray-500 mr-2">English</Text>
-            <Feather name="chevron-right" size={20} color="#9ca3af" />
+            <Text className="text-sm text-mutedText mr-2">English</Text>
+            <Feather name="chevron-right" size={20} color="#71717a" />
           </TouchableOpacity>
         </Card>
 
@@ -101,14 +95,14 @@ const SettingsScreen: React.FC = () => {
             className="flex-row items-center p-4"
             onPress={openCurrency}
           >
-            <Ionicons name="wallet-outline" size={20} color="#000" />
+            <Ionicons name="wallet-outline" size={20} color="#000000" />
             <View className="flex-1 ml-3">
-              <Text className="text-base text-black">Currency</Text>
+              <Text className="text-base text-surfaceText">Currency</Text>
             </View>
-            <Text className="text-sm text-gray-500 mr-2">
+            <Text className="text-sm text-mutedText mr-2">
               {settings.currency}
             </Text>
-            <Feather name="chevron-right" size={20} color="#9ca3af" />
+            <Feather name="chevron-right" size={20} color="#71717a" />
           </TouchableOpacity>
         </Card>
 
@@ -118,14 +112,14 @@ const SettingsScreen: React.FC = () => {
             className="flex-row items-center p-4"
             onPress={() => console.log("Investment preferences pressed")}
           >
-            <Feather name="bar-chart-2" size={20} color="#000" />
+            <Feather name="bar-chart-2" size={20} color="#000000" />
             <View className="flex-1 ml-3">
-              <Text className="text-base text-black">
+              <Text className="text-base text-surfaceText">
                 Investment preferences
               </Text>
-              <Text className="text-xs text-gray-400">Unselected</Text>
+              <Text className="text-xs text-mutedText">Unselected</Text>
             </View>
-            <Feather name="chevron-right" size={20} color="#9ca3af" />
+            <Feather name="chevron-right" size={20} color="#71717a" />
           </TouchableOpacity>
         </Card>
 
@@ -139,13 +133,13 @@ const SettingsScreen: React.FC = () => {
               )
             }
           >
-            <Feather name="bell" size={20} color="#000" />
+            <Feather name="bell" size={20} color="#000000" />
             <View className="flex-1 ml-3">
-              <Text className="text-base text-black">
-                Notifications settings
+              <Text className="text-base text-surfaceText">
+                Notification settings
               </Text>
             </View>
-            <Feather name="chevron-right" size={20} color="#9ca3af" />
+            <Feather name="chevron-right" size={20} color="#71717a" />
           </TouchableOpacity>
         </Card>
 

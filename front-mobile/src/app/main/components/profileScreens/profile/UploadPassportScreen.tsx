@@ -1,49 +1,43 @@
-// ../../screens/main/components/profileScreens/profile/UploadPassportScreen.tsx
+// screens/main/components/profileScreens/profile/UploadPassportScreen.tsx
 import React, { useState } from "react";
 import { ScrollView, View, Text, TouchableOpacity, Image } from "react-native";
 import { useRouter } from "expo-router";
-import TopBar from "@main/components/profileScreens/components/ui/TopBar";
+import {
+  TopBar,
+  BottomSheet,
+} from "@main/components/profileScreens/components/ui";
 import Feather from "react-native-vector-icons/Feather";
-import BottomSheet from "@main/components/profileScreens/components/ui/SheetIndicator"; // ★ NEW
 
 const UploadPassportScreen: React.FC = () => {
   const router = useRouter();
-
-  /* ───────── local state for the info sheet ───────── */
-  const [isInfoSheetVisible, setInfoSheetVisible] = useState(false); // ★ NEW
+  const [isInfoSheetVisible, setInfoSheetVisible] = useState(false);
 
   return (
     <>
-      <ScrollView className="flex-1 bg-white">
-        {/* Top Bar */}
+      <ScrollView className="flex-1 bg-background">
         <TopBar
           title="Upload your passport"
           onBackPress={() => router.back()}
         />
 
         <View className="px-4 py-4">
-          {/* Intro */}
-          <Text className="text-xl font-semibold text-gray-900">
+          <Text className="text-xl font-semibold text-surfaceText">
             In order to register you as the legal owner of each property you
             invest in, we require you to upload your passport for verification
             of your identity.
           </Text>
 
-          {/* Why do we need this? (opens sheet) */}
           <TouchableOpacity
-            onPress={() => setInfoSheetVisible(true)} // ★ NEW
-            className="mt-3 border border-black rounded-lg px-4 py-2 flex-row items-center justify-center bg-white"
+            onPress={() => setInfoSheetVisible(true)}
+            className="mt-3 border border-border rounded-lg px-4 py-2 items-center justify-center bg-surface"
           >
-            <Text className="text-base font-medium text-black">
+            <Text className="text-base font-medium text-surfaceText">
               Why do we need this?
             </Text>
           </TouchableOpacity>
 
-          {/* Instructions grid */}
           <View className="mt-6">
-            {/* Row 1 */}
             <View className="flex-row justify-between mb-4">
-              {/* Good photo */}
               <View className="w-[48%]">
                 <View className="relative h-32 rounded-xl bg-gray-100 items-center justify-center">
                   <Image
@@ -54,12 +48,11 @@ const UploadPassportScreen: React.FC = () => {
                     <Feather name="check-circle" size={20} color="#10B981" />
                   </View>
                 </View>
-                <Text className="mt-2 text-sm font-medium text-gray-900 text-center">
+                <Text className="mt-2 text-sm font-medium text-surfaceText text-center">
                   Show all details, including the line code at the bottom
                 </Text>
               </View>
 
-              {/* No screen photos */}
               <View className="w-[48%]">
                 <View className="relative h-32 rounded-xl bg-gray-100 items-center justify-center">
                   <Image
@@ -70,15 +63,13 @@ const UploadPassportScreen: React.FC = () => {
                     <Feather name="x-circle" size={20} color="#EF4444" />
                   </View>
                 </View>
-                <Text className="mt-2 text-sm font-medium text-gray-900 text-center">
+                <Text className="mt-2 text-sm font-medium text-surfaceText text-center">
                   No photos captured from another screen
                 </Text>
               </View>
             </View>
 
-            {/* Row 2 */}
             <View className="flex-row justify-between">
-              {/* No glare */}
               <View className="w-[48%]">
                 <View className="relative h-32 rounded-xl bg-gray-100 items-center justify-center">
                   <Image
@@ -89,12 +80,11 @@ const UploadPassportScreen: React.FC = () => {
                     <Feather name="x-circle" size={20} color="#EF4444" />
                   </View>
                 </View>
-                <Text className="mt-2 text-sm font-medium text-gray-900 text-center">
+                <Text className="mt-2 text-sm font-medium text-surfaceText text-center">
                   No glare or overexposed photos
                 </Text>
               </View>
 
-              {/* No cutoff */}
               <View className="w-[48%]">
                 <View className="relative h-32 rounded-xl bg-gray-100 items-center justify-center">
                   <Image
@@ -105,38 +95,36 @@ const UploadPassportScreen: React.FC = () => {
                     <Feather name="x-circle" size={20} color="#EF4444" />
                   </View>
                 </View>
-                <Text className="mt-2 text-sm font-medium text-gray-900 text-center">
+                <Text className="mt-2 text-sm font-medium text-surfaceText text-center">
                   No overcropped or cutoff photos
                 </Text>
               </View>
             </View>
           </View>
 
-          {/* Verify button */}
           <TouchableOpacity
             onPress={() =>
               router.push(
                 "main/components/profileScreens/profile/VerificationProgressScreen"
               )
             }
-            className="mt-8 rounded-lg bg-black px-4 py-4 items-center justify-center"
+            className="mt-8 rounded-lg bg-primary px-4 py-4 items-center justify-center"
           >
-            <Text className="text-base font-semibold text-white">
+            <Text className="text-base font-semibold text-primaryText">
               Verify passport
             </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* ───────── Why-do-we-need-this? Sheet ───────── */}
       <BottomSheet
         visible={isInfoSheetVisible}
         onClose={() => setInfoSheetVisible(false)}
       >
-        <Text className="text-lg font-semibold text-gray-900 text-center mb-4">
+        <Text className="text-lg font-semibold text-surfaceText text-center mb-4">
           Why do we need this?
         </Text>
-        <Text className="text-sm text-gray-700 text-center">
+        <Text className="text-sm text-mutedText text-center">
           Uploading your passport is a mandatory step for financial regulations.
           This allows us to verify your identity and ensures that your account
           is secure, your property is registered under your name and your funds

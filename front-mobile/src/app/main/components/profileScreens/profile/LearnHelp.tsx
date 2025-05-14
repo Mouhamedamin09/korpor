@@ -1,4 +1,4 @@
-// ../../screens/HelpCollectionsScreen.tsx
+// screens/HelpCollectionsScreen.tsx
 import React, { useState } from "react";
 import {
   ScrollView,
@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   TextInput,
 } from "react-native";
-import TopBar from "@main/components/profileScreens/components/ui/TopBar";
-import ListItem from "@main/components/profileScreens/components/ui/ListItem";
+import {
+  TopBar,
+  ListItem,
+} from "@main/components/profileScreens/components/ui";
 import Feather from "react-native-vector-icons/Feather";
 import { useRouter } from "expo-router";
 
@@ -18,17 +20,16 @@ const LearnHelp: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
-      {/* If the user taps the search icon, show the search bar */}
+    <ScrollView className="flex-1 bg-background">
       {isSearchActive ? (
-        <View className="bg-white border-b border-gray-200 py-3 px-4 flex-row items-center shadow-sm mb-4">
-          <Feather name="search" size={20} color="gray" className="mr-2" />
+        <View className="bg-surface border-b border-border py-3 px-4 flex-row items-center shadow-sm mb-4">
+          <Feather name="search" size={20} color="#71717a" className="mr-2" />
           <TextInput
             placeholder="Search..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoFocus
-            className="flex-1 text-base"
+            className="flex-1 text-base text-surfaceText"
           />
           <TouchableOpacity
             onPress={() => {
@@ -36,36 +37,32 @@ const LearnHelp: React.FC = () => {
               setSearchQuery("");
             }}
           >
-            <Feather name="x" size={24} color="black" />
+            <Feather name="x" size={24} color="#000000" />
           </TouchableOpacity>
         </View>
       ) : (
-        /* Otherwise, show the top bar with a “Returns” title and a search icon on the right */
         <TopBar
           title="Returns"
           onBackPress={() => router.back()}
           rightComponent={
             <TouchableOpacity onPress={() => setIsSearchActive(true)}>
-              <Feather name="search" size={24} color="black" />
+              <Feather name="search" size={24} color="#000000" />
             </TouchableOpacity>
           }
         />
       )}
 
-      {/* Only show the collection content if we aren’t in search mode */}
       {!isSearchActive && (
         <View>
-          {/* Header section mirroring the screenshot */}
           <View className="px-4 py-4">
-            <Text className="text-base text-gray-800 font-medium">
+            <Text className="text-base font-medium text-surfaceText">
               How do I make money?
             </Text>
-            <Text className="text-sm text-gray-600 mt-1">
+            <Text className="text-sm text-mutedText mt-1">
               5 articles by Ahmed jaziri
             </Text>
           </View>
 
-          {/* Articles list items */}
           <ListItem
             label="How do returns work?"
             onPress={() => console.log("How do returns work?")}
@@ -81,7 +78,7 @@ const LearnHelp: React.FC = () => {
           <ListItem
             label="How will I know what my investment is worth?"
             onPress={() =>
-              console.log("How will I know my investment’s value?")
+              console.log("How will I know what my investment’s value?")
             }
           />
           <ListItem

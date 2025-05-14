@@ -1,26 +1,28 @@
-// ../../screens/GetHelpScreen.tsx
+// screens/GetHelpScreen.tsx
 import React from "react";
 import { ScrollView, View, Text } from "react-native";
-import TopBar from "@main/components/profileScreens/components/ui/TopBar";
-import ListItem from "@main/components/profileScreens/components/ui/ListItem";
+import {
+  TopBar,
+  ListItem,
+} from "@main/components/profileScreens/components/ui";
 import { useRouter } from "expo-router";
 
 const GetHelpScreen: React.FC = () => {
   const router = useRouter();
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <ScrollView className="flex-1 bg-background">
       <TopBar title="Get help" onBackPress={() => router.back()} />
 
       <View className="px-4 pb-4">
         <View className="mb-4">
-          <Text className="text-lg font-bold text-gray-700 mb-2">
+          <Text className="text-lg font-bold text-surfaceText mb-2">
             Help resources
           </Text>
           <ListItem
             iconName="help-circle"
             label="FAQs"
-            onPress={() => router.push("help")}
+            onPress={() => router.push("/help")}
           />
           <ListItem
             iconName="book"
@@ -42,7 +44,7 @@ const GetHelpScreen: React.FC = () => {
         </View>
 
         <View className="mb-4">
-          <Text className="text-lg font-bold text-gray-700 mb-2">
+          <Text className="text-lg font-bold text-surfaceText mb-2">
             Contact us
           </Text>
           <ListItem
@@ -68,7 +70,7 @@ const GetHelpScreen: React.FC = () => {
       </View>
 
       <View className="items-center mb-4">
-        <Text className="text-xs text-gray-400">Version 1.0</Text>
+        <Text className="text-xs text-textGray">Version 1.0</Text>
       </View>
     </ScrollView>
   );
