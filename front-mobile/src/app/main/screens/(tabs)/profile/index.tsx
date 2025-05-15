@@ -162,7 +162,12 @@ const ProfileScreen: React.FC = () => {
             { label: "Notifications", icon: "bell" },
             { label: "Refer a Friend", icon: "users" },
             { label: "Feedback Survey", icon: "edit" },
-            { label: "Calculate My Potential", icon: "trending-up" },
+            {
+              label: "Calculate My Potential",
+              icon: "trending-up",
+              route:
+                "/main/components/profileScreens/profile/PotentialIncomeScreen",
+            },
             {
               label: "Settings",
               icon: "settings",
