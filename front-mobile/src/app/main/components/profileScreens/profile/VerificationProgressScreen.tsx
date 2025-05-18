@@ -1,3 +1,5 @@
+// app/screens/VerificationProgressScreen.tsx
+
 import React, { useState } from "react";
 import {
   ScrollView,
@@ -9,7 +11,7 @@ import {
   Dimensions,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import DocumentScanner, {
   ResponseType,
   ScanDocumentOptions,
@@ -19,8 +21,10 @@ import * as ImagePicker from "expo-image-picker";
 const { width } = Dimensions.get("window");
 
 export default function VerificationProgressScreen() {
+  const router = useRouter();
   const [passportUri, setPassportUri] = useState<string | null>(null);
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
+
   const allDone = !!passportUri && !!selfieUri;
 
   const scanWithCamera = async () => {
@@ -47,6 +51,13 @@ export default function VerificationProgressScreen() {
       quality: 0.9,
     });
     if (!result.canceled) setSelfieUri(result.assets[0].uri);
+  };
+
+  const handleNext = () => {
+    // once both images are in place, go back to CompleteAccountSetupScreen
+    router.push(
+      "main/components/profileScreens/profile/CompleteAccountSetupScreen"
+    );
   };
 
   return (
@@ -103,7 +114,7 @@ export default function VerificationProgressScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => console.log("Next clicked")}
+          onPress={handleNext}
           disabled={!allDone}
           className={`mt-6 rounded-lg p-4 items-center ${
             allDone ? "bg-black" : "bg-gray-300"

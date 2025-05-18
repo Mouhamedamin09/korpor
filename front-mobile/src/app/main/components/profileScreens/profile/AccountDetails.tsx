@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
+  RefreshControl,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { router } from "expo-router";
@@ -26,6 +27,10 @@ import {
   verifyFieldChange,
   AccountData,
 } from "@main/services/api";
+import {
+  fetchInvestmentLimitData,
+  InvestmentLimitData,
+} from "@main/services/InvestmentLimit";
 import { getInitials } from "@main/components/profileScreens/components/ui/string";
 
 const emailValid = (s: string) =>
@@ -35,36 +40,58 @@ const frPhone = /^(?:\+33|33|0)[1-9]\d{8}$/;
 const phoneValid = (s: string) =>
   tnPhone.test(s.trim()) || frPhone.test(s.trim());
 
-const AccountScreen: React.FC = () => {
+export default function AccountScreen() {
+  // --- state ---
   const [account, setAccount] = useState<AccountData | null>(null);
+  const [limitData, setLimitData] = useState<InvestmentLimitData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // pull-to-refresh
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // sheet + modal state
   const [isUpdateSheetVisible, setUpdateSheetVisible] = useState(false);
   const [isSwitchSheetVisible, setSwitchSheetVisible] = useState(false);
-  const [updateType, setUpdateType] = useState<"email" | "phone" | null>(null);
-  const [inputValue, setInputValue] = useState("");
-
   const [isCloseModalVisible, setCloseModalVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
+  // update-flow state
+  const [updateType, setUpdateType] = useState<"email" | "phone" | null>(null);
+  const [inputValue, setInputValue] = useState("");
   const [awaitingCode, setAwaitingCode] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [validationErr, setValidationErr] = useState("");
   const [verifyErr, setVerifyErr] = useState("");
 
+  // --- data loading ---
+  const loadAll = async () => {
+    try {
+      const [acct, lim] = await Promise.all([
+        fetchAccountData(),
+        fetchInvestmentLimitData(),
+      ]);
+      setAccount(acct);
+      setLimitData(lim);
+      setError(null);
+    } catch {
+      setError("Failed to load data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchAccountData()
-      .then((data) => {
-        setAccount(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("Failed to load account data.");
-        setLoading(false);
-      });
+    loadAll();
   }, []);
 
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    await loadAll();
+    setIsRefreshing(false);
+  };
+
+  // --- update flows ---
   const handleUpdatePress = (t: "email" | "phone") => {
     if (!account) return;
     setUpdateType(t);
@@ -74,9 +101,7 @@ const AccountScreen: React.FC = () => {
     setAwaitingCode(false);
     setUpdateSheetVisible(true);
   };
-
   const handleSwitchPress = () => setSwitchSheetVisible(true);
-
   const handleCloseSheet = () => {
     setUpdateSheetVisible(false);
     setSwitchSheetVisible(false);
@@ -133,24 +158,33 @@ const AccountScreen: React.FC = () => {
     }
   };
 
+  // --- render states ---
   if (loading)
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="#000000" />
+        <ActivityIndicator size="large" color="#000" />
       </View>
     );
-  if (error || !account)
+  if (error || !account || !limitData)
     return (
       <View className="flex-1 items-center justify-center bg-background p-4">
-        <Text className="text-destructive">{error || "Unknown error"}</Text>
+        <Text className="text-red-600">{error || "Unknown error"}</Text>
       </View>
     );
 
+  // --- derived ---
   const initials = getInitials(account.name);
+  const { investedThisYear, annualLimit } = limitData;
+  const usedPct = Math.round((investedThisYear / annualLimit) * 100);
 
   return (
     <View className="flex-1 bg-background">
-      <ScrollView className="flex-1">
+      <ScrollView
+        className="flex-1"
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+        }
+      >
         <TopBar title="Your Account" onBackPress={() => router.back()} />
 
         <View className="pt-4 px-4">
@@ -172,12 +206,13 @@ const AccountScreen: React.FC = () => {
             onSwitchAccount={handleSwitchPress}
           />
 
+          {/* Investment Limit */}
           <Card>
             <View className="flex-row items-center justify-between mb-2">
               <View>
                 <Text className="text-sm text-mutedText">Investment Limit</Text>
                 <Text className="text-base font-semibold text-surfaceText">
-                  {account.investmentUsedPct}% used
+                  {usedPct}% used
                 </Text>
               </View>
               <TouchableOpacity
@@ -191,11 +226,8 @@ const AccountScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <Text className="text-sm text-mutedText">
-              TN{" "}
-              {Math.round(
-                (account.investmentUsedPct / 100) * account.investmentTotal
-              )}{" "}
-              / {account.investmentTotal.toLocaleString()}
+              TND {investedThisYear.toLocaleString()} /{" "}
+              {annualLimit.toLocaleString()}
             </Text>
           </Card>
 
@@ -210,12 +242,7 @@ const AccountScreen: React.FC = () => {
             onPress={() => setCloseModalVisible(true)}
             className="flex-row items-center justify-center rounded-xl border border-border bg-surface p-4 shadow-sm mb-4"
           >
-            <Feather
-              name="trash-2"
-              size={20}
-              color="#000000"
-              className="mr-4"
-            />
+            <Feather name="trash-2" size={20} color="#000" className="mr-4" />
             <Text className="text-base font-medium text-surfaceText">
               Close Account
             </Text>
@@ -223,6 +250,7 @@ const AccountScreen: React.FC = () => {
         </View>
       </ScrollView>
 
+      {/* Update Email/Phone */}
       <BottomSheet visible={isUpdateSheetVisible} onClose={handleCloseSheet}>
         {!awaitingCode ? (
           <>
@@ -231,14 +259,13 @@ const AccountScreen: React.FC = () => {
                 <Feather
                   name={updateType === "email" ? "mail" : "phone"}
                   size={24}
-                  color="#000000"
+                  color="#000"
                 />
               </View>
               <Text className="text-xl font-semibold text-surfaceText text-center">
                 Need help updating information?
               </Text>
             </View>
-
             <View className="mb-6">
               <Text className="text-sm font-medium text-text mb-2">
                 {updateType === "email" ? "Email Address" : "Phone Number"}
@@ -261,7 +288,6 @@ const AccountScreen: React.FC = () => {
                 </Text>
               ) : null}
             </View>
-
             <TouchableOpacity
               onPress={handleSave}
               className="bg-primary rounded-lg p-4 items-center mb-4"
@@ -270,14 +296,12 @@ const AccountScreen: React.FC = () => {
                 Save Changes
               </Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               onPress={handleCloseSheet}
               className="rounded-lg p-4 items-center border border-border"
             >
               <Text className="text-text font-medium text-base">Cancel</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               onPress={() => console.log("Send message clicked")}
               className="flex-row items-center justify-center mt-6"
@@ -285,7 +309,7 @@ const AccountScreen: React.FC = () => {
               <Text className="text-surfaceText font-medium mr-2">
                 Send us a message
               </Text>
-              <Feather name="message-circle" size={18} color="#000000" />
+              <Feather name="message-circle" size={18} color="#000" />
             </TouchableOpacity>
           </>
         ) : (
@@ -299,7 +323,6 @@ const AccountScreen: React.FC = () => {
                 verification code.
               </Text>
             </View>
-
             <TextInput
               className="border border-border rounded-lg p-4 text-center text-base tracking-widest bg-inputBg mb-4"
               maxLength={6}
@@ -310,13 +333,11 @@ const AccountScreen: React.FC = () => {
                 setVerifyErr("");
               }}
             />
-
             {verifyErr ? (
               <Text className="text-destructive text-sm mb-3 text-center">
                 {verifyErr}
               </Text>
             ) : null}
-
             <TouchableOpacity
               onPress={handleVerify}
               className="bg-primary rounded-lg p-4 items-center mb-4"
@@ -325,7 +346,6 @@ const AccountScreen: React.FC = () => {
                 Verify
               </Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               onPress={handleCloseSheet}
               className="rounded-lg p-4 items-center border border-border"
@@ -336,10 +356,11 @@ const AccountScreen: React.FC = () => {
         )}
       </BottomSheet>
 
+      {/* Switch to Business */}
       <BottomSheet visible={isSwitchSheetVisible} onClose={handleCloseSheet}>
         <View className="items-center">
           <View className="w-20 h-20 rounded-full bg-inputBg items-center justify-center mb-4">
-            <Feather name="briefcase" size={28} color="#000000" />
+            <Feather name="briefcase" size={28} color="#000" />
           </View>
           <Text className="text-xl font-semibold text-surfaceText text-center mb-2">
             Switch to Business
@@ -350,7 +371,6 @@ const AccountScreen: React.FC = () => {
             Please contact us to switch your profile!
           </Text>
         </View>
-
         <TouchableOpacity
           onPress={() => console.log("Get in touch clicked")}
           className="bg-primary rounded-lg p-4 items-center mb-4 flex-row justify-center"
@@ -358,9 +378,8 @@ const AccountScreen: React.FC = () => {
           <Text className="text-primaryText font-medium text-base mr-2">
             Get in touch
           </Text>
-          <Feather name="message-circle" size={20} color="#ffffff" />
+          <Feather name="message-circle" size={20} color="#fff" />
         </TouchableOpacity>
-
         <TouchableOpacity
           onPress={handleCloseSheet}
           className="rounded-lg p-4 items-center border border-border"
@@ -369,6 +388,7 @@ const AccountScreen: React.FC = () => {
         </TouchableOpacity>
       </BottomSheet>
 
+      {/* Confirm Close Account */}
       <Modal
         transparent
         animationType="fade"
@@ -392,14 +412,13 @@ const AccountScreen: React.FC = () => {
                   Cancel
                 </Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 disabled={isClosing}
                 onPress={confirmCloseAccount}
-                className="h-10 px-4 items-center justify-center rounded-md bg-destructive"
+                className="h-10 px-4 items-center justify-center rounded-md bg-black"
               >
                 {isClosing ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
+                  <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text className="text-base font-medium text-destructiveText">
                     Accept
@@ -412,6 +431,4 @@ const AccountScreen: React.FC = () => {
       </Modal>
     </View>
   );
-};
-
-export default AccountScreen;
+}
