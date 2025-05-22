@@ -10,7 +10,7 @@ interface CardProps {
 const Card: React.FC<CardProps> = ({ children, extraStyle = "" }) => {
   return (
     <View
-      className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm mb-4 ${extraStyle}`}
+      className={`rounded-xl border border-gray-200 bg-white p-4 mb-4 ${extraStyle}`}
     >
       {children}
     </View>

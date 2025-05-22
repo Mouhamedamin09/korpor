@@ -1,4 +1,5 @@
 // app/screens/PotentialIncomeScreen.tsx
+
 import React, { useState } from "react";
 import {
   ScrollView,
@@ -21,9 +22,8 @@ import TopBar from "@main/components/profileScreens/components/ui/TopBar";
 import Card from "@main/components/profileScreens/components/ui/card";
 
 const { width: screenWidth } = Dimensions.get("window");
-// ScrollView px-4 gives 32 total horizontal padding
-// Card p-4 gives another 32 total padding
-const chartWidth = screenWidth - 32 - 32;
+// px-4 on ScrollView + p-4 on Card = 16×2 + 16×2 = 64 total horizontal padding
+const chartWidth = screenWidth - 64;
 
 const GREEN = "#34D37D";
 const LIGHT_GREEN = "rgba(52,211,125,0.2)";
@@ -55,52 +55,63 @@ export default function PotentialIncomeScreen() {
   const maxY = proj[years] * 1.2;
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-gray-50">
       <TopBar title="Potential income" onBackPress={() => router.back()} />
 
-      <ScrollView className="flex-1 px-4 pt-2 pb-4">
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 24 }}
+        className="px-4 pt-4"
+      >
+        {/* Intro */}
+        <Text className="text-center text-base text-gray-700 mb-6">
+          See how your monthly deposits and yield grow over time.
+        </Text>
+
         {/* Deposit selector */}
-        <View className="flex-row items-center justify-center border border-gray-300 rounded-xl py-2 mb-6">
-          <TouchableOpacity
-            onPress={() => setDeposit((d) => Math.max(0, d - 100))}
-            className="px-4"
-          >
-            <Feather name="minus" size={20} color={GREEN} />
-          </TouchableOpacity>
-          <View className="flex-row items-center mx-4">
-            <Text className="text-gray-500 mr-1">AED</Text>
-            <TextInput
-              value={`${deposit}`}
-              keyboardType="numeric"
-              onChangeText={(t) => setDeposit(Number(t) || 0)}
-              className="text-lg font-semibold text-gray-900 w-20 text-center p-0"
-            />
+        <Card extraStyle="mb-6">
+          <Text className="text-sm text-gray-600 mb-2 text-center">
+            Monthly deposit
+          </Text>
+          <View className="flex-row items-center justify-center border border-gray-300 rounded-xl py-2">
+            <TouchableOpacity
+              onPress={() => setDeposit((d) => Math.max(0, d - 100))}
+              className="px-4"
+            >
+              <Feather name="minus" size={20} color={GREEN} />
+            </TouchableOpacity>
+            <View className="flex-row items-center mx-4">
+              <Text className="text-gray-500 mr-1">AED</Text>
+              <TextInput
+                value={`${deposit}`}
+                keyboardType="numeric"
+                onChangeText={(t) => setDeposit(Number(t) || 0)}
+                className="text-lg font-semibold text-gray-900 w-20 text-center p-0"
+              />
+            </View>
+            <TouchableOpacity
+              onPress={() => setDeposit((d) => d + 100)}
+              className="px-4"
+            >
+              <Feather name="plus" size={20} color={GREEN} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            onPress={() => setDeposit((d) => d + 100)}
-            className="px-4"
-          >
-            <Feather name="plus" size={20} color={GREEN} />
-          </TouchableOpacity>
-        </View>
+        </Card>
 
         {/* Stat cards */}
         <View className="flex-row mb-6">
           <Card extraStyle="flex-1 mr-2 p-4">
             <Feather name="bar-chart-2" size={24} color={GREEN} />
             <Text className="text-sm text-gray-500 mt-2">
-              Proj. value Y{years}
+              Value after {years} year{years > 1 ? "s" : ""}
             </Text>
-            <Text className="text-lg font-semibold text-gray-900">
+            <Text className="text-xl font-bold text-gray-900">
               AED {proj[years].toLocaleString()}
             </Text>
           </Card>
           <Card extraStyle="flex-1 ml-2 p-4">
             <Feather name="dollar-sign" size={24} color={GREEN} />
-            <Text className="text-sm text-gray-500 mt-2">
-              Monthly income Y{years}
-            </Text>
-            <Text className="text-lg font-semibold text-gray-900">
+            <Text className="text-sm text-gray-500 mt-2">Monthly income</Text>
+            <Text className="text-xl font-bold text-gray-900">
               AED{" "}
               {Math.floor(
                 (proj[years] * (yieldPct / 100)) / 12
@@ -109,8 +120,8 @@ export default function PotentialIncomeScreen() {
           </Card>
         </View>
 
-        {/* Centered Chart */}
-        <Card extraStyle="p-4 mb-6">
+        {/* Chart */}
+        <Card extraStyle="mb-6">
           <View className="items-center">
             <Svg width={chartWidth} height={300}>
               <VictoryChart
@@ -156,78 +167,86 @@ export default function PotentialIncomeScreen() {
               </VictoryChart>
             </Svg>
           </View>
-
-          <Text className="text-sm text-gray-600 mt-4">
-            The green line shows your portfolio value projection over {years}{" "}
-            years, based on your monthly deposit and {yieldPct}% net yield.
-          </Text>
-          <Text className="text-sm text-gray-600 mb-4">
-            The shaded band represents a likely range (±20%) around the
-            projection, illustrating potential variability. Calculations start
-            at year 0 with an initial base of AED 500,000, compounding annually
-            and adding monthly deposits.
-          </Text>
-
-          <View className="flex-row justify-center">
-            <View className="flex-row items-center mr-6">
-              <View className="w-3 h-3 bg-green-500 mr-2" />
-              <Text className="text-gray-700">Projection</Text>
-            </View>
-            <View className="flex-row items-center">
-              <View className="w-3 h-3 bg-green-200 mr-2" />
-              <Text className="text-gray-700">Likely range</Text>
+          <View className="mt-4 space-y-2">
+            <Text className="text-sm text-gray-600">
+              Green line: projection over {years} year
+            </Text>
+            <Text className="text-sm text-gray-600">
+              Shaded band: ±20% variability range
+            </Text>
+            <View className="flex-row justify-center mt-3">
+              <View className="flex-row items-center mr-6">
+                <View className="w-3 h-3 bg-green-500 mr-2 rounded-sm" />
+                <Text className="text-gray-700">Projection</Text>
+              </View>
+              <View className="flex-row items-center">
+                <View className="w-3 h-3 bg-green-200 mr-2 rounded-sm" />
+                <Text className="text-gray-700">Range</Text>
+              </View>
             </View>
           </View>
         </Card>
 
         {/* Controls */}
-        <View className="flex-row justify-between mb-6 px-4">
-          <View className="flex-1 items-center">
-            <Text className="text-gray-500 mb-1">Years</Text>
-            <View className="flex-row items-center">
-              <TouchableOpacity
-                onPress={() => setYearIdx((i) => Math.max(0, i - 1))}
-              >
-                <Feather name="minus" size={18} color={GREEN} />
-              </TouchableOpacity>
-              <Text className="text-lg font-semibold text-gray-900 mx-3">
-                {years}
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  setYearIdx((i) => Math.min(yearOptions.length - 1, i + 1))
-                }
-              >
-                <Feather name="plus" size={18} color={GREEN} />
-              </TouchableOpacity>
+        <Card extraStyle="p-4 mb-6">
+          <Text className="text-sm text-gray-600 mb-4 text-center">
+            Customize timeframe & yield
+          </Text>
+          <View className="flex-row justify-around">
+            {/* Years Picker */}
+            <View className="items-center">
+              <Text className="text-gray-500 mb-1">Years</Text>
+              <View className="flex-row items-center">
+                <TouchableOpacity
+                  onPress={() => setYearIdx((i) => Math.max(0, i - 1))}
+                  className="px-2"
+                >
+                  <Feather name="minus" size={18} color={GREEN} />
+                </TouchableOpacity>
+                <Text className="text-lg font-bold text-gray-900 mx-2">
+                  {years}
+                </Text>
+                <TouchableOpacity
+                  onPress={() =>
+                    setYearIdx((i) => Math.min(yearOptions.length - 1, i + 1))
+                  }
+                  className="px-2"
+                >
+                  <Feather name="plus" size={18} color={GREEN} />
+                </TouchableOpacity>
+              </View>
+            </View>
+            {/* Yield Picker */}
+            <View className="items-center">
+              <Text className="text-gray-500 mb-1">Net yield %</Text>
+              <View className="flex-row items-center">
+                <TouchableOpacity
+                  onPress={() =>
+                    setYieldPct((p) => Math.max(5.25, +(p - 0.25).toFixed(2)))
+                  }
+                  className="px-2"
+                >
+                  <Feather name="minus" size={18} color={GREEN} />
+                </TouchableOpacity>
+                <Text className="text-lg font-bold text-gray-900 mx-2">
+                  {yieldPct.toFixed(2)}
+                </Text>
+                <TouchableOpacity
+                  onPress={() =>
+                    setYieldPct((p) => Math.min(6.75, +(p + 0.25).toFixed(2)))
+                  }
+                  className="px-2"
+                >
+                  <Feather name="plus" size={18} color={GREEN} />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-          <View className="flex-1 items-center">
-            <Text className="text-gray-500 mb-1">Net yield %</Text>
-            <View className="flex-row items-center">
-              <TouchableOpacity
-                onPress={() =>
-                  setYieldPct((p) => Math.max(5.25, +(p - 0.25).toFixed(2)))
-                }
-              >
-                <Feather name="minus" size={18} color={GREEN} />
-              </TouchableOpacity>
-              <Text className="text-lg font-semibold text-gray-900 mx-3">
-                {yieldPct.toFixed(2)}
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  setYieldPct((p) => Math.min(6.75, +(p + 0.25).toFixed(2)))
-                }
-              >
-                <Feather name="plus" size={18} color={GREEN} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+        </Card>
 
-        <Text className="text-xs text-gray-500 leading-snug mb-2">
-          Illustrative only. Adjust criteria; not a guarantee of future results.
+        <Text className="text-xs text-gray-500 text-center">
+          Illustrative only — adjust your inputs. Not a guarantee of future
+          performance.
         </Text>
       </ScrollView>
     </View>

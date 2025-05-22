@@ -18,6 +18,7 @@
       "supportsTablet": true
     },
     "android": {
+      "permissions": ["VIBRATE"],
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

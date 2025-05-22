@@ -1,6 +1,13 @@
 // screens/SecurityPrivacyScreen.tsx
 import React, { useState } from "react";
-import { ScrollView, View, Text, TouchableOpacity, Switch } from "react-native";
+import {
+  ScrollView,
+  View,
+  Text,
+  TouchableOpacity,
+  Switch,
+  Linking,
+} from "react-native";
 import { TopBar } from "@main/components/profileScreens/components/ui";
 import Feather from "react-native-vector-icons/Feather";
 import { useRouter } from "expo-router";
@@ -44,7 +51,11 @@ const SecurityPrivacyScreen: React.FC = () => {
         </View>
 
         <TouchableOpacity
-          onPress={() => console.log("Multi-factor authentication pressed")}
+          onPress={() =>
+            router.push(
+              "/main/components/profileScreens/profile/MultiFactorAuthScreen"
+            )
+          }
           className="flex-row items-center justify-between bg-surface p-4 rounded-xl border border-border shadow-sm mb-4"
         >
           <View className="flex-row items-center">
@@ -57,7 +68,11 @@ const SecurityPrivacyScreen: React.FC = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => console.log("Social logins pressed")}
+          onPress={() =>
+            router.push(
+              "/main/components/profileScreens/profile/ManageSocialLoginsScreen"
+            )
+          }
           className="flex-row items-center justify-between bg-surface p-4 rounded-xl border border-border shadow-sm mb-4"
         >
           <View className="flex-row items-center">
@@ -72,7 +87,7 @@ const SecurityPrivacyScreen: React.FC = () => {
         <Text className="text-lg font-bold text-surfaceText mb-2">Privacy</Text>
 
         <TouchableOpacity
-          onPress={() => console.log("Privacy policy pressed")}
+          onPress={() => Linking.openURL("https://korpor.com")}
           className="flex-row items-center justify-between bg-surface p-4 rounded-xl border border-border shadow-sm mb-4"
         >
           <View className="flex-row items-center">
