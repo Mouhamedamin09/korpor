@@ -8,7 +8,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarShowLabel: false, // disable default label
+        tabBarShowLabel: false,
         tabBarIcon: ({ color, focused }) => {
           let iconName = "";
           let label = "";
@@ -41,7 +41,7 @@ export default function TabLayout() {
               <Ionicons name={iconName as any} size={20} color={color} />
               <Text
                 className={`text-xs mt-1 text-center max-w-[100px] ${
-                  focused ? "text-[#2b7fff] font-semibold" : "text-gray-400"
+                  focused ? "text-black font-semibold" : "text-gray-400"
                 }`}
                 numberOfLines={1}
               >
@@ -84,7 +84,7 @@ export default function TabLayout() {
             </Pressable>
           );
         },
-        tabBarActiveTintColor: "#2b7fff",
+        tabBarActiveTintColor: "#000000",
         tabBarInactiveTintColor: "#9ca3af",
         tabBarStyle: {
           backgroundColor: "#fff",

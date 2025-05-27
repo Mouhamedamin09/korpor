@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { ScrollView, View, Text, TouchableOpacity, Image } from "react-native";
 import { useRouter } from "expo-router";
 import Feather from "react-native-vector-icons/Feather";
-// pull in the SheetIndicator directly — our barrel file didn’t re-export it
+// pull in the SheetIndicator directly — our barrel file didn't re-export it
 import BottomSheet from "@main/components/profileScreens/components/ui/SheetIndicator";
 import TopBar from "@main/components/profileScreens/components/ui/TopBar";
 
@@ -14,7 +14,7 @@ const UploadPassportScreen: React.FC = () => {
 
   return (
     <>
-      <ScrollView className="flex-1 bg-background">
+      <ScrollView className="flex-1 bg-background" contentContainerStyle={{ paddingTop: 16 }}>
         <TopBar
           title="Upload your passport"
           onBackPress={() => router.back()}

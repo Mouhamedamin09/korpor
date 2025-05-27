@@ -3,6 +3,7 @@ import "../../global.css";
 import { OutlinedButton, SolidButtonLg } from "@auth/components/ui/index";
 import { router } from "expo-router";
 const logo = require("@assets/logo.png");
+
 export default function App() {
   return (
     <View className="flex-1 bg-[#09090b] justify-between items-center">

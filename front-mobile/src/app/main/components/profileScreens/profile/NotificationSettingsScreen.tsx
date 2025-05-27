@@ -148,13 +148,16 @@ export default function NotificationSettingsScreen() {
   };
 
   return (
+    <View className="flex-1 bg-background">
+      <TopBar title="Notification Settings" onBackPress={() => router.back()} />
+    
     <ScrollView
       className="flex-1 bg-background"
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <TopBar title="Notification Settings" onBackPress={() => router.back()} />
+      
 
       <View className="p-4">
         <Text className="text-sm text-surfaceText mb-4">
@@ -235,5 +238,6 @@ export default function NotificationSettingsScreen() {
         />
       </View>
     </ScrollView>
+    </View>
   );
 }

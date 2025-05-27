@@ -66,7 +66,7 @@ export default function ReferAFriendScreen() {
     <View className="flex-1 bg-white">
       <TopBar title="Referrals" onBackPress={() => router.back()} />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 24, paddingTop: 16 }}>
         {/* Intro banner */}
         <View className="mx-4 mt-4 p-3 bg-gray-100 rounded-xl flex-row items-center">
           <Text className="text-sm">
@@ -140,7 +140,7 @@ export default function ReferAFriendScreen() {
             </View>
           ))}
           <Text className="text-xs text-gray-500 mt-2">
-            Bonus is paid into your account after your friends’ investments are
+            Bonus is paid into your account after your friends' investments are
             fully funded and closed.
           </Text>
         </Card>

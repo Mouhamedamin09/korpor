@@ -5,6 +5,29 @@ module.exports = {
   darkMode: "class",
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter-Regular'],
+        thin: ['Inter-Thin'],
+        extralight: ['Inter-ExtraLight'],
+        light: ['Inter-Light'],
+        regular: ['Inter-Regular'],
+        medium: ['Inter-Medium'],
+        semibold: ['Inter-SemiBold'],
+        bold: ['Inter-Bold'],
+        extrabold: ['Inter-ExtraBold'],
+        black: ['Inter-Black'],
+      },
+      fontWeight: {
+        thin: '100',
+        extralight: '200',
+        light: '300',
+        normal: '400',
+        medium: '500',
+        semibold: '600',
+        bold: '700',
+        extrabold: '800',
+        black: '900',
+      },
       colors: {
         // Core surfaces
         background: "hsl(0, 0%, 100%)", // page & general bg

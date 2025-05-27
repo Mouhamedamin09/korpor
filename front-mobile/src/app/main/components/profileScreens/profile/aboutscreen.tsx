@@ -110,7 +110,7 @@ const AboutScreen: React.FC = () => {
   return (
     <View className="flex-1 bg-background">
       <TopBar title="About" onBackPress={() => router.back()} />
-      <ScrollView className="flex-1">
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingTop: 16 }}>
         {/* Korpor in numbers */}
         <View className="px-4 mt-4">
           <Text className="text-lg font-semibold text-text mb-4">

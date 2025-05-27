@@ -79,7 +79,7 @@ export default function ProfileScreen() {
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
         }
-        contentContainerStyle={{ paddingBottom: 32 }}
+        contentContainerStyle={{ paddingBottom: 32, paddingTop: 16 }}
       >
         {/* Account row */}
         <PressableRow

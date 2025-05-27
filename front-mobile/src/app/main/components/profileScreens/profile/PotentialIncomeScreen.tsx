@@ -17,7 +17,7 @@ import {
 } from "victory-native";
 import { Svg } from "react-native-svg";
 import Feather from "react-native-vector-icons/Feather";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import TopBar from "@main/components/profileScreens/components/ui/TopBar";
 import Card from "@main/components/profileScreens/components/ui/card";
 
@@ -37,7 +37,9 @@ function fmt(val: number) {
 
 export default function PotentialIncomeScreen() {
   const router = useRouter();
-  const [deposit, setDeposit] = useState(6000);
+  const params = useLocalSearchParams<{ deposit?: string }>();
+  const initialDeposit = params.deposit ? Number(params.deposit) : 6000;
+  const [deposit, setDeposit] = useState(initialDeposit);
   const [yearIdx, setYearIdx] = useState(yearOptions.length - 1);
   const [yieldPct, setYieldPct] = useState(6);
 
@@ -80,7 +82,7 @@ export default function PotentialIncomeScreen() {
               <Feather name="minus" size={20} color={GREEN} />
             </TouchableOpacity>
             <View className="flex-row items-center mx-4">
-              <Text className="text-gray-500 mr-1">AED</Text>
+              <Text className="text-gray-500 mr-1">TND</Text>
               <TextInput
                 value={`${deposit}`}
                 keyboardType="numeric"
@@ -105,14 +107,14 @@ export default function PotentialIncomeScreen() {
               Value after {years} year{years > 1 ? "s" : ""}
             </Text>
             <Text className="text-xl font-bold text-gray-900">
-              AED {proj[years].toLocaleString()}
+              TND {proj[years].toLocaleString()}
             </Text>
           </Card>
           <Card extraStyle="flex-1 ml-2 p-4">
             <Feather name="dollar-sign" size={24} color={GREEN} />
             <Text className="text-sm text-gray-500 mt-2">Monthly income</Text>
             <Text className="text-xl font-bold text-gray-900">
-              AED{" "}
+              TND{" "}
               {Math.floor(
                 (proj[years] * (yieldPct / 100)) / 12
               ).toLocaleString()}

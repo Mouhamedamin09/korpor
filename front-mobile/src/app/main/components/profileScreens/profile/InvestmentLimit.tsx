@@ -46,8 +46,8 @@ export default function InvestmentLimitScreen() {
       />
 
       <ScrollView
-        className="flex-1 px-4 pt-4"
-        contentContainerStyle={{ paddingBottom: 32 }}
+        className="flex-1 px-4"
+        contentContainerStyle={{ paddingBottom: 32, paddingTop: 16 }}
       >
         {/* Progress Card */}
         <Card>

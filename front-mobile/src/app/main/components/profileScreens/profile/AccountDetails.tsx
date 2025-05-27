@@ -184,6 +184,7 @@ export default function AccountScreen() {
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
         }
+        contentContainerStyle={{ paddingTop: 16 }}
       >
         <TopBar title="Your Account" onBackPress={() => router.back()} />
 
@@ -233,7 +234,7 @@ export default function AccountScreen() {
 
           <View className="py-4 mb-4">
             <Text className="text-sm text-mutedText text-center">
-              You’re amongst {account.globalUsers.toLocaleString()} global users
+              You're amongst {account.globalUsers.toLocaleString()} global users
               from {account.globalCountries} different countries
             </Text>
           </View>

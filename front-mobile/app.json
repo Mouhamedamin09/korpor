@@ -8,6 +8,11 @@
     "icon": "./src/assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
+    "fonts": [
+      {
+        "asset": "./src/assets/fonts/Roboto.ttf"
+      }
+    ],
 
     "splash": {
       "image": "./src/assets/splash-icon.png",

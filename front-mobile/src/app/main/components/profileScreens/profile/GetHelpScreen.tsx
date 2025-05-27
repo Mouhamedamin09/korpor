@@ -48,7 +48,7 @@ const tourSlides = [
     image: require("@assets/start-500.png"),
     title: "Start from TND 500",
     subtitle:
-      "We’re breaking down barriers – low minimums and no large down payments or mortgages",
+      "We're breaking down barriers – low minimums and no large down payments or mortgages",
   },
 ];
 
@@ -65,7 +65,7 @@ export default function GetHelpScreen() {
 
   return (
     <>
-      <ScrollView className="flex-1 bg-background">
+      <ScrollView className="flex-1 bg-background" contentContainerStyle={{ paddingTop: 16 }}>
         <TopBar title="Get help" onBackPress={() => router.back()} />
 
         <View className="px-4 pb-4">
