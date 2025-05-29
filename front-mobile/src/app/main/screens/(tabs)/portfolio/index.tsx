@@ -1,6 +1,5 @@
 // screens/main/components/wallet/PortfolioScreen.tsx
-
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   ScrollView,
@@ -9,23 +8,90 @@ import {
   Dimensions,
   Image,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import Feather from "react-native-vector-icons/Feather";
 import CountryFlag from "react-native-country-flag";
 import TopBar from "@main/components/profileScreens/components/ui/TopBar";
-import PortfolioValueCard from "@main/components/portfolio/components/ui/PortfolioValueCard";
 import Card from "@main/components/profileScreens/components/ui/card";
-import QuickstartCard from "@/app/main/components/portfolio/components/ui/QuickstartCard";
+import AcademyVideoCard from "@main/components/wallet/compoenets/ui/AcademyVideoCard";
+import SecurityResourceCard from "@main/components/wallet/compoenets/ui/SecurityResourceCard";
+import {
+  AmountSelector,
+  QuickstartCard,
+  PortfolioValueCard,
+  MonthlyDepositsCard,
+  AutoInvest,
+  AutoReinvest,
+} from "@/app/main/components/portfolio/components/ui/index";
+import { fetchAccountData, fetchUserSettings } from "@main/services/api";
+import {
+  fetchPortfolioTotals,
+  fetchAutomationStatus,
+} from "@main/services/portfolio";
 
 const { width } = Dimensions.get("window");
+
+const CURRENCY = {
+  USD: { symbol: "$", flag: "US", code: "USD" },
+  EUR: { symbol: "€", flag: "FR", code: "EUR" },
+  TND: { symbol: "TND", flag: "TN", code: "TND" },
+} as const;
 
 const PortfolioScreen: React.FC = () => {
   const router = useRouter();
 
-  // dummy totals until your API is wired up
-  const usdTotal = 0;
-  const aedTotal = 0;
-  const cur = { code: "TND", flag: "TN" };
+  /* ---------------- currency ---------------- */
+  const [currency, setCurrency] = useState<keyof typeof CURRENCY>("TND");
+  const [loadingCurrency, setLoadingCurrency] = useState(true);
+
+  const loadCurrency = useCallback(async () => {
+    setLoadingCurrency(true);
+    try {
+      const { email } = await fetchAccountData();
+      const { currency: serverCurrency } = await fetchUserSettings(email);
+      if (serverCurrency && serverCurrency in CURRENCY) {
+        setCurrency(serverCurrency as keyof typeof CURRENCY);
+      }
+    } catch (e) {
+      console.warn("Failed to load currency, defaulting to TND", e);
+    } finally {
+      setLoadingCurrency(false);
+    }
+  }, []);
+
+  /* ---------------- portfolio data ---------------- */
+  const [totals, setTotals] = useState({ usd: 0, local: 0 });
+  const [automation, setAutomation] = useState({
+    autoInvestSetup: false,
+    autoReinvestSetup: false,
+  });
+  const [loadingPortfolio, setLoadingPortfolio] = useState(true);
+
+  const loadPortfolioData = useCallback(async () => {
+    setLoadingPortfolio(true);
+    try {
+      const [tot, auto] = await Promise.all([
+        fetchPortfolioTotals(),
+        fetchAutomationStatus(),
+      ]);
+      setTotals(tot);
+      setAutomation(auto);
+    } catch (e) {
+      console.warn("Failed to load portfolio data", e);
+    } finally {
+      setLoadingPortfolio(false);
+    }
+  }, []);
+
+  /* ---------------- focus effect ---------------- */
+  useFocusEffect(
+    useCallback(() => {
+      loadCurrency();
+      loadPortfolioData();
+    }, [loadCurrency, loadPortfolioData])
+  );
+
+  const cur = CURRENCY[currency];
 
   return (
     <View className="flex-1 bg-background">
@@ -51,14 +117,16 @@ const PortfolioScreen: React.FC = () => {
         }
       />
 
-      <ScrollView contentContainerStyle={{ paddingVertical: 24, paddingTop: 32 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         <PortfolioValueCard
-          usdValue={usdTotal}
+          usdValue={totals.usd}
           localCurrencyCode={cur.code}
-          localValue={aedTotal}
+          localValue={totals.local}
+          loading={loadingPortfolio}
         />
 
         <Card extraStyle="p-6 bg-white rounded-2xl shadow-sm mx-4">
+          {/* existing “Start earning” block (unchanged) */}
           <View className="flex-row items-center mb-4">
             <View className="w-20 h-20 rounded-2xl bg-green-100 items-center justify-center mr-4">
               <Image
@@ -80,18 +148,9 @@ const PortfolioScreen: React.FC = () => {
           <View className="h-px bg-gray-200 mb-4" />
 
           {[
-            {
-              icon: "award",
-              txt: "Receive legal ownership documents",
-            },
-            {
-              icon: "dollar-sign",
-              txt: "Receive rental payments every month",
-            },
-            {
-              icon: "arrow-up",
-              txt: "Earn property appreciation over time",
-            },
+            { icon: "award", txt: "Receive legal ownership documents" },
+            { icon: "dollar-sign", txt: "Receive rental payments every month" },
+            { icon: "arrow-up", txt: "Earn property appreciation over time" },
           ].map(({ icon, txt }) => (
             <View key={txt} className="flex-row items-center mb-3">
               <Feather name={icon as any} size={20} color="#10B981" />
@@ -106,11 +165,79 @@ const PortfolioScreen: React.FC = () => {
             <Feather name="chevron-right" size={20} color="#10B981" />
           </TouchableOpacity>
         </Card>
-        {/* —————————————————————————————
-             END CARD
-           ————————————————————————————— */}
+
         <QuickstartCard />
-        {/* …other sections here… */}
+
+        <Text className="ml-5 text-xl font-semibold mt-4">
+          How your money could grow
+        </Text>
+        <MonthlyDepositsCard currencyCode={cur.code} />
+
+        <Text className="ml-5 text-xl font-semibold mt-4">Automations</Text>
+        <AutoInvest isSetup={automation.autoInvestSetup} />
+        <AutoReinvest isSetup={automation.autoReinvestSetup} />
+
+        <Text className="ml-5 text-xl font-semibold my-4">
+          Learn about our security
+        </Text>
+
+        <AcademyVideoCard />
+
+        <View className="mb-4" />
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16 }}
+        >
+          {[
+            {
+              icon: "credit-card",
+              title: "Learn about deposits\nand withdrawals",
+              read: true,
+              onPress: () => console.log("open article 1"),
+            },
+            {
+              icon: "shield",
+              title: "How does DFSA\nprotect my money?",
+              read: false,
+              onPress: () => console.log("open article 2"),
+            },
+            {
+              icon: "user",
+              title: "How does DFSA protect user Money?",
+              read: false,
+              onPress: () => console.log("open article 3"),
+            },
+            {
+              icon: "lock",
+              title: "How does Korpor protect my data?",
+              read: false,
+              onPress: () => console.log("open article 4"),
+            },
+            {
+              icon: "info",
+              title: "What is DIFC?",
+              read: false,
+              onPress: () => console.log("open article 5"),
+            },
+          ].map(({ icon, title, read, onPress }, idx, arr) => (
+            <View
+              key={title}
+              style={{
+                width: 260,
+                marginRight: idx === arr.length - 1 ? 0 : 12,
+              }}
+            >
+              <SecurityResourceCard
+                icon={icon}
+                title={title}
+                read={read}
+                onPress={onPress}
+              />
+            </View>
+          ))}
+        </ScrollView>
       </ScrollView>
     </View>
   );

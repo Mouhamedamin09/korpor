@@ -37,8 +37,6 @@ const BenefitRow = ({
   </View>
 );
 
-
-
 // ───────────────────────────────────────── component ─────
 const AutoInvestScreen: React.FC = () => {
   const router = useRouter();
@@ -50,9 +48,13 @@ const AutoInvestScreen: React.FC = () => {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, paddingTop: 16 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingBottom: 32,
+          paddingTop: 16,
+        }}
       >
-        <SetupCard />
+        <SetupCard type="invest" />
         {/* ░░ benefits ░░ */}
         <Text className="text-lg font-semibold text-gray-900 mb-4">
           Benefits
@@ -72,7 +74,7 @@ const AutoInvestScreen: React.FC = () => {
           title="Diversify on autopilot"
           subtitle="AutoInvest minimizes your risk by spreading your investments across several properties each month according to the theme of your choice"
         />
-        <HowItWorks />
+        <HowItWorks type="invest" />
       </ScrollView>
     </View>
   );

@@ -6,14 +6,12 @@ import Feather from "react-native-vector-icons/Feather";
 import CountryFlag from "react-native-country-flag";
 import { useRouter } from "expo-router";
 import { MotiView } from "moti";
-
 import {
   fetchAccountData,
   fetchUserSettings,
   updateCurrency,
 } from "@main/services/api";
 
-/* ---------- tiny helper to make grey pulsing blocks ---------- */
 const PulseBlock = ({
   height,
   width = "100%",
@@ -34,7 +32,6 @@ const PulseBlock = ({
   />
 );
 
-/* grey placeholder for one currency row */
 const CurrencyRowSkeleton = () => (
   <MotiView
     from={{ opacity: 0.3 }}
@@ -42,7 +39,6 @@ const CurrencyRowSkeleton = () => (
     transition={{ type: "timing", duration: 700, loop: true }}
     className="bg-surface p-4 rounded-xl border border-border shadow-sm mb-4"
   >
-    {/* circle flag + two text bars */}
     <View className="flex-row items-center">
       <View className="w-6 h-6 rounded-full bg-gray-300" />
       <View className="ml-3 flex-1">
@@ -87,7 +83,6 @@ const CurrencyScreen: React.FC = () => {
       <TopBar title="Select Currency" onBackPress={() => router.back()} />
 
       <View className="px-4 py-6">
-        {/* skeleton rows while loading */}
         {loading
           ? currencies.map((c) => <CurrencyRowSkeleton key={c.code} />)
           : currencies.map((c) => (
@@ -114,7 +109,6 @@ const CurrencyScreen: React.FC = () => {
               </TouchableOpacity>
             ))}
 
-        {/* info paragraph / its skeleton */}
         {loading ? (
           <PulseBlock height={48} width="100%" radius={8} />
         ) : (

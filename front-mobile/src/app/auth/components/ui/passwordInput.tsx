@@ -16,9 +16,9 @@ export default function PasswordInput({
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
 
   return (
-    <View className="border border-[#3f3f46] rounded-xl px-4 h-12 flex-row mb-3 justify-between">
+    <View className="border border-border rounded-xl px-4 h-12 flex-row mb-3 justify-between">
       <TextInput
-        className="text-base text-[#fafafa] bg-[#09090b]"
+        className="text-base text-primary bg-background"
         placeholder={placeholder}
         placeholderTextColor="#A0A0A0"
         secureTextEntry={!isPasswordVisible}

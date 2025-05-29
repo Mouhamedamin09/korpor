@@ -20,12 +20,12 @@ export default function EmailInput({
   };
 
   return (
-    <View className="w-full">
+    <View className="">
       <TextInput
-        className={`border rounded-xl px-4 h-12 text-base text-[#fafafa] w-full py-3 ${
+        className={`border rounded-xl px-4 h-12 text-base text-primaryBlack w-full py-3 ${
           isValid
-            ? "border-[#3f3f46] bg-[#09090b] mb-3"
-            : "border-red-500 bg-[#09090b]"
+            ? "border-border bg-background mb-3"
+            : "border-red-500 bg-background"
         }`}
         placeholder={placeholder}
         placeholderTextColor="#A0A0A0"

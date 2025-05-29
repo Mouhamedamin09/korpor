@@ -155,7 +155,11 @@ const WalletScreen: React.FC = () => {
             <View className="flex-row justify-around mt-6 mb-4 px-2">
               {[
                 { icon: "refresh-ccw", label: "Invest" },
-                { icon: "plus", label: "Deposit", route: "deposit" },
+                {
+                  icon: "plus",
+                  label: "Deposit",
+                  route: "main/components/wallet/walletscreens/DepositScreen",
+                },
                 {
                   icon: "arrow-up-right",
                   label: "Withdraw",
@@ -196,7 +200,7 @@ const WalletScreen: React.FC = () => {
                 subtitle="Pick and choose properties yourself"
                 onPress={() => {
                   setInvestSheetOpen(false);
-                  router.push("/invest/properties");
+                  router.push("main/screens/properties");
                 }}
               />
               <SheetRow
@@ -205,7 +209,9 @@ const WalletScreen: React.FC = () => {
                 subtitle="Build a diversified portfolio on autopilot"
                 onPress={() => {
                   setInvestSheetOpen(false);
-                  router.push("/main/components/wallet/walletscreens/AutoInvestScreen");
+                  router.push(
+                    "/main/components/wallet/walletscreens/AutoInvestScreen"
+                  );
                 }}
               />
             </BottomSheet>

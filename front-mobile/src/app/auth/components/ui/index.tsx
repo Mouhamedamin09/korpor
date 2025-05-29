@@ -12,6 +12,7 @@ import EmailInput from "./emailInput";
 import PasswordBarInput from "./passwordBarInput";
 import OTPInput from "./OTPInput";
 import SolidButtonLg from "./solidButtonLg";
+import OutlinedButtonSm from "./outlinedButtonSm";
 export {
   OutlinedButton,
   OTPInput,
@@ -27,4 +28,5 @@ export {
   PasswordInput,
   RememberMeCheckbox,
   PressableText,
+  OutlinedButtonSm,
 };
