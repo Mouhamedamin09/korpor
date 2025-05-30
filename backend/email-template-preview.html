@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Korpor - Email Template Preview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: #0F172A;
+            background-color: #F8FAFC;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #008F6B 0%, #00B37D 100%);
+            padding: 48px 32px;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="70" cy="10" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="60" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+            opacity: 0.3;
+            animation: float 20s linear infinite;
+        }
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(-50px, -50px) rotate(360deg); }
+        }
+        .logo {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 1;
+        }
+        .tagline {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+        .content {
+            padding: 48px 32px;
+        }
+        .greeting {
+            font-size: 20px;
+            margin-bottom: 24px;
+            color: #0F172A;
+            font-weight: 600;
+        }
+        .message {
+            font-size: 16px;
+            margin-bottom: 32px;
+            color: #475569;
+            line-height: 1.7;
+        }
+        .verification-box {
+            background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
+            border: 2px solid #10B981;
+            padding: 32px;
+            border-radius: 16px;
+            text-align: center;
+            margin: 32px 0;
+            position: relative;
+        }
+        .verification-box::before {
+            content: '🔐';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 0 8px;
+            font-size: 20px;
+        }
+        .verification-label {
+            font-size: 14px;
+            color: #065F46;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+        .verification-code {
+            font-size: 42px;
+            font-weight: 800;
+            color: #10B981;
+            letter-spacing: 6px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            margin: 8px 0;
+            text-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+        }
+        .expiry-info {
+            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+            border: 1px solid #F59E0B;
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin: 24px 0;
+            text-align: center;
+            color: #92400E;
+            font-weight: 600;
+        }
+        .expiry-info::before {
+            content: '⏰';
+            margin-right: 8px;
+            font-size: 16px;
+        }
+        .security-note {
+            background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+            border: 1px solid #3B82F6;
+            padding: 24px;
+            border-radius: 12px;
+            margin: 32px 0;
+            color: #1E40AF;
+        }
+        .security-title {
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+        .security-icon {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+        .security-list {
+            line-height: 1.8;
+        }
+        .security-list li {
+            margin-bottom: 4px;
+        }
+        .footer {
+            background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+            padding: 32px;
+            text-align: center;
+            border-top: 1px solid #E2E8F0;
+        }
+        .footer-text {
+            font-size: 16px;
+            color: #475569;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        .footer-text .brand {
+            color: #10B981;
+            font-weight: 800;
+        }
+        .contact-info {
+            font-size: 13px;
+            color: #64748B;
+            line-height: 1.6;
+        }
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, #E2E8F0 50%, transparent 100%);
+            margin: 24px 0;
+        }
+        @media (max-width: 600px) {
+            .email-container {
+                margin: 16px;
+                border-radius: 12px;
+            }
+            .header, .content, .footer {
+                padding: 32px 24px;
+            }
+            .verification-code {
+                font-size: 36px;
+                letter-spacing: 4px;
+            }
+            .verification-box {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">KORPOR</div>
+            <div class="tagline">Your Trusted Investment Platform</div>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">Hello Amin Kraiem,</div>
+            
+            <div class="message">
+                We received a request to change your email address on your Korpor account. 
+                To complete this process securely, please use the verification code below:
+            </div>
+            
+            <div class="verification-box">
+                <div class="verification-label">Your Verification Code</div>
+                <div class="verification-code">754321</div>
+            </div>
+            
+            <div class="expiry-info">
+                <strong>This code will expire in 10 minutes</strong> for your security.
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="security-note">
+                <div class="security-title">
+                    <span class="security-icon">🛡️</span>
+                    Security Information
+                </div>
+                <div class="security-list">
+                    <li>• If you didn't request this email change, please ignore this email</li>
+                    <li>• Never share this code with anyone from our team</li>
+                    <li>• This code can only be used once and expires quickly</li>
+                    <li>• Contact our support team if you have any concerns</li>
+                </div>
+            </div>
+            
+            <div class="message">
+                If you have any questions or need assistance, our support team is here to help you 24/7.
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-text">
+                Thank you for choosing <span class="brand">Korpor</span>
+            </div>
+            <div class="contact-info">
+                This email was sent from a notification-only address. Please do not reply to this email.<br>
+                For support, contact us through your Korpor app or visit our help center.
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

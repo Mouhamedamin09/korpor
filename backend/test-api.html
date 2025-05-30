@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #result {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow: auto;
+            max-height: 500px;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: inline-block;
+            width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>API Test Page</h1>
+    
+    <div class="form-group">
+        <label for="apiUrl">API URL:</label>
+        <input type="text" id="apiUrl" value="https://korpor-yfpcp7wt7a-uc.a.run.app/api/users" style="width: 450px;">
+    </div>
+    
+    <div class="form-group">
+        <label for="page">Page:</label>
+        <input type="number" id="page" value="1" min="1">
+        
+        <label for="limit">Limit:</label>
+        <input type="number" id="limit" value="10" min="1">
+    </div>
+    
+    <div class="form-group">
+        <label for="status">Status:</label>
+        <select id="status">
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="unverified">Unverified</option>
+        </select>
+        
+        <label for="role">Role:</label>
+        <select id="role">
+            <option value="">All</option>
+            <option value="superadmin">Super Admin</option>
+            <option value="admin">Admin</option>
+            <option value="agent">Agent</option>
+            <option value="user">User</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label for="search">Search:</label>
+        <input type="text" id="search" placeholder="Search name, email...">
+    </div>
+    
+    <div class="form-group">
+        <label for="sortBy">Sort By:</label>
+        <select id="sortBy">
+            <option value="created_at">Created At</option>
+            <option value="name">Name</option>
+            <option value="email">Email</option>
+        </select>
+        
+        <label for="sortOrder">Order:</label>
+        <select id="sortOrder">
+            <option value="desc">Descending</option>
+            <option value="asc">Ascending</option>
+        </select>
+    </div>
+    
+    <button onclick="fetchUsers()">Fetch Users</button>
+    
+    <div id="result">
+        <p>Results will appear here...</p>
+    </div>
+    
+    <script>
+        function fetchUsers() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const page = document.getElementById('page').value;
+            const limit = document.getElementById('limit').value;
+            const status = document.getElementById('status').value;
+            const role = document.getElementById('role').value;
+            const search = document.getElementById('search').value;
+            const sortBy = document.getElementById('sortBy').value;
+            const sortOrder = document.getElementById('sortOrder').value;
+            
+            // Build query string
+            let queryParams = [];
+            if (page) queryParams.push(`page=${page}`);
+            if (limit) queryParams.push(`limit=${limit}`);
+            if (status) queryParams.push(`status=${status}`);
+            if (role) queryParams.push(`role=${role}`);
+            if (search) queryParams.push(`search=${encodeURIComponent(search)}`);
+            if (sortBy) queryParams.push(`sortBy=${sortBy}`);
+            if (sortOrder) queryParams.push(`sortOrder=${sortOrder}`);
+            
+            const queryString = queryParams.length > 0 ? '?' + queryParams.join('&') : '';
+            const fullUrl = apiUrl + queryString;
+            
+            document.getElementById('result').innerHTML = `<p>Fetching: ${fullUrl}</p>`;
+            
+            // Make API request
+            fetch(fullUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('result').innerHTML = 
+                        `<h3>API Response:</h3>
+                         <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                })
+                .catch(error => {
+                    document.getElementById('result').innerHTML = 
+                        `<h3>Error:</h3>
+                         <pre style="color: red">${error.message}</pre>`;
+                });
+        }
+    </script>
+</body>
+</html> 

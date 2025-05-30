@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pending Users API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #result {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow: auto;
+            max-height: 500px;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: inline-block;
+            width: 100px;
+        }
+        .panel {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .action-buttons button {
+            margin-right: 10px;
+        }
+        .action-buttons button.approve {
+            background-color: #4CAF50;
+        }
+        .action-buttons button.reject {
+            background-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pending Users API Test</h1>
+    
+    <div class="panel">
+        <h2>Get Pending Users</h2>
+        <div class="form-group">
+            <label for="apiUrl">API URL:</label>
+            <input type="text" id="apiUrl" value="https://korpor-yfpcp7wt7a-uc.a.run.app/api/admin/users/pending" style="width: 500px;">
+        </div>
+        
+        <button onclick="fetchPendingUsers()">Fetch Pending Users</button>
+    </div>
+    
+    <div class="panel">
+        <h2>Approve User</h2>
+        <div class="form-group">
+            <label for="approveUrl">API URL:</label>
+            <input type="text" id="approveUrl" value="https://korpor-yfpcp7wt7a-uc.a.run.app/api/admin/users/" style="width: 450px;">
+            <span>/approve</span>
+        </div>
+        
+        <div class="form-group">
+            <label for="userId">User ID:</label>
+            <input type="text" id="userId" placeholder="Enter user ID">
+        </div>
+        
+        <div class="form-group">
+            <label for="roleId">Role ID:</label>
+            <select id="roleId">
+                <option value="1">Super Admin (1)</option>
+                <option value="2">Admin (2)</option>
+                <option value="3">Agent (3)</option>
+                <option value="4" selected>User (4)</option>
+            </select>
+        </div>
+        
+        <button onclick="approveUser()">Approve User</button>
+    </div>
+    
+    <div class="panel">
+        <h2>Reject User</h2>
+        <div class="form-group">
+            <label for="rejectUrl">API URL:</label>
+            <input type="text" id="rejectUrl" value="https://korpor-yfpcp7wt7a-uc.a.run.app/api/admin/users/" style="width: 450px;">
+            <span>/reject</span>
+        </div>
+        
+        <div class="form-group">
+            <label for="rejectUserId">User ID:</label>
+            <input type="text" id="rejectUserId" placeholder="Enter user ID">
+        </div>
+        
+        <div class="form-group">
+            <label for="reason">Reason:</label>
+            <input type="text" id="reason" placeholder="Optional rejection reason" style="width: 300px;">
+        </div>
+        
+        <button onclick="rejectUser()">Reject User</button>
+    </div>
+    
+    <h2>Users List</h2>
+    <div id="usersList"></div>
+    
+    <h2>API Response</h2>
+    <div id="result">
+        <p>Results will appear here...</p>
+    </div>
+    
+    <script>
+        function fetchPendingUsers() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            
+            document.getElementById('result').innerHTML = `<p>Fetching: ${apiUrl}</p>`;
+            
+            // Make API request
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('result').innerHTML = 
+                        `<h3>API Response:</h3>
+                         <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    
+                    // Display users in a nicer format
+                    displayUsers(data.data);
+                })
+                .catch(error => {
+                    document.getElementById('result').innerHTML = 
+                        `<h3>Error:</h3>
+                         <pre style="color: red">${error.message}</pre>`;
+                });
+        }
+        
+        function displayUsers(users) {
+            const usersList = document.getElementById('usersList');
+            if (!users || users.length === 0) {
+                usersList.innerHTML = '<p>No pending users found.</p>';
+                return;
+            }
+            
+            let html = '';
+            users.forEach(user => {
+                html += `
+                <div class="panel">
+                    <h3>${user.firstName} ${user.lastName} (${user.email})</h3>
+                    <p><strong>User ID:</strong> ${user.id}</p>
+                    <p><strong>Username:</strong> ${user.username}</p>
+                    <p><strong>Status:</strong> ${user.status}</p>
+                    <p><strong>Current Role:</strong> ${user.role}</p>
+                    <p><strong>Created:</strong> ${new Date(user.createdAt).toLocaleString()}</p>
+                    
+                    <div class="action-buttons">
+                        <button class="approve" onclick="populateApproveForm('${user.id}')">Approve</button>
+                        <button class="reject" onclick="populateRejectForm('${user.id}')">Reject</button>
+                    </div>
+                </div>
+                `;
+            });
+            
+            usersList.innerHTML = html;
+        }
+        
+        function populateApproveForm(userId) {
+            document.getElementById('userId').value = userId;
+            // Scroll to approve section
+            document.querySelector('h2').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function populateRejectForm(userId) {
+            document.getElementById('rejectUserId').value = userId;
+            // Scroll to reject section
+            document.querySelectorAll('h2')[1].scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function approveUser() {
+            const baseUrl = document.getElementById('approveUrl').value;
+            const userId = document.getElementById('userId').value;
+            const roleId = document.getElementById('roleId').value;
+            
+            if (!userId) {
+                alert('Please enter a User ID');
+                return;
+            }
+            
+            const apiUrl = `${baseUrl}${userId}/approve`;
+            
+            document.getElementById('result').innerHTML = `<p>Sending approval to: ${apiUrl}</p>`;
+            
+            // Make API request
+            fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ roleId: parseInt(roleId) })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('result').innerHTML = 
+                        `<h3>Approval Response:</h3>
+                         <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    // Refresh the pending users list
+                    fetchPendingUsers();
+                })
+                .catch(error => {
+                    document.getElementById('result').innerHTML = 
+                        `<h3>Error:</h3>
+                         <pre style="color: red">${error.message}</pre>`;
+                });
+        }
+        
+        function rejectUser() {
+            const baseUrl = document.getElementById('rejectUrl').value;
+            const userId = document.getElementById('rejectUserId').value;
+            const reason = document.getElementById('reason').value;
+            
+            if (!userId) {
+                alert('Please enter a User ID');
+                return;
+            }
+            
+            const apiUrl = `${baseUrl}${userId}/reject`;
+            
+            document.getElementById('result').innerHTML = `<p>Sending rejection to: ${apiUrl}</p>`;
+            
+            // Make API request
+            fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ reason })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('result').innerHTML = 
+                        `<h3>Rejection Response:</h3>
+                         <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    // Refresh the pending users list
+                    fetchPendingUsers();
+                })
+                .catch(error => {
+                    document.getElementById('result').innerHTML = 
+                        `<h3>Error:</h3>
+                         <pre style="color: red">${error.message}</pre>`;
+                });
+        }
+    </script>
+</body>
+</html> 
