@@ -1,30 +1,26 @@
-import { Text, TouchableOpacity } from "react-native";
+import React from "react";
+import { TouchableOpacity, Text, ActivityIndicator } from "react-native";
 
 interface SolidButtonProps {
   title: string;
   onPress: () => void;
-  width?: string;
-  height?: string;
-  paddingX?: string;
-  paddingY?: string;
+  disabled?: boolean;
 }
 
 export default function SolidButton({
   title,
   onPress,
-  width = "w-auto",
-  height = "11",
-  paddingX = "px-4",
-  paddingY = "py-3",
-}: SolidButtonProps) {
+  disabled = false,
+}: SolidButtonProps): JSX.Element {
   return (
     <TouchableOpacity
-      className={`flex-row items-center justify-center bg-[#fafafa] rounded-xl w-${width} h-12 px-${paddingX} py-${paddingY}`}
+      className={`w-full h-12 rounded-xl justify-center items-center mb-3 ${
+        disabled ? "bg-[#3f3f46]" : "bg-[#0ea5e9]"
+      }`}
       onPress={onPress}
+      disabled={disabled}
     >
-      <Text className="font-medium text-[#09090b] text-center text-lg">
-        {title}
-      </Text>
+      <Text className="text-white font-semibold text-base">{title}</Text>
     </TouchableOpacity>
   );
 }

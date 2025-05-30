@@ -5,12 +5,14 @@ interface EmailInputProps {
   placeholder: string;
   value: string;
   onChangeText: (text: string) => void;
+  editable?: boolean;
 }
 
 export default function EmailInput({
   placeholder,
   value,
   onChangeText,
+  editable = true,
 }: EmailInputProps): JSX.Element {
   const [isValid, setIsValid] = useState<boolean>(true);
 
@@ -38,6 +40,7 @@ export default function EmailInput({
           validateEmail(text);
         }}
         onBlur={() => validateEmail(value)}
+        editable={editable}
       />
       {!isValid && (
         <Text className="text-red-500 text-sm mb-1">Invalid email address</Text>

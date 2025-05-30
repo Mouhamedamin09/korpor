@@ -1,7 +1,7 @@
-// @main/components/profileScreens/components/ui/TopBar.tsx
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface TopBarProps {
   title: string;
@@ -16,10 +16,13 @@ const TopBar: React.FC<TopBarProps> = ({
   rightComponent,
   noMargin = false,
 }) => {
+  const insets = useSafeAreaInsets();
+
   return (
     <View
-      className={`bg-white border-b border-gray-200 py-4 px-4 flex-row items-center justify-between shadow-sm 
-        
+      style={{ paddingTop: insets.top }}
+      className={`bg-white border-b border-gray-200 py-4 px-4 flex-row items-center justify-between shadow-sm ${
+        noMargin ? "" : "mb-4"
       }`}
     >
       <View className="flex-row items-center">
@@ -30,7 +33,7 @@ const TopBar: React.FC<TopBarProps> = ({
         )}
         <Text className="text-xl font-bold text-gray-900">{title}</Text>
       </View>
-      {rightComponent && rightComponent}
+      {rightComponent}
     </View>
   );
 };

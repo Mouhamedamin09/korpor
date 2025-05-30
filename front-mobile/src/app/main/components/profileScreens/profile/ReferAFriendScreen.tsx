@@ -9,6 +9,7 @@ import {
   Dimensions,
   Share,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import CountryFlag from "react-native-country-flag";
@@ -16,7 +17,12 @@ import { useRouter } from "expo-router";
 import TopBar from "@main/components/profileScreens/components/ui/TopBar";
 import Card from "@main/components/profileScreens/components/ui/card";
 import BottomSheet from "@main/components/profileScreens/components/ui/SheetIndicator";
-import { fetchReferralInfo, ReferralInfo } from "@main/services/Refer";
+import { 
+  fetchReferralInfo, 
+  switchCurrency,
+  getReferralCode,
+  ReferralInfo 
+} from "@main/services/Refer";
 
 const { width: screenWidth } = Dimensions.get("window");
 const BLACK = "#000";
@@ -25,42 +31,102 @@ export default function ReferAFriendScreen() {
   const router = useRouter();
   const [ref, setRef] = useState<ReferralInfo | null>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [switchingCurrency, setSwitchingCurrency] = useState(false);
+
+  const loadReferralInfo = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchReferralInfo();
+      setRef(data);
+    } catch (error) {
+      console.error('Error loading referral info:', error);
+      Alert.alert('Error', 'Failed to load referral information');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetchReferralInfo().then(setRef);
+    loadReferralInfo();
   }, []);
 
-  if (!ref) {
+  const handleCurrencySwitch = async (newCurrency: "TND" | "EUR") => {
+    if (!ref || ref.currency === newCurrency) return;
+    
+    try {
+      setSwitchingCurrency(true);
+      const updatedRef = await switchCurrency(newCurrency);
+      setRef(updatedRef);
+      setSheetVisible(false);
+      
+      Alert.alert(
+        'Currency Switched',
+        `Your currency has been changed to ${newCurrency}. All amounts and referral links are now updated.`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Error switching currency:', error);
+      Alert.alert('Error', 'Failed to switch currency. Please try again.');
+    } finally {
+      setSwitchingCurrency(false);
+    }
+  };
+
+  const onShare = async () => {
+    if (!ref) return;
+    
+    try {
+      const amount = ref.currency === "EUR" 
+        ? `€${ref.referralAmount.toFixed(2)}`
+        : `TND ${ref.referralAmount.toFixed(2)}`;
+      
+      // Use the user's permanent static referral code
+      const message = `Hi,Join me on Korpor with my invite code: ${ref.code} and Get ${amount} bonus to invest in real estate`;
+      
+      await Share.share({ message });
+    } catch (error) {
+      console.error('Error sharing referral:', error);
+      Alert.alert('Error', 'Failed to share referral link');
+    }
+  };
+
+  if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
         <ActivityIndicator size="large" color={BLACK} />
+        <Text className="mt-4 text-gray-600">Loading referral information...</Text>
       </View>
     );
   }
 
-  const { currency, userId, code, referralAmount, minInvestment } = ref;
-  const amount =
-    currency === "EUR"
-      ? `€${referralAmount.toFixed(2)}`
-      : `TND ${referralAmount.toFixed(2)}`;
-  const minInvest =
-    currency === "EUR"
-      ? `€${minInvestment.toLocaleString()}`
-      : `TND ${minInvestment.toLocaleString()}`;
-  const link = `https://app.getkorpor.com/rewards?c=${userId}&n=${code}`;
-
-  async function onShare() {
-    const message = `Hi! Join me on Korpor and get ${amount} for FREE, to invest in rental generating investment properties!\n${link}`;
-    try {
-      await Share.share({ message });
-    } catch {}
+  if (!ref) {
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <Text className="text-gray-600">Failed to load referral information</Text>
+        <TouchableOpacity 
+          onPress={loadReferralInfo}
+          className="mt-4 bg-black rounded-lg px-6 py-3"
+        >
+          <Text className="text-white font-semibold">Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
+
+  const { currency, userId, code, referralAmount, minInvestment, stats } = ref;
+  const amount = currency === "EUR"
+    ? `€${referralAmount.toFixed(2)}`
+    : `TND ${referralAmount.toFixed(2)}`;
+  const minInvest = currency === "EUR"
+    ? `€${minInvestment.toLocaleString()}`
+    : `TND ${minInvestment.toLocaleString()}`;
 
   const marketName = currency === "EUR" ? "France" : "Tunisia";
   const flagCode = currency === "EUR" ? "FR" : "TN";
-  const switchMarketLabel =
-    currency === "EUR" ? "Tunisia (TND)" : "France (EUR)";
+  const switchMarketLabel = currency === "EUR" ? "Tunisia (TND)" : "France (EUR)";
   const switchFlag = currency === "EUR" ? "TN" : "FR";
+  const switchCurrencyValue = currency === "EUR" ? "TND" : "EUR";
 
   return (
     <View className="flex-1 bg-white">
@@ -91,8 +157,7 @@ export default function ReferAFriendScreen() {
             Refer and earn
           </Text>
           <Text className="text-sm text-gray-600 text-center mt-2 px-4">
-            Each friend you refer gets {amount}. If they invest over {minInvest}
-            , you get {amount}!
+            Each friend you refer gets {amount}. If they invest over {minInvest}, you get {amount}!
           </Text>
         </Card>
 
@@ -100,11 +165,15 @@ export default function ReferAFriendScreen() {
         <View className="flex-row mx-4 mt-4">
           <Card extraStyle="flex-1 mr-2 p-4 items-center">
             <Text className="text-sm text-gray-500">Registered</Text>
-            <Text className="text-xl font-semibold text-gray-900 mt-2">0</Text>
+            <Text className="text-xl font-semibold text-gray-900 mt-2">
+              {stats?.totalReferred || 0}
+            </Text>
           </Card>
           <Card extraStyle="flex-1 ml-2 p-4 items-center">
             <Text className="text-sm text-gray-500">Invested</Text>
-            <Text className="text-xl font-semibold text-gray-900 mt-2">0</Text>
+            <Text className="text-xl font-semibold text-gray-900 mt-2">
+              {stats?.totalInvested || 0}
+            </Text>
           </Card>
         </View>
 
@@ -114,7 +183,7 @@ export default function ReferAFriendScreen() {
             {
               num: 1,
               title: "Invite a friend",
-              desc: "Using your invite link above",
+              desc: "Using your invite link below",
             },
             {
               num: 2,
@@ -140,8 +209,7 @@ export default function ReferAFriendScreen() {
             </View>
           ))}
           <Text className="text-xs text-gray-500 mt-2">
-            Bonus is paid into your account after your friends' investments are
-            fully funded and closed.
+            Bonus is paid into your account after your friends' investments are fully funded and closed.
           </Text>
         </Card>
 
@@ -198,19 +266,24 @@ export default function ReferAFriendScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => {
-            /* TODO: switch market logic */
-          }}
+          onPress={() => handleCurrencySwitch(switchCurrencyValue as "TND" | "EUR")}
+          disabled={switchingCurrency}
           className="w-full flex-row items-center justify-center border border-gray-300 py-3 rounded-lg"
         >
-          <CountryFlag
-            isoCode={switchFlag}
-            size={20}
-            style={{ marginRight: 8 }}
-          />
-          <Text className="text-gray-900 font-semibold">
-            {switchMarketLabel}
-          </Text>
+          {switchingCurrency ? (
+            <ActivityIndicator size="small" color="#000" />
+          ) : (
+            <>
+              <CountryFlag
+                isoCode={switchFlag}
+                size={20}
+                style={{ marginRight: 8 }}
+              />
+              <Text className="text-gray-900 font-semibold">
+                {switchMarketLabel}
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
       </BottomSheet>
     </View>

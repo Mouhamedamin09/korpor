@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text } from "react-native";
+import { View, Text, ActivityIndicator, Alert } from "react-native";
 import { router } from "expo-router";
 
 import {
@@ -16,27 +16,48 @@ import { signin } from "@auth/services/signin";
 export default function LoginCard(): JSX.Element {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  // Add state for error message
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleSignin = async (): Promise<void> => {
     // Reset error message on each signin attempt
     setErrorMessage("");
+    setIsLoading(true);
 
     // Validate fields
     if (!email.trim() || !password.trim()) {
       setErrorMessage("Please fill out all required fields.");
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setErrorMessage("Please enter a valid email address.");
+      setIsLoading(false);
       return;
     }
 
     try {
       const responseData = await signin({ email, password });
       console.log("Sign-in successful:", responseData);
-      // You can navigate after sign-in:
-      // router.replace("/Home/home");
+
+      // Show success message
+      Alert.alert("Success", "You have successfully logged in!", [
+        {
+          text: "OK",
+          onPress: () => {
+            // Navigate to properties page after successful login
+            router.replace("/main/screens/(tabs)/properties");
+          },
+        },
+      ]);
     } catch (error: any) {
-      // Display error message instead of using Alert
+      console.error("Sign-in error:", error);
       setErrorMessage(error.message || "Unable to sign in. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -61,22 +82,43 @@ export default function LoginCard(): JSX.Element {
       <EmailInput
         placeholder="Email"
         value={email}
-        onChangeText={(text: string) => setEmail(text)}
+        onChangeText={(text: string) => {
+          setEmail(text);
+          setErrorMessage(""); // Clear error when user types
+        }}
+        editable={!isLoading}
       />
 
       {/* Password Input */}
       <PasswordInput
         placeholder="Password"
         value={password}
-        onChangeText={(text: string) => setPassword(text)}
+        onChangeText={(text: string) => {
+          setPassword(text);
+          setErrorMessage(""); // Clear error when user types
+        }}
+        editable={!isLoading}
       />
 
       {/* Login Button */}
-      <SolidButton title="Log in" onPress={handleSignin} />
+      <SolidButton
+        title={isLoading ? "Signing in..." : "Log in"}
+        onPress={handleSignin}
+        disabled={isLoading}
+      />
+
+      {/* Show loading indicator */}
+      {isLoading && (
+        <View className="items-center mt-2">
+          <ActivityIndicator size="small" color="#fafafa" />
+        </View>
+      )}
 
       {/* Show error message if any */}
       {errorMessage ? (
-        <Text className="text-red-500 text-sm mt-2 mb-2">{errorMessage}</Text>
+        <Text className="text-red-500 text-sm mt-2 mb-2 text-center">
+          {errorMessage}
+        </Text>
       ) : null}
 
       <View className="flex-row items-center pt-1 justify-between mx-1">
@@ -84,7 +126,9 @@ export default function LoginCard(): JSX.Element {
         <PressableText
           text="Forgot password?"
           onPress={() => {
-            router.push("auth/screens/Login/forgotPassword/forgotPassword");
+            if (!isLoading) {
+              router.push("auth/screens/Login/forgotPassword/forgotPassword");
+            }
           }}
         />
       </View>
@@ -96,7 +140,9 @@ export default function LoginCard(): JSX.Element {
         <PressableText
           text="Sign up"
           onPress={() => {
-            router.push("auth/screens/Signup/signup");
+            if (!isLoading) {
+              router.push("auth/screens/Signup/signup");
+            }
           }}
         />
       </View>

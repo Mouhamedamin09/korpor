@@ -22,18 +22,18 @@ export default function GlossaryScreen() {
       <View className="px-4">
         <View className="flex-row items-center mb-4">
           <Image
-            source={require("@assets/Ahmed.png")}
+            source={require("@assets/khalil.png")}
             className="w-10 h-10 rounded-full mr-3"
           />
           <View>
             <Text className="text-lg font-bold text-surfaceText">
-              Ahmed Jaziri
+              Khalil Zouari
             </Text>
             <Text className="text-sm text-mutedText">
-              Written by Ahmed Jaziri
+              Written by Khalil Zouari
             </Text>
             <Text className="text-sm text-mutedText">
-              Updated over 8 months ago
+              Updated over 1 months ago
             </Text>
           </View>
         </View>

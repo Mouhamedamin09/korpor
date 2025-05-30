@@ -23,7 +23,7 @@ import {
   getNews,
   getFounders,
   getRating,
-  NumbersData,
+  Numbers,
   NewsItem,
   Founder,
 } from "@main/services/api";
@@ -83,9 +83,9 @@ const BackersCarousel: React.FC<{ logos: string[] }> = ({ logos }) => {
 };
 
 const AboutScreen: React.FC = () => {
-  const [numbers, setNumbers] = useState<NumbersData>({
-    registeredUsers: 0,
-    propertyVolume: 0,
+  const [numbers, setNumbers] = useState<Numbers>({
+    userCount: "0",
+    propertyVolume: "0"
   });
   const [backers, setBackers] = useState<string[]>([]);
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
@@ -100,17 +100,18 @@ const AboutScreen: React.FC = () => {
     getRating().then(setRating).catch(console.error);
   }, []);
 
-  const abbreviate = (n: number): string => {
-    if (n >= 1_000_000_000) return `${Math.floor(n / 1_000_000_000)}B+`;
-    if (n >= 1_000_000) return `${Math.floor(n / 1_000_000)}M+`;
-    if (n >= 1_000) return `${Math.floor(n / 1_000)}K+`;
-    return n.toString();
+  const abbreviate = (n: string): string => {
+    const num = parseInt(n);
+    if (num >= 1_000_000_000) return `${Math.floor(num / 1_000_000_000)}B+`;
+    if (num >= 1_000_000) return `${Math.floor(num / 1_000_000)}M+`;
+    if (num >= 1_000) return `${Math.floor(num / 1_000)}K+`;
+    return n;
   };
 
   return (
     <View className="flex-1 bg-background">
       <TopBar title="About" onBackPress={() => router.back()} />
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingTop: 16 }}>
+      <ScrollView className="flex-1">
         {/* Korpor in numbers */}
         <View className="px-4 mt-4">
           <Text className="text-lg font-semibold text-text mb-4">
@@ -119,7 +120,7 @@ const AboutScreen: React.FC = () => {
           <View className="flex-row mb-10">
             <View className="flex-1 bg-brandDark rounded-2xl p-6 items-center shadow-lg mr-4">
               <Text className="text-3xl font-extrabold text-white">
-                {abbreviate(numbers.registeredUsers)}
+                {abbreviate(numbers.userCount)}
               </Text>
               <Text className="mt-3 text-xs font-medium text-mutedText uppercase tracking-wide text-center">
                 Registered users

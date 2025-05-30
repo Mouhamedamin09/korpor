@@ -31,18 +31,52 @@ export default function UploadAddressScreen() {
         overlayColor: "#ffffff40",
       };
       const { scannedImages } = await DocumentScanner.scanDocument(options);
-      if (scannedImages.length) setAddressUri(scannedImages[0]);
-    } catch {}
+      if (scannedImages && scannedImages.length > 0) {
+        setAddressUri(scannedImages[0]);
+      }
+    } catch {
+      // Handle error silently or show error message
+    }
   };
 
   const onVerify = async () => {
-    if (!addressUri) return;
+    if (!addressUri) {
+      Alert.alert("Missing Document", "Please scan an address document first.");
+      return;
+    }
+    
     setSubmitting(true);
-    await submitAddressVerification(addressUri);
-    setSubmitting(false);
-    router.push(
-      "main/components/profileScreens/profile/CompleteAccountSetupScreen"
-    );
+    
+    try {
+      const result = await submitAddressVerification(addressUri);
+      
+      if (result.qualified) {
+        Alert.alert(
+          "Success!", 
+          "Your address document has been submitted for review. We'll notify you once it's verified.",
+          [
+            {
+              text: "OK",
+              onPress: () => router.push(
+                "main/components/profileScreens/profile/CompleteAccountSetupScreen"
+              ),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Upload Failed", 
+          result.message || "Failed to upload document. Please try again."
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        "Error", 
+        "An unexpected error occurred. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -65,6 +99,7 @@ export default function UploadAddressScreen() {
         <TouchableOpacity
           onPress={scanAddress}
           className="flex-row items-center justify-between bg-white rounded-lg px-4 py-3 mb-3 shadow"
+          disabled={submitting}
         >
           <View className="flex-row items-center">
             <View className="w-8 h-8 rounded-full bg-green-50 items-center justify-center mr-3">
@@ -85,7 +120,7 @@ export default function UploadAddressScreen() {
           onPress={onVerify}
           disabled={!addressUri || submitting}
           className={`mt-6 rounded-lg p-4 items-center ${
-            addressUri ? "bg-black" : "bg-gray-300"
+            addressUri && !submitting ? "bg-black" : "bg-gray-300"
           }`}
         >
           {submitting ? (

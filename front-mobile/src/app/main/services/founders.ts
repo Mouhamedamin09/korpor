@@ -1,5 +1,4 @@
-export interface Founder {
-  imageUrl: string;
+export interface Founder {  imageUrl: string;
   linkedInUrl: string;
   name: string;
   role: string;
@@ -7,18 +6,18 @@ export interface Founder {
   logoUrl?: string;
 }
 
-// Fake stub: returns mock founder data
+import EV_API_URL from "src/shared/constants/api";
+
+// Real API call to backend
 export async function getFounders(): Promise<Founder[]> {
-  return Promise.resolve([
-    {
-      imageUrl: "https://randomuser.me/api/portraits/men/32.jpg",
-      linkedInUrl: "https://linkedin.com/in/ramitabbara",
-      name: "Rami Tabbara",
-      role: "Co-Founder & Co-CEO",
-      description:
-        "Rami, a veteran in Dubai’s real estate industry with 18+ years experience, has been affiliated with The First Group and Damac Properties.",
-      logoUrl:
-        "https://upload.wikimedia.org/wikipedia/commons/5/5d/Damac_Properties_Logo.png",
-    },
-  ]);
+  try {
+    const response = await fetch(`${EV_API_URL}/api/founders`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch founders');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching founders:', error);
+    return [];
+  }
 }

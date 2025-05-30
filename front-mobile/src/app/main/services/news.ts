@@ -9,15 +9,16 @@ export async function getNews(): Promise<NewsItem[]> {
   return Promise.resolve([
     {
       imageUrl:
-        "https://static.techspot.com/images2/news/bigimage/2023/07/2023-07-11-image-6.jpg",
-      date: "10 Jun 2024",
+        "https://i.postimg.cc/gj22yPG1/Chat-GPT-Image-May-28-2025-05-41-56-PM.png",
+      date: "1 Jun 2025",
       title:
-        "Stake raises $14M to bring its fractional property platform to Saudi Arabia",
+        "Korpor raises $14M to bring its fractional property platform to Tunisia",
     },
     {
-      imageUrl: "https://i.insider.com/5f354a4d3f737021a52bafae?width=700",
-      date: "12 Jul 2024",
-      title: "Stake launches new investment features in Abu Dhabi",
+      imageUrl:
+        "https://i.postimg.cc/hPbqDYgd/Chat-GPT-Image-May-28-2025-05-47-03-PM.png",
+      date: "2 Juin 2025",
+      title: "Korpor launches new investment features in France",
     },
   ]);
 }
