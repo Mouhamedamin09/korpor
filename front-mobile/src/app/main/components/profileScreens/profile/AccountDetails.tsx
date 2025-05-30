@@ -25,13 +25,14 @@ import {
   requestAccountClosure,
   requestFieldChange,
   verifyFieldChange,
-  AccountData,
 } from "@main/services/api";
 import {
   fetchInvestmentLimitData,
   InvestmentLimitData,
 } from "@main/services/InvestmentLimit";
 import { getInitials } from "@main/components/profileScreens/components/ui/string";
+import { requestPhoneChange, verifyPhone } from "@main/services/phone";
+import { AccountData } from "@main/services/account";
 
 const emailValid = (s: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim().toLowerCase());
@@ -63,6 +64,12 @@ export default function AccountScreen() {
   const [codeInput, setCodeInput] = useState("");
   const [validationErr, setValidationErr] = useState("");
   const [verifyErr, setVerifyErr] = useState("");
+
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
 
   // --- data loading ---
   const loadAll = async () => {
@@ -155,6 +162,59 @@ export default function AccountScreen() {
     } finally {
       setIsClosing(false);
       setCloseModalVisible(false);
+    }
+  };
+
+  const handlePhoneUpdate = async () => {
+    if (!account) return;
+    
+    try {
+      console.log('📱 Starting phone update for user:', account.id);
+      console.log('📱 Current phone:', account.phone);
+      console.log('📱 New phone:', newPhone);
+      
+      setError("");
+      setIsVerifying(true);
+      const result = await requestPhoneChange(account.id, newPhone);
+      
+      console.log('📱 Phone change request completed');
+      setShowPhoneModal(false);
+      setShowVerificationModal(true);
+      
+      if (result.code) {
+        console.log('📱 Setting verification code from response:', result.code);
+        setVerificationCode(result.code);
+      }
+    } catch (err) {
+      console.error('❌ Phone update error:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!account) return;
+    
+    try {
+      console.log('🔐 Starting phone verification');
+      console.log('🔐 User ID:', account.id);
+      console.log('🔐 Verification code:', verificationCode);
+      
+      setError("");
+      setIsVerifying(true);
+      const result = await verifyPhone(account.id, verificationCode);
+      
+      console.log('✅ Phone verification successful:', result);
+      setShowVerificationModal(false);
+      // Refresh account data to show new phone
+      await onRefresh();
+      console.log('✅ Account data refreshed with new phone');
+    } catch (err) {
+      console.error('❌ Phone verification error:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -430,6 +490,82 @@ export default function AccountScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Phone Update Modal */}
+      <BottomSheet
+        visible={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+      >
+        <View className="p-4">
+          <Text className="text-lg font-semibold text-gray-900 mb-4">
+            Verify Phone Number
+          </Text>
+          <Text className="text-sm text-gray-600 mb-4">
+            Please enter the verification code sent to your old phone number.
+          </Text>
+          
+          <TextInput
+            value={verificationCode}
+            onChangeText={setVerificationCode}
+            placeholder="Enter verification code"
+            keyboardType="number-pad"
+            maxLength={6}
+            className="border border-gray-300 rounded-lg p-3 mb-4"
+          />
+
+          {error ? (
+            <Text className="text-red-500 text-sm mb-4">{error}</Text>
+          ) : null}
+
+          <TouchableOpacity
+            onPress={handleVerifyCode}
+            disabled={isVerifying}
+            className="bg-primary rounded-lg p-3 items-center"
+          >
+            {isVerifying ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="text-white font-semibold">Verify</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* Phone Update Form */}
+      <BottomSheet
+        visible={showPhoneModal}
+        onClose={() => setShowPhoneModal(false)}
+      >
+        <View className="p-4">
+          <Text className="text-lg font-semibold text-gray-900 mb-4">
+            Update Phone Number
+          </Text>
+          
+          <TextInput
+            value={newPhone}
+            onChangeText={setNewPhone}
+            placeholder="Enter new phone number"
+            keyboardType="phone-pad"
+            className="border border-gray-300 rounded-lg p-3 mb-4"
+          />
+
+          {error ? (
+            <Text className="text-red-500 text-sm mb-4">{error}</Text>
+          ) : null}
+
+          <TouchableOpacity
+            onPress={handlePhoneUpdate}
+            disabled={isVerifying}
+            className="bg-primary rounded-lg p-3 items-center"
+          >
+            {isVerifying ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="text-white font-semibold">Save Changes</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </View>
   );
 }

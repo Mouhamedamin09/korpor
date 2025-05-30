@@ -1,6 +1,8 @@
 import { Stack } from "expo-router";
 import { ThemeProvider } from "@shared/providers/themeProvider";
 import { FontProvider } from "@shared/providers/fontProvider";
+// Import global CSS for NativeWind
+import "../../global.css";
 
 export default function RootLayout() {
   return (

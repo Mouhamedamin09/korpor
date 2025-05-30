@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 
 import TopBar from "@main/components/profileScreens/components/ui/TopBar";
 import { fetchAccountData, AccountData } from "@main/services/api";
+import { fetchDetailedVerificationStatus, BackendVerificationStatus } from "@main/services/Verification";
 import { getInitials } from "@main/components/profileScreens/components/ui/string";
 
 type VerificationProgress = {
@@ -22,7 +23,7 @@ type VerificationProgress = {
 };
 
 interface ExtendedAccountData extends AccountData {
-  verificationProgress?: VerificationProgress;
+  verificationProgress: VerificationProgress;
 }
 
 const PressableRow: React.FC<{
@@ -44,24 +45,97 @@ export default function ProfileScreen() {
   const [account, setAccount] = useState<ExtendedAccountData | null>(null);
 
   useEffect(() => {
-    fetchAccountData()
-      .then((data) => setAccount(data))
-      .catch(console.error);
+    const fetchData = async () => {
+      try {
+        const [accountData, verificationStatus] = await Promise.all([
+          fetchAccountData(),
+          fetchDetailedVerificationStatus()
+        ]);
+
+        // Calculate real verification progress
+        let completed = 2; // Steps 1-2 are always complete (account + employment)
+        if (verificationStatus?.identityStatus === 'approved') completed++;
+        if (verificationStatus?.addressStatus === 'approved') completed++;
+
+        const extendedAccountData: ExtendedAccountData = {
+          ...accountData,
+          verificationProgress: {
+            completed,
+            total: 4
+          }
+        };
+
+        setAccount(extendedAccountData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        // Fallback to account data only with default verification
+        try {
+          const accountData = await fetchAccountData();
+          const extendedAccountData: ExtendedAccountData = {
+            ...accountData,
+            verificationProgress: {
+              completed: 2, // Default to 2/4 for new users
+              total: 4
+            }
+          };
+          setAccount(extendedAccountData);
+        } catch (fallbackError) {
+          console.error('Fallback fetch also failed:', fallbackError);
+        }
+      }
+    };
+
+    fetchData();
   }, []);
 
   const initials = account ? getInitials(account.name) : "MK";
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setIsRefreshing(true);
-    fetchAccountData()
-      .then((data) => setAccount(data))
-      .catch(console.error)
-      .finally(() => setIsRefreshing(false));
+    try {
+      const [accountData, verificationStatus] = await Promise.all([
+        fetchAccountData(),
+        fetchDetailedVerificationStatus()
+      ]);
+
+      // Calculate real verification progress
+      let completed = 2; // Steps 1-2 are always complete (account + employment)
+      if (verificationStatus?.identityStatus === 'approved') completed++;
+      if (verificationStatus?.addressStatus === 'approved') completed++;
+
+      const extendedAccountData: ExtendedAccountData = {
+        ...accountData,
+        verificationProgress: {
+          completed,
+          total: 4
+        }
+      };
+
+      setAccount(extendedAccountData);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      // Fallback to account data only
+      try {
+        const accountData = await fetchAccountData();
+        const extendedAccountData: ExtendedAccountData = {
+          ...accountData,
+          verificationProgress: {
+            completed: 2, // Default to 2/4 for new users
+            total: 4
+          }
+        };
+        setAccount(extendedAccountData);
+      } catch (fallbackError) {
+        console.error('Fallback refresh also failed:', fallbackError);
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   // Safely read progress
-  const completed = account?.verificationProgress?.completed ?? 0;
-  const total = account?.verificationProgress?.total ?? 0;
+  const completed = account?.verificationProgress?.completed ?? 2;
+  const total = account?.verificationProgress?.total ?? 4;
 
   return (
     <View className="flex-1 bg-white">
@@ -113,22 +187,34 @@ export default function ProfileScreen() {
             )
           }
         >
-          <View className="flex-row items-center rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <Feather
-              name="check-circle"
-              size={24}
-              color="black"
-              className="mr-3"
-            />
+          <View className=" mt-2 flex-row items-center rounded-3xl bg-white shadow-lg border border-[#E5E7EB] p-4">
+            {/* icon bubble */}
+            <View className="w-12 h-12 rounded-full bg-[#10B981]/10 items-center justify-center mr-4">
+              <Feather
+                name={completed === total ? "check" : "shield"}
+                size={20}
+                color="#000"
+              />
+            </View>
+
             <View className="flex-1">
-              <Text className="text-sm font-semibold text-black">
+              <Text className="text-base font-semibold text-[#0A0E23] mb-1">
                 Verify your account to start investing
               </Text>
-              <Text className="text-xs text-gray-600">
-                {`${completed} / ${total}`}
+
+              <View className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <View
+                  style={{ width: `${(completed / total) * 100}%` }}
+                  className="h-full bg-[#10B981]"
+                />
+              </View>
+
+              <Text className="text-xs text-[#6B7280] mt-1">
+                {`${completed} of ${total} steps completed`}
               </Text>
             </View>
-            <Feather name="chevron-right" size={24} color="black" />
+
+            <Feather name="chevron-right" size={24} color="#9CA3AF" />
           </View>
         </PressableRow>
 

@@ -1,6 +1,6 @@
 // components/ui/Carousel.tsx
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   Animated,
   View,
@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import Feather from "react-native-vector-icons/Feather";
 import { router } from "expo-router";
+import { fetchWalletBalance, formatBalance, convertCurrency, WalletBalance } from "@main/services/wallet";
 
 const { width } = Dimensions.get("window");
 const CARD_W = width - 32; // screen-padding (px-4) expected
@@ -18,7 +19,7 @@ const CARD_H = 160;
 const DOT_W = 40;
 const GAP = 8; // 8px between dots
 
-type Props = { currency?: string };
+type Props = { currency?: 'USD' | 'EUR' | 'TND' };
 
 const pages = [
   {
@@ -139,14 +140,53 @@ const pages = [
   },
 ] as const;
 
-const Carousel: React.FC<Props> = ({ currency = "AED" }) => {
+const Carousel: React.FC<Props> = ({ currency = "TND" }) => {
   const scrollX = useRef(new Animated.Value(0)).current;
+  const [walletData, setWalletData] = useState<WalletBalance | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const translateX = scrollX.interpolate({
     inputRange: [0, (pages.length - 1) * CARD_W],
     outputRange: [0, (pages.length - 1) * (DOT_W + GAP)],
     extrapolate: "clamp",
   });
+
+  useEffect(() => {
+    const loadWalletData = async () => {
+      try {
+        const data = await fetchWalletBalance();
+        setWalletData(data);
+      } catch (error) {
+        console.error('Error loading wallet data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadWalletData();
+  }, [currency]);
+
+  const getBalanceForPage = (index: number): string => {
+    if (loading || !walletData) {
+      return `${currency} 0.00`;
+    }
+
+    let amount = 0;
+    switch (index) {
+      case 0: // Total balance
+        amount = walletData.totalBalance;
+        break;
+      case 1: // Cash balance
+        amount = walletData.cashBalance;
+        break;
+      case 2: // Rewards balance
+        amount = walletData.rewardsBalance;
+        break;
+    }
+
+    // Convert from wallet currency (TND) to display currency and format
+    return formatBalance(amount, walletData.currency, currency);
+  };
 
   return (
     <View className="mt-2">
@@ -162,7 +202,7 @@ const Carousel: React.FC<Props> = ({ currency = "AED" }) => {
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
           { useNativeDriver: false }
         )}
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <View style={{ width: CARD_W }} className="px-4">
             <LinearGradient
               colors={["#008F6B", "#00B37D"]}
@@ -181,7 +221,7 @@ const Carousel: React.FC<Props> = ({ currency = "AED" }) => {
                 {item.title}
               </Text>
               <Text className="text-white text-3xl font-bold text-center">
-                {currency} 0
+                {getBalanceForPage(index)}
               </Text>
               {item.cta}
             </LinearGradient>

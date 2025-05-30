@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
+  ViewStyle,
 } from "react-native";
 import CountryFlag from "react-native-country-flag";
 import Feather from "react-native-vector-icons/Feather";
@@ -21,7 +22,7 @@ import Carousel from "@main/components/wallet/compoenets/ui/Carousel";
 import AcademyVideoCard from "@main/components/wallet/compoenets/ui/AcademyVideoCard";
 import SecurityResourceCard from "@main/components/wallet/compoenets/ui/SecurityResourceCard";
 
-import { fetchAccountData, fetchUserSettings } from "@main/services/api";
+import { fetchWalletBalance, WalletBalance } from "@main/services/wallet";
 
 const { width } = Dimensions.get("window");
 const ACTION_W = width / 4;
@@ -40,10 +41,10 @@ const PulseBlock = ({
   radius = 8,
   style = {},
 }: {
-  height: number | string;
-  width?: number | string;
+  height: number;
+  width?: any;
   radius?: number;
-  style?: object;
+  style?: any;
 }) => (
   <MotiView
     from={{ opacity: 0.3 }}
@@ -61,20 +62,17 @@ const PulseBlock = ({
 
 const WalletScreen: React.FC = () => {
   const router = useRouter();
-  const [currency, setCurrency] = useState<keyof typeof CURRENCY>("TND");
+  const [walletData, setWalletData] = useState<WalletBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [investSheetOpen, setInvestSheetOpen] = useState(false);
 
-  const loadCurrency = useCallback(async () => {
+  const loadWalletData = useCallback(async () => {
     setLoading(true);
     try {
-      const { email } = await fetchAccountData();
-      const { currency: serverCurrency } = await fetchUserSettings(email);
-      if (serverCurrency && serverCurrency in CURRENCY) {
-        setCurrency(serverCurrency as keyof typeof CURRENCY);
-      }
+      const data = await fetchWalletBalance();
+      setWalletData(data);
     } catch (e) {
-      console.warn("Failed to load currency, defaulting to TND", e);
+      console.warn("Failed to load wallet data:", e);
     } finally {
       setLoading(false);
     }
@@ -82,10 +80,11 @@ const WalletScreen: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
-      loadCurrency();
-    }, [loadCurrency])
+      loadWalletData();
+    }, [loadWalletData])
   );
 
+  const currency = walletData?.currency || "TND";
   const cur = CURRENCY[currency];
 
   return (
@@ -124,7 +123,7 @@ const WalletScreen: React.FC = () => {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 24, paddingTop: 16 }}
+        contentContainerStyle={{ paddingBottom: 24 }}
       >
         {loading ? (
           <View className="px-4 mt-4 mb-4">
@@ -149,7 +148,7 @@ const WalletScreen: React.FC = () => {
         ) : (
           <>
             {/* ── balance carousel ──────────────────────────────────── */}
-            <Carousel currency={cur.symbol} />
+            <Carousel currency={currency} />
 
             {/* ── quick-action row ─────────────────────────────────── */}
             <View className="flex-row justify-around mt-6 mb-4 px-2">
@@ -163,12 +162,12 @@ const WalletScreen: React.FC = () => {
                 {
                   icon: "arrow-up-right",
                   label: "Withdraw",
-                  route: "main/components/wallet/walletscreens/WithdrawScreen",
+                  route: "/main/components/wallet/walletscreens/WithdrawScreen",
                 },
                 {
                   icon: "credit-card",
                   label: "Settings",
-                  route: "walletSettings",
+                  route: "/main/screens/(tabs)/wallet/settings",
                 },
               ].map(({ icon, label, route }) => (
                 <TouchableOpacity
@@ -195,7 +194,7 @@ const WalletScreen: React.FC = () => {
               onClose={() => setInvestSheetOpen(false)}
             >
               <SheetRow
-                icon={<Feather name="home" size={24} color="#059669" />}
+                icon={<Feather name="home" size={24} color="#10B981" />}
                 title="Browse Properties"
                 subtitle="Pick and choose properties yourself"
                 onPress={() => {
@@ -204,7 +203,7 @@ const WalletScreen: React.FC = () => {
                 }}
               />
               <SheetRow
-                icon={<Feather name="zap" size={24} color="#059669" />}
+                icon={<Feather name="zap" size={24} color="#10B981" />}
                 title="AutoInvest"
                 subtitle="Build a diversified portfolio on autopilot"
                 onPress={() => {

@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Image
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Feather from "react-native-vector-icons/Feather";
@@ -15,154 +16,137 @@ import { useRouter } from "expo-router";
 import {
   fetchLiveChatAgents,
   fetchAccountData,
-  searchArticles,
   LiveChatAgent,
-  SearchHit,
 } from "@main/services/api";
 
 import Avatar from "@main/components/profileScreens/components/ui/Avatar";
-import SearchHitItem from "@main/components/profileScreens/components/ui/SearchHitItem";
 
 const GUTTER = "px-6";
 const CARD = "bg-surface border-border rounded-2xl shadow-sm";
+
+// Enhanced Chatbot Avatar component
+const ChatBotAvatar: React.FC<{ size?: number }> = ({ size = 50 }) => (
+  <View 
+    className="rounded-full bg-gradient-to-br from-blue-500 to-purple-600 items-center justify-center shadow-lg"
+    style={{ width: size, height: size }}
+  >
+    <Text style={{ fontSize: size * 0.5 }}>🤖</Text>
+  </View>
+);
 
 const LiveChatScreen: React.FC = () => {
   const router = useRouter();
   const [agents, setAgents] = useState<LiveChatAgent[]>([]);
   const [name, setName] = useState("User");
-  const [tab, setTab] = useState<"msg" | "help">("msg");
-  const [q, setQ] = useState("");
-  const [hits, setHits] = useState<SearchHit[]>([]);
+  const [isReady, setIsReady] = useState(false);
 
-  useEffect(() => {
-    fetchLiveChatAgents().then(setAgents);
-    fetchAccountData().then((u) => setName(u.name.split(" ")[0]));
-  }, []);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (tab === "help" && q.trim().length > 1) {
-        searchArticles(q).then(setHits);
-      } else {
-        setHits([]);
+  // Safe navigation helper
+  const safeGoBack = () => {
+    try {
+      if (isReady && router && router.back && typeof router.back === 'function') {
+        router.back();
       }
-    }, 250);
-    return () => clearTimeout(t);
-  }, [q, tab]);
+    } catch (error) {
+      console.log('Navigation back error:', error);
+    }
+  };
+
+  useEffect(() => {
+    // Set ready state after a small delay to ensure navigation is initialized
+    const timer = setTimeout(() => {
+      setIsReady(true);
+    }, 100);
+
+    fetchLiveChatAgents().then(setAgents).catch(console.error);
+    fetchAccountData().then((u) => setName(u.name.split(" ")[0])).catch(console.error);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-background">
+      {/* Enhanced Header with Chatbot Design */}
       <LinearGradient
-        colors={["#051026", "#0b1c46"]}
-        className="rounded-b-[36px] pb-12"
+        colors={["#051026", "#0b1c46", "#1a2b5c"]}
+        className="rounded-b-[36px] pb-8"
       >
         <View
-          className={`${GUTTER} pt-12 flex-row items-center justify-between`}
+          className={`${GUTTER} pt-12 flex-row items-center justify-between mb-6`}
         >
           <Text className="text-white text-3xl font-extrabold tracking-wide">
             korpor
           </Text>
-          <View className="flex-row">
-            {agents.slice(0, 2).map((a) => (
-              <Avatar
-                key={a.id}
-                name={a.name}
-                uri={a.avatar}
-                size={30}
-                extraStyle="mr-2"
-              />
-            ))}
+          
+          {/* Chatbot Logo */}
+          <View className="relative">
+            <Image source={require("@assets/chatbotW.png")} className="w-16 h-16 rounded-full" />
+            {/* Online indicator */}
+            <View className="absolute -bottom-2 -right-2 w-7 h-7 bg-green-500 rounded-full border-3 border-white items-center justify-center">
+              <View className="w-3 h-3 bg-white rounded-full" />
+            </View>
           </View>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Feather name="x" size={26} color="#fff" />
+
+          <TouchableOpacity 
+            onPress={safeGoBack}
+            className="w-12 h-12 rounded-full bg-white/20 items-center justify-center"
+          >
+            <Feather name="x" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
-        <View className={`${GUTTER} mt-10`}>
-          <Text className="text-white text-[22px] leading-8 font-semibold">
-            Hi {name}!{"\n"}How can we help?
+        
+        <View className={`${GUTTER} mb-8`}>
+          <Text className="text-white text-[28px] leading-9 font-bold mb-3">
+            Hi {name}! 👋
+          </Text>
+          <Text className="text-white/85 text-lg leading-7">
+            I'm your AI assistant. How can I help you today?
           </Text>
         </View>
+
+     
+       
       </LinearGradient>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 48 }}
+        contentContainerStyle={{ paddingBottom: 32 }}
+        className="flex-1"
       >
-        <View className={`${GUTTER} mt-8`}>
-          <View className="bg-mutedBg rounded-xl p-1 flex-row">
-            <TouchableOpacity
-              onPress={() => setTab("msg")}
-              className={`flex-1 items-center py-3 rounded-lg ${
-                tab === "msg" ? "bg-surface" : ""
-              }`}
-            >
-              <Text
-                className={
-                  tab === "msg" ? "text-surfaceText" : "text-mutedText"
-                }
-              >
-                Messages
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setTab("help")}
-              className={`flex-1 items-center py-3 rounded-lg ${
-                tab === "help" ? "bg-surface" : ""
-              }`}
-            >
-              <Text
-                className={
-                  tab === "help" ? "text-surfaceText" : "text-mutedText"
-                }
-              >
-                Help
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {tab === "msg" && (
-          <View className={`${GUTTER} mt-10 space-y-4`}>
-            <Text className="text-xs uppercase tracking-wider text-textGray">
-              Recent message
+        <View className={`${GUTTER} mt-12`}>
+          <View className="flex-row items-center justify-between mb-8">
+            <Text className="text-lg font-bold text-surfaceText">
+              Recent Messages
             </Text>
-            <TouchableOpacity className={`${CARD} p-5 flex-row`}>
-              <Avatar
-                name={agents[0]?.name || "A"}
-                uri={agents[0]?.avatar}
-                size={40}
-                extraStyle="mr-4"
-              />
-              <View className="flex-1">
-                <Text className="font-medium mb-1 text-surfaceText">
-                  You: [GIF]
-                </Text>
-                <Text className="text-xs text-mutedText">
-                  {agents[0]?.name.split(" ")[0]} · Just now
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={20} color="#000000" />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {tab === "help" && (
-          <View className={`${GUTTER} mt-10 space-y-6`}>
-            <View className={`${CARD} flex-row items-center px-4`}>
-              <TextInput
-                placeholder="Search help articles"
-                value={q}
-                onChangeText={setQ}
-                className="flex-1 py-4 text-base text-surfaceText"
-              />
-              <Feather name="search" size={20} color="#000000" />
+            <View className="flex-row items-center">
+              <View className="w-3 h-3 bg-green-500 rounded-full mr-2" />
+              <Text className="text-sm text-green-600 font-semibold">Online</Text>
             </View>
-
-            {hits.map((h) => (
-              <SearchHitItem key={h.id} {...h} />
-            ))}
           </View>
-        )}
+          
+          {/* Chatbot Conversation */}
+          <TouchableOpacity className={`${CARD} p-8 flex-row items-center mb-8`}>
+            <Image source={require("@assets/chatbot.png")} className="w-16 h-16 rounded-full" />
+            <View className="flex-1 ml-6">
+              <View className="flex-row items-center mb-2">
+                <Text className="font-bold text-surfaceText text-lg">
+                  Korpor Assistant
+                </Text>
+                <View className="ml-3 bg-blue-100 rounded-full px-3 py-1">
+                  <Text className="text-blue-600 text-xs font-bold">AI</Text>
+                </View>
+              </View>
+              <Text className="text-mutedText text-base mb-3 leading-6">
+                Hello! I'm here to help with your investment questions. How can I assist you today?
+              </Text>
+              <Text className="text-sm text-textGray font-medium">
+                Active now
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={24} color="#9ca3af" />
+          </TouchableOpacity>
+
+         
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

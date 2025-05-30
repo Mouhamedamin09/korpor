@@ -59,6 +59,7 @@ const formatDateFull = (date: Date) =>
 
 export type DepositData = {
   startDate: string; // e.g. "15 Jun 2025"
+  depositDay: number; // e.g. 15 (the day of the month)
   frequency: string; // e.g. "Monthly"
   paymentMethod: string; // e.g. "Visa •••• 1234"
   verification: "Verified" | "Pending";
@@ -67,7 +68,7 @@ export type DepositData = {
 interface Props {
   /** Optional existing deposit data (for editing) */
   deposit?: DepositData | null;
-  /** Called once the user taps “Continue” */
+  /** Called once the user taps "Continue" */
   onNext: (data: DepositData) => void;
 }
 
@@ -90,7 +91,7 @@ const DepositSettings: React.FC<Props> = ({ onNext, deposit }) => {
   const [pickerVisible, setPickerVisible] = useState<boolean>(false);
   const days = Array.from({ length: 30 }, (_, i) => i + 1);
 
-  /* ───────── “Start today” toggle ───────── */
+  /* ───────── "Start today" toggle ───────── */
   const [startToday, setStartToday] = useState<boolean>(
     selectedDay === todayDay
   );
@@ -151,6 +152,7 @@ const DepositSettings: React.FC<Props> = ({ onNext, deposit }) => {
     const startDate = formatDateFull(start);
     return {
       startDate,
+      depositDay: selectedDay,
       frequency: "Monthly",
       paymentMethod: "Visa •••• 1234", // replace with real method when chosen
       verification: completed === total ? "Verified" : "Pending",

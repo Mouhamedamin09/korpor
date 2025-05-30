@@ -29,15 +29,15 @@ const HelpArticleScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* title */}
+      {/* Title */}
       <View className="px-4 mb-4">
         <Text className="text-2xl font-bold text-black">{article.title}</Text>
       </View>
 
-      {/* author block */}
+      {/* Author block */}
       <View className="px-4 flex-row items-center mb-4">
         <Image
-          source={require("@assets/Ahmed.png")} // demo avatar
+          source={require("@assets/khalil.png")} // demo avatar
           className="w-10 h-10 rounded-full mr-3"
         />
         <View>
@@ -48,11 +48,23 @@ const HelpArticleScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* body */}
-      <View className="px-4 pb-8">
-        <Text className="text-lg text-black whitespace-pre-wrap">
-          {article.body}
-        </Text>
+      {/* Body with basic markdown bold parser */}
+      <View className="px-4 pb-8 flex-row flex-wrap">
+        {article.body.split(/(\*\*.*?\*\*)/g).map((part, index) => {
+          if (part.startsWith("**") && part.endsWith("**")) {
+            return (
+              <Text key={index} className="text-lg font-bold text-black">
+                {part.slice(2, -2)}
+              </Text>
+            );
+          } else {
+            return (
+              <Text key={index} className="text-lg text-black">
+                {part}
+              </Text>
+            );
+          }
+        })}
       </View>
     </ScrollView>
   );

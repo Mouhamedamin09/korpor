@@ -1,6 +1,7 @@
 import { Text, View, Image } from "react-native";
 import "../../global.css";
-import { OutlinedButton, SolidButtonLg } from "@auth/components/ui/index";
+import OutlinedButton from "@auth/components/ui/outlinedButton";
+import SolidButtonLg from "@auth/components/ui/solidButtonLg";
 import { router } from "expo-router";
 const logo = require("@assets/logo-black.png");
 const Slogan = require("@assets/korporBlack.png");
@@ -33,7 +34,7 @@ export default function App() {
         <SolidButtonLg
           title="main app(temp)"
           onPress={() => {
-            router.push("main/screens/properties");
+            router.push("main/screens/(tabs)/properties");
           }}
         />
         <SolidButtonLg

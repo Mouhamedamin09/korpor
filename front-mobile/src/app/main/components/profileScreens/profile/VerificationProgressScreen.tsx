@@ -9,6 +9,7 @@ import {
   Alert,
   Image,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { useRouter } from "expo-router";
@@ -17,6 +18,7 @@ import DocumentScanner, {
   ScanDocumentOptions,
 } from "react-native-document-scanner-plugin";
 import * as ImagePicker from "expo-image-picker";
+import { submitIdentityVerification } from "@main/services/Verification";
 
 const { width } = Dimensions.get("window");
 
@@ -24,6 +26,7 @@ export default function VerificationProgressScreen() {
   const router = useRouter();
   const [passportUri, setPassportUri] = useState<string | null>(null);
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const allDone = !!passportUri && !!selfieUri;
 
@@ -36,8 +39,12 @@ export default function VerificationProgressScreen() {
         overlayColor: "#ffffff40",
       };
       const { scannedImages } = await DocumentScanner.scanDocument(options);
-      if (scannedImages.length) setPassportUri(scannedImages[0]);
-    } catch {}
+      if (scannedImages && scannedImages.length > 0) {
+        setPassportUri(scannedImages[0]);
+      }
+    } catch {
+      // Handle error silently or show error message
+    }
   };
 
   const takeSelfie = async () => {
@@ -53,11 +60,44 @@ export default function VerificationProgressScreen() {
     if (!result.canceled) setSelfieUri(result.assets[0].uri);
   };
 
-  const handleNext = () => {
-    // once both images are in place, go back to CompleteAccountSetupScreen
-    router.push(
+  const handleNext = async () => {
+    if (!passportUri || !selfieUri) {
+      Alert.alert("Missing Documents", "Please capture both passport and selfie images.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      const result = await submitIdentityVerification(passportUri, selfieUri);
+      
+      if (result.qualified) {
+        Alert.alert(
+          "Success!", 
+          "Your identity documents have been submitted for review. We'll notify you once they're verified.",
+          [
+            {
+              text: "OK",
+              onPress: () => router.push(
       "main/components/profileScreens/profile/CompleteAccountSetupScreen"
-    );
+              ),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Upload Failed", 
+          result.message || "Failed to upload documents. Please try again."
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        "Error", 
+        "An unexpected error occurred. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -80,6 +120,7 @@ export default function VerificationProgressScreen() {
         <TouchableOpacity
           onPress={scanWithCamera}
           className="flex-row items-center justify-between bg-white rounded-lg px-4 py-3 mb-3 shadow"
+          disabled={isSubmitting}
         >
           <View className="flex-row items-center">
             <View className="w-8 h-8 rounded-full bg-green-50 items-center justify-center mr-3">
@@ -99,6 +140,7 @@ export default function VerificationProgressScreen() {
         <TouchableOpacity
           onPress={takeSelfie}
           className="flex-row items-center justify-between bg-white rounded-lg px-4 py-3 shadow"
+          disabled={isSubmitting}
         >
           <View className="flex-row items-center">
             <View className="w-8 h-8 rounded-full bg-green-50 items-center justify-center mr-3">
@@ -115,12 +157,16 @@ export default function VerificationProgressScreen() {
 
         <TouchableOpacity
           onPress={handleNext}
-          disabled={!allDone}
+          disabled={!allDone || isSubmitting}
           className={`mt-6 rounded-lg p-4 items-center ${
-            allDone ? "bg-black" : "bg-gray-300"
+            allDone && !isSubmitting ? "bg-black" : "bg-gray-300"
           }`}
         >
+          {isSubmitting ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
           <Text className="text-base font-medium text-white">Next</Text>
+          )}
         </TouchableOpacity>
 
         {passportUri && (
