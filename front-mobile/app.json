@@ -13,7 +13,6 @@
         "asset": "./src/assets/fonts/Roboto.ttf"
       }
     ],
-
     "splash": {
       "image": "./src/assets/splash-icon.png",
       "resizeMode": "contain",
@@ -23,7 +22,9 @@
       "supportsTablet": true
     },
     "android": {
-      "permissions": ["VIBRATE"],
+      "permissions": [
+        "VIBRATE"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -33,7 +34,11 @@
     "web": {
       "favicon": "./src/assets/favicon.png"
     },
-    "plugins": ["expo-router", "expo-camera"],
+    "plugins": [
+      "expo-router",
+      "expo-camera",
+      "expo-secure-store"
+    ],
     "extra": {
       "router": {
         "origin": false
