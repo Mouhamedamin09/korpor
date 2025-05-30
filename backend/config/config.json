@@ -1,0 +1,39 @@
+{
+  "development": {
+    "username": "root",
+    "password": "",
+    "database": "korpor_dev",
+    "host": "127.0.0.1",
+    "port": 3306,
+    "dialect": "mysql",
+    "logging": true,
+    "pool": {
+      "max": 5,
+      "min": 0,
+      "acquire": 60000,
+      "idle": 10000
+    },
+    "define": {
+      "underscored": true,
+      "timestamps": true,
+      "paranoid": false
+    },
+    "dialectOptions": {
+      "connectTimeout": 60000
+    }
+  },
+  "test": {
+    "username": "root",
+    "password": "",
+    "database": "korpor_dev_test",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "root",
+    "password": "",
+    "database": "korpor_dev_prod",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  }
+} 

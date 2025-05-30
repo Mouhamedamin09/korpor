@@ -1,44 +1,269 @@
-// screens/main/components/wallet/DepositScreen.tsx
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ScrollView,
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { useRouter } from "expo-router";
 import TopBar from "@main/components/profileScreens/components/ui/TopBar";
 import Card from "@main/components/profileScreens/components/ui/card";
+import AmountInputCard from "../compoenets/ui/AmountInputCard";
+import {
+  fetchWalletBalance,
+  depositFunds,
+  getCurrencySymbol,
+  convertCurrency,
+  type WalletBalance,
+  type DepositRequest,
+} from "../../../services/wallet";
+import {
+  fetchUserSettings,
+  type UserSettings,
+  fetchAccountData,
+} from "../../../services/api";
 
-const MIN_DEPOSIT = 5.0;
+const MIN_DEPOSIT = 10.0;
+const MAX_DEPOSIT = 10000.0;
 
-type Method = {
+type PaymentMethod = {
   id: string;
   label: string;
+  description: string;
+  fee: number;
+  processingTime: string;
+  icon: string;
 };
 
-const METHODS: Method[] = [
-  { id: "card", label: "Credit/Debit Card" },
-  { id: "bank", label: "Bank Transfer" },
+const PAYMENT_METHODS: PaymentMethod[] = [
+  {
+    id: "card",
+    label: "Debit/Credit Card",
+    description: "••••1234",
+    fee: 0.0,
+    processingTime: "Instant",
+    icon: "credit-card",
+  },
+  {
+    id: "bank",
+    label: "Bank Transfer",
+    description: "••••5678",
+    fee: 0.0,
+    processingTime: "1-3 business days",
+    icon: "globe",
+  },
+  {
+    id: "wallet",
+    label: "Mobile Wallet",
+    description: "••••9012",
+    fee: 2.5,
+    processingTime: "Instant",
+    icon: "smartphone",
+  },
 ];
 
 const DepositScreen: React.FC = () => {
   const router = useRouter();
   const [amount, setAmount] = useState<string>("");
-  const [selectedMethod, setSelectedMethod] = useState<string>(METHODS[0].id);
+  const [selectedMethod, setSelectedMethod] = useState<string>(
+    PAYMENT_METHODS[0].id
+  );
+  const [walletData, setWalletData] = useState<WalletBalance | null>(null);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [depositing, setDepositing] = useState(false);
+  const [error, setError] = useState<string>("");
 
+  // Load wallet data and user settings on component mount
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      // Use the existing fetchAccountData function
+      const accountData = await fetchAccountData();
+      const userEmail = accountData.email;
+
+      const [wallet, settings] = await Promise.all([
+        fetchWalletBalance(),
+        fetchUserSettings(userEmail),
+      ]);
+
+      setWalletData(wallet);
+      setUserSettings(settings);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load wallet data"
+      );
+      console.error("Error loading initial data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectedMethodData =
+    PAYMENT_METHODS.find((m) => m.id === selectedMethod) || PAYMENT_METHODS[0];
   const numAmount = parseFloat(amount) || 0;
-  const valid = numAmount >= MIN_DEPOSIT && selectedMethod;
+  const totalWithFee = numAmount + selectedMethodData.fee;
+
+  const valid =
+    numAmount >= MIN_DEPOSIT &&
+    numAmount <= MAX_DEPOSIT &&
+    selectedMethod &&
+    !depositing;
+
+  const handleDeposit = async () => {
+    if (!valid || !walletData) return;
+
+    try {
+      setDepositing(true);
+
+      // Prepare deposit data
+      const depositData: DepositRequest = {
+        amount: numAmount,
+        description: `Deposit via ${selectedMethodData.label}`,
+        reference: `DEP_${Date.now()}_${selectedMethod.toUpperCase()}`,
+      };
+
+      // Show confirmation dialog
+      Alert.alert(
+        "Confirm Deposit",
+        `Add ${getCurrencySymbol(
+          userSettings?.currency || walletData.currency
+        )} ${numAmount.toFixed(2)} to your wallet using ${
+          selectedMethodData.label
+        }?\n\nProcessing time: ${
+          selectedMethodData.processingTime
+        }\nFee: ${getCurrencySymbol(
+          userSettings?.currency || walletData.currency
+        )} ${selectedMethodData.fee.toFixed(2)}`,
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => setDepositing(false),
+          },
+          {
+            text: "Confirm",
+            style: "default",
+            onPress: () => processDeposit(depositData),
+          },
+        ]
+      );
+    } catch (err) {
+      setDepositing(false);
+      Alert.alert(
+        "Error",
+        err instanceof Error ? err.message : "An unexpected error occurred"
+      );
+    }
+  };
+
+  const processDeposit = async (depositData: DepositRequest) => {
+    try {
+      await depositFunds(depositData);
+
+      Alert.alert(
+        "Deposit Successful",
+        `Your deposit of ${numAmount.toFixed(2)} ${
+          userSettings?.currency || walletData?.currency
+        } has been processed successfully and added to your wallet.`,
+        [
+          {
+            text: "View Transactions",
+            onPress: () => {
+              setAmount("");
+              setSelectedMethod(PAYMENT_METHODS[0].id);
+              router.push("transactions?filter=deposits");
+            },
+          },
+          {
+            text: "OK",
+            style: "default",
+            onPress: () => {
+              setAmount("");
+              setSelectedMethod(PAYMENT_METHODS[0].id);
+              router.back();
+            },
+          },
+        ]
+      );
+    } catch (depositError) {
+      Alert.alert(
+        "Deposit Failed",
+        depositError instanceof Error
+          ? depositError.message
+          : "An error occurred during deposit"
+      );
+    } finally {
+      setDepositing(false);
+    }
+  };
+
+  const formatDisplayAmount = (
+    amount: number,
+    currency: "USD" | "EUR" | "TND"
+  ) => {
+    if (!userSettings)
+      return `${getCurrencySymbol(currency)} ${amount.toFixed(2)}`;
+
+    const convertedAmount = convertCurrency(
+      amount,
+      currency,
+      userSettings.currency
+    );
+    return `${getCurrencySymbol(
+      userSettings.currency
+    )} ${convertedAmount.toFixed(2)}`;
+  };
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-background">
+        <TopBar title="Add Funds" onBackPress={() => router.back()} />
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#10B981" />
+          <Text className="mt-4 text-gray-600">Loading wallet data...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error && !walletData) {
+    return (
+      <View className="flex-1 bg-background">
+        <TopBar title="Add Funds" onBackPress={() => router.back()} />
+        <View className="flex-1 justify-center items-center px-6">
+          <Feather name="alert-circle" size={48} color="#EF4444" />
+          <Text className="mt-4 text-lg font-medium text-gray-900 text-center">
+            Unable to Load Wallet
+          </Text>
+          <Text className="mt-2 text-gray-600 text-center">{error}</Text>
+          <TouchableOpacity
+            onPress={loadInitialData}
+            className="mt-6 bg-green-600 px-6 py-3 rounded-xl"
+          >
+            <Text className="text-white font-medium">Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-background">
-      <TopBar title="Deposit" onBackPress={() => router.back()} />
+      {/* ── Top Bar ───────────────────────────────────────────── */}
+      <TopBar title="Add Funds" onBackPress={() => router.back()} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -48,40 +273,48 @@ const DepositScreen: React.FC = () => {
           className="flex-1"
           contentContainerStyle={{ paddingBottom: 24, paddingTop: 8 }}
         >
-          {/* ── Amount Input ─────────────────────────────── */}
+          {/* ── Current Balance ──────────────────────────────────── */}
           <Card extraStyle="p-4 bg-white rounded-2xl shadow-sm mx-4 mb-4">
-            <Text className="text-base font-medium text-gray-900 mb-2">
-              Enter amount to deposit
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Current Balance
             </Text>
-            <View className="flex-row items-center border border-gray-200 rounded-xl px-3 py-2">
-              <Text className="text-lg text-gray-600 mr-1">$</Text>
-              <TextInput
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType="numeric"
-                placeholder="0.00"
-                className="flex-1 text-lg text-gray-900"
-              />
-            </View>
-            <Text className="text-xs text-gray-500 mt-1">
-              Minimum deposit is ${MIN_DEPOSIT.toFixed(2)}
+            <Text className="text-2xl font-bold text-gray-900">
+              {formatDisplayAmount(
+                walletData?.cashBalance || 0,
+                walletData?.currency || "TND"
+              )}
+            </Text>
+            <Text className="text-sm text-gray-500 mt-1">
+              Cash available for investment and withdrawal
             </Text>
           </Card>
 
-          {/* ── Method Selection ───────────────────────────── */}
+          {/* ── Amount Input ──────────────────────────────────── */}
+          <AmountInputCard
+            amount={amount}
+            onChangeAmount={setAmount}
+            onMaxPress={() => setAmount(MAX_DEPOSIT.toString())}
+            minAmount={MIN_DEPOSIT}
+            currencySymbol={getCurrencySymbol(
+              userSettings?.currency || walletData?.currency || "TND"
+            )}
+            feeRate={0.0} // No fee for deposits by default
+          />
+
+          {/* ── Payment Method Selection ──────────────────────────────── */}
           <Card extraStyle="p-4 bg-white rounded-2xl shadow-sm mx-4 mb-4">
             <Text className="text-base font-medium text-gray-900 mb-3">
               Payment Method
             </Text>
 
-            {METHODS.map(({ id, label }) => {
-              const isSelected = selectedMethod === id;
+            {PAYMENT_METHODS.map((method) => {
+              const isSelected = selectedMethod === method.id;
 
               return (
                 <Pressable
-                  key={id}
-                  onPress={() => setSelectedMethod(id)}
-                  android_ripple={{ color: "#d1fae5" }}
+                  key={method.id}
+                  onPress={() => setSelectedMethod(method.id)}
+                  android_ripple={{ color: "#d1fae5", borderless: false }}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: isSelected }}
                   className={`flex-row items-center p-3 rounded-xl mb-2 ${
@@ -90,77 +323,184 @@ const DepositScreen: React.FC = () => {
                       : "border border-gray-200"
                   }`}
                 >
+                  <View
+                    className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${
+                      isSelected ? "bg-green-100" : "bg-gray-100"
+                    }`}
+                  >
+                    <Feather
+                      name={method.icon}
+                      size={20}
+                      color={isSelected ? "#10B981" : "#6B7280"}
+                    />
+                  </View>
+
+                  <View className="flex-1">
+                    <Text className="text-base font-medium text-gray-900">
+                      {method.label}
+                    </Text>
+                    <Text className="text-sm text-gray-500">
+                      {method.description}
+                    </Text>
+                    <Text className="text-xs text-gray-400 mt-1">
+                      {method.processingTime}
+                      {method.fee > 0 &&
+                        ` • Fee: ${getCurrencySymbol(
+                          userSettings?.currency ||
+                            walletData?.currency ||
+                            "TND"
+                        )} ${method.fee.toFixed(2)}`}
+                    </Text>
+                  </View>
+
                   <Feather
                     name={isSelected ? "check-circle" : "circle"}
                     size={22}
                     color={isSelected ? "#10B981" : "#9CA3AF"}
-                    className="mr-3"
                   />
-
-                  <Text className="text-base text-gray-900">{label}</Text>
                 </Pressable>
               );
             })}
 
             <Pressable
               onPress={() => router.push("addPaymentMethod")}
-              android_ripple={{ color: "#e5e7eb" }}
+              android_ripple={{ color: "#e5e7eb", borderless: false }}
               className="flex-row items-center pt-3 mt-1 border-t border-gray-100"
             >
               <Feather name="plus-circle" size={20} color="#374151" />
               <Text className="ml-2 text-sm font-medium text-gray-700">
-                Add new method
+                Add new payment method
               </Text>
             </Pressable>
           </Card>
 
-          {/* ── Info Card ─────────────────────────────── */}
+          {/* ── Processing Info ────────────────────────────────── */}
           <Card extraStyle="p-4 bg-white rounded-2xl shadow-sm mx-4 mb-4">
             <View className="flex-row justify-between mb-1">
               <Text className="text-sm text-gray-600">Processing time</Text>
               <Text className="text-sm font-medium text-gray-900">
-                Instant to 1 day
+                {selectedMethodData.processingTime}
               </Text>
             </View>
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-600">Fees</Text>
-              <Text className="text-sm font-medium text-gray-900">$ 0.00</Text>
+            <View className="flex-row justify-between mb-1">
+              <Text className="text-sm text-gray-600">Processing fee</Text>
+              <Text className="text-sm font-medium text-gray-900">
+                {formatDisplayAmount(
+                  selectedMethodData.fee,
+                  walletData?.currency || "TND"
+                )}
+              </Text>
+            </View>
+            <View className="flex-row justify-between pt-2 border-t border-gray-100">
+              <Text className="text-sm font-medium text-gray-900">
+                Total to pay
+              </Text>
+              <Text className="text-sm font-medium text-gray-900">
+                {formatDisplayAmount(
+                  totalWithFee,
+                  walletData?.currency || "TND"
+                )}
+              </Text>
             </View>
           </Card>
 
-          {/* ── Confirm Button ───────────────────────────── */}
+          {/* ── Validation Messages ─────────────────────────────── */}
+          {numAmount > 0 && numAmount < MIN_DEPOSIT && (
+            <View className="mx-4 mb-4 p-3 bg-yellow-50 rounded-xl border border-yellow-200">
+              <Text className="text-sm text-yellow-800">
+                Minimum deposit amount is{" "}
+                {formatDisplayAmount(
+                  MIN_DEPOSIT,
+                  walletData?.currency || "TND"
+                )}
+              </Text>
+            </View>
+          )}
+
+          {numAmount > MAX_DEPOSIT && (
+            <View className="mx-4 mb-4 p-3 bg-red-50 rounded-xl border border-red-200">
+              <Text className="text-sm text-red-800">
+                Maximum deposit amount is{" "}
+                {formatDisplayAmount(
+                  MAX_DEPOSIT,
+                  walletData?.currency || "TND"
+                )}
+              </Text>
+            </View>
+          )}
+
+          {/* ── Security Info ─────────────────────────────────── */}
+          <View className="px-6 mb-4 flex-row items-start">
+            <Feather
+              name="shield"
+              size={20}
+              color="#10B981"
+              className="mt-0.5"
+            />
+            <View className="ml-3 flex-1">
+              <Text className="text-sm font-medium text-green-700 mb-1">
+                Secure Deposits
+              </Text>
+              <Text className="text-sm text-gray-600">
+                All deposits are secured with bank-level encryption. Funds are
+                typically available instantly for card deposits or within 1-3
+                business days for bank transfers.
+              </Text>
+            </View>
+          </View>
+
+          {/* ── Confirm Button ────────────────────────────────── */}
           <TouchableOpacity
-            onPress={() =>
-              valid &&
-              router.push("confirmDeposit", {
-                amount,
-                method: selectedMethod,
-              })
-            }
+            onPress={handleDeposit}
             disabled={!valid}
             className={`mx-4 rounded-2xl py-4 items-center ${
               valid ? "bg-green-600" : "bg-gray-300"
             }`}
           >
-            <Text
-              className={`text-base font-semibold ${
-                valid ? "text-white" : "text-gray-600"
-              }`}
-            >
-              Confirm Deposit
-            </Text>
+            {depositing ? (
+              <View className="flex-row items-center">
+                <ActivityIndicator size="small" color="white" />
+                <Text className="ml-2 text-base font-semibold text-white">
+                  Processing...
+                </Text>
+              </View>
+            ) : (
+              <Text
+                className={`text-base font-semibold ${
+                  valid ? "text-white" : "text-gray-600"
+                }`}
+              >
+                Add Funds
+              </Text>
+            )}
           </TouchableOpacity>
 
-          {/* ── History Link ───────────────────────────── */}
-          <TouchableOpacity
-            onPress={() => router.push("transactions?filter=deposits")}
-            className="mt-6 mb-8 flex-row items-center justify-center"
-          >
-            <Feather name="clock" size={16} color="#374151" />
-            <Text className="ml-2 text-sm font-medium text-gray-900">
-              View deposit history
-            </Text>
-          </TouchableOpacity>
+          {/* ── Quick Links ────────────────────────────────── */}
+          <View className="mt-6 mb-8 space-y-3">
+            <TouchableOpacity
+              onPress={() => router.push("transactions?filter=deposits")}
+              className="flex-row items-center mb-4 justify-center"
+            >
+              <Feather name="clock" size={16} color="#374151" />
+              <Text className="ml-2 text-sm font-medium text-gray-900">
+                View deposit history
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() =>
+                router.push(
+                  "/main/components/wallet/walletscreens/WithdrawScreen"
+                )
+              }
+              className="flex-row items-center justify-center"
+            >
+              <Feather name="arrow-up-circle" size={16} color="#374151" />
+              <Text className="ml-2 text-sm font-medium text-gray-900">
+                Withdraw funds
+              </Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
