@@ -1,35 +1,36 @@
-/* -----------------------------------------------------------
-   🔹  SetupCard — matches Carousel card style (enhanced)
-   ----------------------------------------------------------- */
-
 import { LinearGradient } from "expo-linear-gradient";
 import { Dimensions, View, Text, TouchableOpacity } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { useRouter } from "expo-router";
 
 const { width } = Dimensions.get("window");
-const CARD_W = width - 32; // identical to Carousel
-const CARD_H = 230; // ↑ taller card
+const CARD_W = width - 32;
+const CARD_H = 230;
 
-const SetupCard: React.FC = () => {
+interface Props {
+  type: "invest" | "reinvest";
+}
+
+const SetupCard: React.FC<Props> = ({ type }) => {
   const router = useRouter();
+  const isInvest = type === "invest";
 
   return (
     <View style={{ width: CARD_W }} className="self-center mb-6">
       <LinearGradient
-        colors={["#008F6B", "#00B37D"]} // same gradient as Carousel
+        colors={["#008F6B", "#00B37D"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
           height: CARD_H,
           borderRadius: 20,
           overflow: "hidden",
-          padding: 24, // more breathing room
+          padding: 24,
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        {/* decorative overlay bars ------------------------- */}
+        {/* Overlay bars */}
         <View
           style={{
             position: "absolute",
@@ -53,27 +54,32 @@ const SetupCard: React.FC = () => {
           }}
         />
 
-        {/* logo ------------------------------------------- */}
         <Feather
-          name="activity"
+          name={isInvest ? "activity" : "refresh-ccw"}
           size={40}
           color="#ffffff"
           style={{ marginBottom: 12 }}
         />
 
-        {/* text + CTA ------------------------------------- */}
         <Text className="text-white text-center text-lg font-semibold mb-2">
-          No AutoInvest setup
+          No Auto{isInvest ? "Invest" : "Reinvest"} setup
         </Text>
-        <Text className="text-white text-center text-sm opacity-90 mb-5">
-          Automate your investment strategy and enjoy peace of mind{"\n"}
-          as your portfolio grows steadily
+        <Text className="text-white text-center text-sm opacity-90 mb-5 font-semibold">
+          {isInvest
+            ? "Automate your investment strategy and enjoy peace of mind\nas your portfolio grows steadily"
+            : "Automatically reinvest your rental income to grow your portfolio\nwithout any manual effort"}
         </Text>
 
         <TouchableOpacity
           style={{ width: "90%" }}
           className="bg-black self-center rounded-lg px-6 py-3 active:opacity-80 mb-2"
-          onPress={() => router.push("/main/components/wallet/walletscreens/StartAutoInvest")}
+          onPress={() =>
+            router.push(
+              isInvest
+                ? "/main/components/wallet/walletscreens/StartAutoInvest"
+                : "/main/components/wallet/walletscreens/StartAutoReinvest"
+            )
+          }
         >
           <Text className="text-base font-semibold text-white text-center">
             Setup now

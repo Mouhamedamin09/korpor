@@ -24,9 +24,9 @@ const PhoneNumberInput: FC<PhoneNumberInputProps> = ({
         }}
         containerStyle={{
           borderWidth: 1,
-          borderColor: "#3f3f46",
+          borderColor: "#e2e8f0",
           borderRadius: 12,
-          backgroundColor: "#09090b",
+          backgroundColor: "#FFF",
           height: 48,
           width: "100%",
         }}
@@ -37,13 +37,13 @@ const PhoneNumberInput: FC<PhoneNumberInputProps> = ({
         textContainerStyle={{
           paddingHorizontal: 2,
           paddingVertical: 1,
-          backgroundColor: "#09090b",
+          backgroundColor: "#FFF",
           borderTopRightRadius: 8,
           borderBottomRightRadius: 8,
         }}
         textInputStyle={{
           fontSize: 16,
-          color: "#fff",
+          color: "#000",
         }}
         textInputProps={{
           placeholderTextColor: "#A0A0A0",
@@ -51,7 +51,7 @@ const PhoneNumberInput: FC<PhoneNumberInputProps> = ({
         renderDropdownImage={
           <View className="flex-row items-center justify-center">
             <Image source={ArrowDown} className="w-[12px] h-[12px]" />
-            <View className="w-[1px] bg-[#3f3f46] mx-2 h-12" />
+            <View className="w-[1px] bg-border mx-2 h-12" />
           </View>
         }
       />

@@ -1,7 +1,6 @@
 import { View, Text, Image, TouchableOpacity } from "react-native";
 import { PasswordResetCard } from "@auth/components/complex/index";
 import { router } from "expo-router";
-
 const BackButton = require("@assets/back.png");
 const OTP = require("@assets/OTP.png");
 

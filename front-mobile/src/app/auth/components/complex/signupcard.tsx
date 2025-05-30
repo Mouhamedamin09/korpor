@@ -8,6 +8,7 @@ import {
   PhoneNumberInput,
   EmailInput,
   PressableText,
+  OutlinedButtonSm,
 } from "../ui";
 import BirthdayPicker from "./birthdaypicker";
 import { useState } from "react";
@@ -62,87 +63,93 @@ export default function SignupCard() {
   };
 
   return (
-    <View className="w-[90%] h-auto bg-[#09090b] rounded-2xl border border-[#3f3f46] p-5">
-      {/* Name / Surname */}
-      <Text className="text-4xl font-bold text-[#fafafa] mb-1 ml-1">
-        Sign Up
-      </Text>
-      <Text className="ml-1 text-[#a1a1aa] mb-6 text-small">
-        Enter your information below to create your account
-      </Text>
-      <View className="flex-row items-center justify-between">
-        <View className="flex-1">
-          <Input placeholder="First Name" value={name} onChangeText={setName} />
+    <View>
+      <View className="w-[90%] h-auto bg-background rounded-2xl border border-border p-5 shadow">
+        {/* Name / Surname */}
+        <Text className="text-3xl font-bold text-text mb-1 ml-1">
+          Create an account
+        </Text>
+        <Text className="ml-1 text-[#a1a1aa] mb-6">
+          Enter your information below to create your account
+        </Text>
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1">
+            <Input
+              placeholder="First Name"
+              value={name}
+              onChangeText={setName}
+            />
+          </View>
+          <View className="w-4" />
+          <View className="flex-1">
+            <Input
+              placeholder="Last Name"
+              value={surname}
+              onChangeText={setSurname}
+            />
+          </View>
         </View>
-        <View className="w-4" />
-        <View className="flex-1">
-          <Input
-            placeholder="Last Name"
-            value={surname}
-            onChangeText={setSurname}
+
+        {/* Email */}
+        <EmailInput placeholder="Email" value={email} onChangeText={setEmail} />
+
+        {/* Birthdate */}
+        <DateInput
+          value={selectedDate}
+          placeholder="Select birthday"
+          onPress={() => setIsBirthdayPickerVisible(true)}
+        />
+
+        {/* Phone number (stored locally but not sent to API) */}
+        <PhoneNumberInput value={phone} onChangeText={setPhone} />
+
+        <OutlinedButtonSm title="Sign up" onPress={handleSignup} />
+
+        {/* Show error message if any */}
+        {errorMessage ? (
+          <Text className="text-red-500 text-sm mt-2">{errorMessage}</Text>
+        ) : null}
+
+        <DividerWithText text="Or" />
+
+        <GoogleButton
+          text="Continue with Google"
+          onPress={() => {
+            console.log("Google button pressed");
+          }}
+        />
+
+        {/* Birthday Picker Modal */}
+        <BirthdayPicker
+          isBirthdayPickerVisible={isBirthdayPickerVisible}
+          onSelectDate={(date) => {
+            setSelectedDate(date);
+            setIsBirthdayPickerVisible(false);
+          }}
+          setIsBirthdayPickerVisible={setIsBirthdayPickerVisible}
+        />
+
+        <Text className="text-[#a1a1aa] text-small text-center mt-4">
+          By clicking signup, you agree to our{" "}
+        </Text>
+        <View className="flex-row align-middle justify-center">
+          <PressableText
+            text="Terms of Service"
+            onPress={() => {
+              console.log("ToS clicked");
+            }}
+          />
+          <Text className="text-[#a1a1aa] mb-4 text-small text-center">
+            {" "}
+            and{" "}
+          </Text>
+          <PressableText
+            text="Privacy Policy"
+            onPress={() => {
+              console.log("PP clicked");
+            }}
           />
         </View>
-      </View>
-
-      {/* Email */}
-      <EmailInput placeholder="Email" value={email} onChangeText={setEmail} />
-
-      {/* Birthdate */}
-      <DateInput
-        value={selectedDate}
-        placeholder="Select birthday"
-        onPress={() => setIsBirthdayPickerVisible(true)}
-      />
-
-      {/* Phone number (stored locally but not sent to API) */}
-      <PhoneNumberInput value={phone} onChangeText={setPhone} />
-
-      <SolidButton title="Sign up" onPress={handleSignup} />
-
-      {/* Show error message if any */}
-      {errorMessage ? (
-        <Text className="text-red-500 text-sm mt-2">{errorMessage}</Text>
-      ) : null}
-
-      <DividerWithText text="Or" />
-
-      <GoogleButton
-        text="Continue with Google"
-        onPress={() => {
-          console.log("Google button pressed");
-        }}
-      />
-
-      {/* Birthday Picker Modal */}
-      <BirthdayPicker
-        isBirthdayPickerVisible={isBirthdayPickerVisible}
-        onSelectDate={(date) => {
-          setSelectedDate(date);
-          setIsBirthdayPickerVisible(false);
-        }}
-        setIsBirthdayPickerVisible={setIsBirthdayPickerVisible}
-      />
-
-      <Text className="text-[#a1a1aa] text-small text-center mt-4">
-        By clicking signup, you agree to our{" "}
-      </Text>
-      <View className="flex-row align-middle justify-center">
-        <PressableText
-          text="Terms of Service"
-          onPress={() => {
-            console.log("ToS clicked");
-          }}
-        />
-        <Text className="text-[#a1a1aa] mb-4 text-small text-center">
-          {" "}
-          and{" "}
-        </Text>
-        <PressableText
-          text="Privacy Policy"
-          onPress={() => {
-            console.log("PP clicked");
-          }}
-        />
       </View>
     </View>
   );

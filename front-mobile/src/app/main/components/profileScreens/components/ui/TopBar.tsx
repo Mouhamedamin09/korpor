@@ -19,13 +19,8 @@ const TopBar: React.FC<TopBarProps> = ({
   const insets = useSafeAreaInsets();
 
   return (
-    <View
-      style={{ paddingTop: insets.top }}
-      className={`bg-white border-b border-gray-200 py-4 px-4 flex-row items-center justify-between shadow-sm ${
-        noMargin ? "" : "mb-4"
-      }`}
-    >
-      <View className="flex-row items-center">
+    <View className="bg-white border-b border-gray-200 pb-4 px-4 flex-row justify-between shadow-sm pt-14">
+      <View className="flex-row">
         {onBackPress && (
           <TouchableOpacity onPress={onBackPress} className="mr-3">
             <Feather name="arrow-left" size={24} color="black" />
