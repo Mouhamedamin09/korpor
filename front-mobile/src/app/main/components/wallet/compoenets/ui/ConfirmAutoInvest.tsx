@@ -20,6 +20,7 @@ import { fetchWalletBalance, WalletBalance } from "@main/services/wallet";
 
 export type DepositData = {
   startDate: string;
+  depositDay: number; // e.g. 15 (the day of the month)
   frequency: string;
   paymentMethod: string;
   verification: "Verified" | "Pending";
@@ -34,7 +35,7 @@ interface Props {
 }
 
 const ConfirmAutoInvest: React.FC<Props> = ({
-  amount = 0,
+  amount,
   theme,
   deposit,
   onBack,
@@ -43,6 +44,15 @@ const ConfirmAutoInvest: React.FC<Props> = ({
   const [accountData, setAccountData] = useState<AccountData | null>(null);
   const [walletData, setWalletData] = useState<WalletBalance | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Add debugging
+  console.log("ConfirmAutoInvest rendered with amount:", amount);
+  console.log("ConfirmAutoInvest props:", { amount, theme, deposit });
+
+  // Validate that amount is properly passed
+  if (amount === undefined || amount === null) {
+    console.error("ConfirmAutoInvest: amount prop is undefined/null!");
+  }
 
   useEffect(() => {
     const loadUserData = async () => {

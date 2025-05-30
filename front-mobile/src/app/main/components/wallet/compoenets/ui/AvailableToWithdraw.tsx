@@ -240,6 +240,7 @@ const styles = StyleSheet.create({
     alignItems: "baseline",
   },
   currencySymbol: {
+    marginLeft: 50,
     fontSize: 28,
     fontWeight: "700",
     color: "#fff",

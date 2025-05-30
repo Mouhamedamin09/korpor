@@ -25,7 +25,7 @@ export default function AcademyVideoCard() {
         {/* Speaker Avatar */}
         <View className="w-20 h-20 rounded-full bg-[#10B981] items-center justify-center overflow-hidden mr-4">
           <Image
-            source={require("@assets/Ahmed.png")}
+            source={require("@assets/khalil.png")}
             className="w-full h-full"
             resizeMode="cover"
           />
@@ -37,7 +37,7 @@ export default function AcademyVideoCard() {
             Safety and security
           </Text>
           <Text className="text-sm text-gray-600">
-            Learn from our CEO&nbsp;Ahmed
+            Learn from our CEO&nbsp;Mr khalil
           </Text>
         </View>
 

@@ -36,7 +36,8 @@ const PressableRow: React.FC<{
   );
 
 type VerificationProgress = { completed: number; total: number };
-interface ExtendedAccountData extends AccountData {
+interface ExtendedAccountData
+  extends Omit<AccountData, "verificationProgress"> {
   verificationProgress?: VerificationProgress;
 }
 
@@ -227,9 +228,11 @@ const DepositSettings: React.FC<Props> = ({ onNext, deposit }) => {
               <Switch
                 value={startToday}
                 disabled={selectedDay === todayDay}
-                onValueChange={(v) =>
-                  selectedDay !== todayDay && setStartToday(v)
-                }
+                onValueChange={(v) => {
+                  if (selectedDay !== todayDay) {
+                    setStartToday(v);
+                  }
+                }}
                 trackColor={{ false: "#E5E7EB", true: "#A7F3D0" }}
                 thumbColor="#10B981"
               />

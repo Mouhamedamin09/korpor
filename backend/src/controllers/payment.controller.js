@@ -13,7 +13,7 @@ exports.handleCallback = async (req, res) => {
   try {
     const [investment] = await rawQuery(
       "SELECT * FROM investments WHERE paymee_ref = ?",
-      [reference],
+      [reference]
     );
 
     if (!investment.length) {
@@ -24,14 +24,14 @@ exports.handleCallback = async (req, res) => {
     const paymeeAmount = parseFloat(amount);
 
     console.log(
-      `Comparing amounts: DB(${investmentAmount}) vs Paymee(${paymeeAmount})`,
+      `Comparing amounts: DB(${investmentAmount}) vs Paymee(${paymeeAmount})`
     );
 
     if (investmentAmount !== paymeeAmount) {
       return res
         .status(400)
         .send(
-          `Payment amount mismatch: DB(${investmentAmount}) != Paymee(${paymeeAmount})`,
+          `Payment amount mismatch: DB(${investmentAmount}) != Paymee(${paymeeAmount})`
         );
     }
 
@@ -39,19 +39,19 @@ exports.handleCallback = async (req, res) => {
     const txHash = await blockchain.recordInvestment(
       investment[0].project_id,
       investment[0].user_address,
-      investment[0].amount / 100,
+      investment[0].amount / 100
     );
 
     // ✅ Now update investment with confirmed status and tx_hash
     await rawQuery(
       "UPDATE investments SET status = 'confirmed', tx_hash = ? WHERE paymee_ref = ?",
-      [txHash, reference],
+      [txHash, reference]
     );
 
     // ✅ Now update the project current amount
     const [project] = await rawQuery(
       "SELECT current_amount, goal_amount FROM projects WHERE id = ?",
-      [investment[0].project_id],
+      [investment[0].project_id]
     );
 
     if (project.length > 0) {
@@ -69,7 +69,7 @@ exports.handleCallback = async (req, res) => {
 
       console.log(
         `New current amount for project ${investment[0].project_id}:`,
-        newCurrentAmount,
+        newCurrentAmount
       );
 
       await rawQuery("UPDATE projects SET current_amount = ? WHERE id = ?", [
@@ -100,7 +100,7 @@ exports.getPaymentStatusByRef = async (req, res) => {
   try {
     const [result] = await rawQuery(
       "SELECT * FROM payments WHERE paymee_ref = ?",
-      [ref],
+      [ref]
     );
 
     if (!result.length) return res.status(404).send("Payment not found");
@@ -119,7 +119,7 @@ exports.getPaymentsByWallet = async (req, res) => {
   try {
     const [result] = await rawQuery(
       "SELECT * FROM payments WHERE user_address = ? ORDER BY created_at DESC",
-      [walletAddress.toLowerCase()],
+      [walletAddress.toLowerCase()]
     );
 
     if (!result.length) return res.status(404).send("No payments found");
