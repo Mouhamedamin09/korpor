@@ -93,7 +93,12 @@ const ExitWindowScreen: React.FC = () => {
             icon: "rotate-ccw",
             route: "main/components/portfolio/components/ui/ExitHistoryScreen",
           },
-          { label: "Window performance", icon: "activity", route: "" },
+          {
+            label: "Window performance",
+            icon: "activity",
+            route:
+              "main/components/portfolio/components/ui/WindowPerformanceScreen",
+          },
           { label: "How it works", icon: "info", route: "" },
         ].map(({ label, icon, route }) => (
           <TouchableOpacity

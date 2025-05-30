@@ -10,6 +10,7 @@ import AutoReinvest from "./autoReInvest";
 import ExitStrategiesCard from "./Academy";
 import ExitHistoryCard from "./ExitHistoryCard";
 import ExitHistorySkeleton from "./ExitHistorySkeleton";
+import WindowPerformanceSkeleton from "./WindowPerformanceSkeleton";
 export {
   AmountSelector,
   QuickstartCard,
@@ -23,4 +24,5 @@ export {
   ExitStrategiesCard,
   ExitHistoryCard,
   ExitHistorySkeleton,
+  WindowPerformanceSkeleton,
 };
