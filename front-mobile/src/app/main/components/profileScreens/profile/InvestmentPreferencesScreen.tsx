@@ -16,6 +16,7 @@ import Card from "@main/components/profileScreens/components/ui/card";
 import {
   getUserPreferences,
   setUserPreference,
+  setUserRegion,
   Market,
   Preference,
 } from "@main/services/Preferences";

@@ -1,12 +1,27 @@
-export interface NumbersData {
-  registeredUsers: number;
-  propertyVolume: number;
+import EV_API_URL from "src/shared/constants/api";
+
+export interface Numbers {
+  userCount: string;
+  propertyVolume: string;
 }
 
-// Fake stub: returns mock numbers for development
-export async function getNumbers(): Promise<NumbersData> {
-  return Promise.resolve({
-    registeredUsers: 1250000,
-    propertyVolume: 950000000,
-  });
+export async function getNumbers(): Promise<Numbers> {
+  try {
+    const response = await fetch(`${EV_API_URL}/api/numbers`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch numbers');
+    }
+    const data = await response.json();
+    return {
+      userCount: data.userCount || "0",
+      propertyVolume: data.propertyVolume || "100000000"
+    };
+  } catch (error) {
+    console.error('Error fetching numbers:', error);
+    // Return default values as strings
+    return {
+      userCount: "0",
+      propertyVolume: "100000000"
+    };
+  }
 }
