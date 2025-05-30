@@ -27,7 +27,7 @@ import { fetchAccountData, fetchUserSettings } from "@main/services/api";
 import {
   fetchPortfolioTotals,
   fetchAutomationStatus,
-} from "@main/services/portfolio";
+} from "@/app/main/services/portfolio";
 
 const { width } = Dimensions.get("window");
 
