@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ScrollView,
   View,
@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import TopBar from "@main/components/profileScreens/components/ui/TopBar";
 import Card from "@main/components/profileScreens/components/ui/card";
 import AmountInputCard from "../compoenets/ui/AmountInputCard";
@@ -55,20 +55,44 @@ const DepositScreen: React.FC = () => {
     loadInitialData();
   }, []);
 
+  // Refresh saved payment methods when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      // Only refresh payment methods, not all data
+      refreshPaymentMethods();
+    }, [])
+  );
+
   const loadInitialData = async () => {
     try {
       setLoading(true);
       setError("");
 
+      console.log("🔄 DepositScreen: Loading initial data...");
+
       // Use the existing fetchAccountData function
       const accountData = await fetchAccountData();
       const userEmail = accountData.email;
 
+      console.log("📧 DepositScreen: User email:", userEmail);
+
       const [wallet, settings, paymentMethods] = await Promise.all([
         fetchWalletBalance(),
         fetchUserSettings(userEmail),
-        getSavedPaymentMethods().catch(() => []),
+        getSavedPaymentMethods().catch((err) => {
+          console.error(
+            "❌ DepositScreen: Error fetching saved payment methods:",
+            err
+          );
+          return [];
+        }),
       ]);
+
+      console.log(
+        "💳 DepositScreen: Loaded payment methods:",
+        paymentMethods.length
+      );
+      console.log("💳 DepositScreen: Payment methods:", paymentMethods);
 
       setWalletData(wallet);
       setUserSettings(settings);
@@ -77,17 +101,69 @@ const DepositScreen: React.FC = () => {
       // Auto-select default payment method
       const defaultMethod = paymentMethods.find((method) => method.is_default);
       if (defaultMethod) {
+        console.log(
+          "✅ DepositScreen: Auto-selected default method:",
+          defaultMethod.id
+        );
         setSelectedMethod(defaultMethod.id);
       } else if (paymentMethods.length > 0) {
+        console.log(
+          "✅ DepositScreen: Auto-selected first method:",
+          paymentMethods[0].id
+        );
         setSelectedMethod(paymentMethods[0].id);
+      } else {
+        console.log("⚠️ DepositScreen: No payment methods available");
       }
     } catch (err) {
+      console.error("❌ DepositScreen: Error loading initial data:", err);
       setError(
         err instanceof Error ? err.message : "Failed to load wallet data"
       );
-      console.error("Error loading initial data:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshPaymentMethods = async () => {
+    try {
+      console.log("🔄 DepositScreen: Refreshing saved payment methods...");
+
+      const paymentMethods = await getSavedPaymentMethods();
+
+      console.log(
+        "💳 DepositScreen: Refreshed payment methods:",
+        paymentMethods.length
+      );
+      console.log(
+        "💳 DepositScreen: Refreshed methods details:",
+        paymentMethods
+      );
+
+      setSavedPaymentMethods(paymentMethods);
+
+      // Auto-select default payment method if none is selected
+      if (!selectedMethod && paymentMethods.length > 0) {
+        const defaultMethod = paymentMethods.find(
+          (method) => method.is_default
+        );
+        if (defaultMethod) {
+          console.log(
+            "✅ DepositScreen: Auto-selected default method after refresh:",
+            defaultMethod.id
+          );
+          setSelectedMethod(defaultMethod.id);
+        } else {
+          console.log(
+            "✅ DepositScreen: Auto-selected first method after refresh:",
+            paymentMethods[0].id
+          );
+          setSelectedMethod(paymentMethods[0].id);
+        }
+      }
+    } catch (err) {
+      console.error("❌ DepositScreen: Error refreshing payment methods:", err);
+      // Don't show error for just payment methods refresh, keep using existing state
     }
   };
 

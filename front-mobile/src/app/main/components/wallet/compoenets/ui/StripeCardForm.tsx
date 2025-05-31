@@ -3,8 +3,8 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import {
   CardField,
@@ -17,12 +17,16 @@ import Card from "@main/components/profileScreens/components/ui/card";
 interface StripeCardFormProps {
   onSuccess: (setupIntent: any) => void;
   onCancel: () => void;
+  onError: (error: string) => void;
+  onProcessing?: (message: string) => void;
   clientSecret?: string;
 }
 
 const StripeCardForm: React.FC<StripeCardFormProps> = ({
   onSuccess,
   onCancel,
+  onError,
+  onProcessing,
   clientSecret,
 }) => {
   const [loading, setLoading] = useState(false);
@@ -32,12 +36,12 @@ const StripeCardForm: React.FC<StripeCardFormProps> = ({
 
   const handleSaveCard = async () => {
     if (!cardComplete || !cardDetails) {
-      Alert.alert("Error", "Please complete your card information");
+      onError("Please complete your card information");
       return;
     }
 
     if (!clientSecret) {
-      Alert.alert("Error", "Setup intent not available. Please try again.");
+      onError("Setup intent not available. Please try again.");
       return;
     }
 
@@ -77,11 +81,11 @@ const StripeCardForm: React.FC<StripeCardFormProps> = ({
 
           case "Processing":
             console.log("⏳ Setup intent is processing");
-            Alert.alert(
-              "Processing",
-              "Your payment method is being processed. This may take a few moments.",
-              [{ text: "OK" }]
-            );
+            if (onProcessing) {
+              onProcessing(
+                "Your payment method is being processed. This may take a few moments."
+              );
+            }
             // For processing status, we can still treat this as success
             // since the payment method will be available once processing completes
             onSuccess(setupIntent);
@@ -89,13 +93,8 @@ const StripeCardForm: React.FC<StripeCardFormProps> = ({
 
           case "RequiresAction":
             console.log("🔐 Setup intent requires additional action");
-            Alert.alert(
-              "Authentication Required",
-              "Please complete the authentication process to save your payment method.",
-              [{ text: "OK" }]
-            );
             throw new Error(
-              "Additional authentication required. Please try again."
+              "Please complete the authentication process to save your payment method."
             );
 
           case "RequiresConfirmation":
@@ -125,8 +124,7 @@ const StripeCardForm: React.FC<StripeCardFormProps> = ({
       }
     } catch (error) {
       console.error("Error confirming setup intent:", error);
-      Alert.alert(
-        "Error",
+      onError(
         error instanceof Error
           ? error.message
           : "Failed to save card information"
@@ -178,7 +176,7 @@ const StripeCardForm: React.FC<StripeCardFormProps> = ({
 
       <View className="flex-row space-x-3">
         <TouchableOpacity
-          className="flex-1 bg-gray-100 rounded-xl py-3 items-center"
+          className="flex-1 bg-gray-100 rounded-xl py-3 items-center mr-2"
           onPress={onCancel}
           disabled={loading}
         >
@@ -201,8 +199,16 @@ const StripeCardForm: React.FC<StripeCardFormProps> = ({
       </View>
 
       <View className="flex-row items-center justify-center mt-4">
-        <Feather name="lock" size={16} color="#10B981" />
-        <Text className="text-xs text-gray-500 ml-2">Secured by Stripe</Text>
+        <Image
+          source={require("@assets/stripe.png")}
+          style={{
+            width: 80,
+            height: 24,
+            resizeMode: "contain",
+            marginRight: 8,
+          }}
+        />
+        <Text className="text-xs text-gray-500">Powered by Stripe</Text>
       </View>
     </Card>
   );

@@ -308,7 +308,7 @@ const WalletSettingsScreen: React.FC = () => {
           </Text>
           <TouchableOpacity
             onPress={handleContactSupport}
-            className="bg-black rounded-lg p-4 items-center mb-3"
+            className="bg-black rounded-lg p-4 w-full items-center mb-3"
             activeOpacity={0.8}
           >
             <Text className="text-white font-semibold">Contact Support</Text>
@@ -360,7 +360,7 @@ const WalletSettingsScreen: React.FC = () => {
           </View>
           <TouchableOpacity
             onPress={() => setContactSupportVisible(false)}
-            className="bg-gray-600 rounded-lg p-4 w-full items-center"
+            className="bg-black rounded-lg p-4 w-full items-center mb-3"
             activeOpacity={0.8}
           >
             <Text className="text-white font-semibold">OK</Text>
@@ -386,7 +386,7 @@ const WalletSettingsScreen: React.FC = () => {
           </Text>
           <TouchableOpacity
             onPress={confirmExportData}
-            className="bg-blue-600 rounded-lg p-4 w-full items-center mb-3"
+            className="bg-black rounded-lg p-4 w-full items-center mb-3"
             activeOpacity={0.8}
           >
             <Text className="text-white font-semibold">Export</Text>
@@ -413,14 +413,14 @@ const WalletSettingsScreen: React.FC = () => {
           <Text className="text-xl font-semibold text-gray-900 mb-4">
             Delete Wallet
           </Text>
-          <Text className="text-sm text-red-600 text-center mb-6 font-medium">
-            ⚠️ This action cannot be undone. All your wallet data will be
+          <Text className="text-sm text-black text-center mb-6 font-medium">
+            This action cannot be undone. All your wallet data will be
             permanently deleted. Please ensure you have withdrawn all funds
             before proceeding.
           </Text>
           <TouchableOpacity
             onPress={confirmDeleteWallet}
-            className="bg-red-600 rounded-lg p-4 w-full items-center mb-3"
+            className="bg-black rounded-lg p-4 w-full items-center mb-3"
             activeOpacity={0.8}
           >
             <Text className="text-white font-semibold">Delete</Text>
@@ -447,13 +447,13 @@ const WalletSettingsScreen: React.FC = () => {
           <Text className="text-xl font-semibold text-gray-900 mb-4">
             Final Confirmation
           </Text>
-          <Text className="text-sm text-red-600 text-center mb-6 font-medium">
+          <Text className="text-sm text-black text-center mb-6 font-medium">
             Are you absolutely sure? This will permanently delete your wallet
             and all associated data.
           </Text>
           <TouchableOpacity
             onPress={finalDeleteConfirmation}
-            className="bg-red-600 rounded-lg p-4 w-full items-center mb-3"
+            className="bg-black rounded-lg p-4 w-full items-center mb-3"
             activeOpacity={0.8}
           >
             <Text className="text-white font-semibold">Delete Forever</Text>

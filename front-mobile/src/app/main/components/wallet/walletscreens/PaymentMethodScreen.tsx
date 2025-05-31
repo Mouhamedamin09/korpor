@@ -488,6 +488,14 @@ const PaymentMethodContent: React.FC = () => {
                 setShowCardForm(false);
                 setSetupIntentClientSecret(null);
               }}
+              onError={(error) => {
+                setErrorMessage(error);
+                setErrorSheetVisible(true);
+              }}
+              onProcessing={(message) => {
+                setSuccessMessage(message);
+                setSuccessSheetVisible(true);
+              }}
               clientSecret={setupIntentClientSecret ?? undefined}
             />
           </View>
@@ -687,13 +695,6 @@ const PaymentMethodContent: React.FC = () => {
                       <Text className="text-base font-semibold text-gray-900">
                         {method.name}
                       </Text>
-                      {method.test_mode && (
-                        <View className="ml-2 px-2 py-1 bg-blue-100 rounded">
-                          <Text className="text-xs text-blue-600 font-medium">
-                            Test Mode
-                          </Text>
-                        </View>
-                      )}
                     </View>
                     <Text className="text-sm text-gray-600">
                       {method.description}
@@ -711,7 +712,7 @@ const PaymentMethodContent: React.FC = () => {
                   </View>
 
                   {method.enabled && !loading && (
-                    <Feather name="plus" size={20} color="#10B981" />
+                    <Feather name="plus" size={20} color="#000" />
                   )}
                   {!method.enabled && (
                     <Text className="text-xs text-gray-400 font-medium">
@@ -746,7 +747,7 @@ const PaymentMethodContent: React.FC = () => {
                   </Text>
                   {isGooglePaySupported && (
                     <Text className="text-xs text-green-600 mt-2">
-                      💡 Google Pay supports cards from Google Play, YouTube,
+                      Google Pay supports cards from Google Play, YouTube,
                       Chrome, and your Android device
                     </Text>
                   )}
@@ -761,21 +762,16 @@ const PaymentMethodContent: React.FC = () => {
           <View className="px-4 mt-6">
             <Card extraStyle="p-4 bg-blue-50 rounded-2xl border border-blue-200">
               <View className="flex-row items-start">
-                <Feather name="shield" size={20} color="#3B82F6" />
+                <Feather name="shield" size={20} color="" />
                 <View className="ml-3 flex-1">
-                  <Text className="text-sm font-semibold text-blue-900">
+                  <Text className="text-sm font-semibold text-black">
                     Secure Payment Processing
                   </Text>
-                  <Text className="text-sm text-blue-700 mt-1">
+                  <Text className="text-sm text-black mt-1">
                     All payments are processed securely through our certified
                     payment partners. Your card information is encrypted and
                     never stored on our servers.
                   </Text>
-                  {paymentMethods?.stripe.test_mode && (
-                    <Text className="text-xs text-blue-600 mt-2 font-medium">
-                      🧪 Currently running in test mode for development
-                    </Text>
-                  )}
                 </View>
               </View>
             </Card>
@@ -789,33 +785,27 @@ const PaymentMethodContent: React.FC = () => {
               Supported Payment Methods
             </Text>
 
-            <View className="flex-row justify-center space-x-4">
-              <View className="w-16 h-10 rounded-lg border border-gray-200 items-center justify-center bg-white">
+            <View className="flex-row justify-center mb-4">
+              <View className="w-24 h-14 rounded-lg border border-gray-200 items-center justify-center bg-[#F9FAFB] mx-2">
+                <Image
+                  source={require("@assets/payme.png")}
+                  style={{ width: 70, height: 25 }}
+                  resizeMode="contain"
+                />
+              </View>
+              <View className="w-24 h-14 rounded-lg border border-gray-200 items-center justify-center bg-[#F9FAFB] mx-2">
                 <Image
                   source={require("@assets/visa.png")}
-                  style={{ width: 40, height: 14 }}
+                  style={{ width: 70, height: 25 }}
                   resizeMode="contain"
                 />
               </View>
-              <View className="w-16 h-10 rounded-lg border border-gray-200 items-center justify-center bg-white">
+              <View className="w-24 h-14 rounded-lg border border-gray-200 items-center justify-center bg-[#F9FAFB] mx-2">
                 <Image
                   source={require("@assets/mastercard.png")}
-                  style={{ width: 28, height: 20 }}
+                  style={{ width: 46, height: 36 }}
                   resizeMode="contain"
                 />
-              </View>
-              {Platform.OS === "android" && isGooglePaySupported && (
-                <View className="w-16 h-10 rounded-lg border border-gray-200 items-center justify-center bg-white">
-                  <Feather name="credit-card" size={20} color="#4285F4" />
-                </View>
-              )}
-              {Platform.OS === "ios" && isApplePaySupported && (
-                <View className="w-16 h-10 rounded-lg border border-gray-200 items-center justify-center bg-white">
-                  <Feather name="smartphone" size={20} color="#000" />
-                </View>
-              )}
-              <View className="w-16 h-10 rounded-lg border border-gray-200 items-center justify-center bg-white">
-                <Feather name="smartphone" size={20} color="#374151" />
               </View>
             </View>
           </View>
@@ -853,7 +843,7 @@ const PaymentMethodContent: React.FC = () => {
           )}
           <TouchableOpacity
             onPress={confirmRemoveCard}
-            className="bg-red-600 rounded-lg p-4 w-full items-center mb-3"
+            className="bg-black rounded-lg p-4 w-full items-center mb-3"
             activeOpacity={0.8}
           >
             <Text className="text-white font-semibold">Remove</Text>
@@ -879,7 +869,7 @@ const PaymentMethodContent: React.FC = () => {
               <Feather name="credit-card" size={28} color="#3B82F6" />
             </View>
             <Text className="text-xl font-semibold text-gray-900 mb-2">
-              Stripe Test Cards 💳
+              Stripe Test Cards
             </Text>
           </View>
           {stripeTestCards && (
@@ -915,7 +905,7 @@ const PaymentMethodContent: React.FC = () => {
           )}
           <TouchableOpacity
             onPress={() => setTestCardsSheetVisible(false)}
-            className="bg-blue-600 rounded-lg p-4 w-full items-center"
+            className="bg-black rounded-lg p-4 w-full items-center mb-3"
             activeOpacity={0.8}
           >
             <Text className="text-white font-semibold">OK</Text>
@@ -933,7 +923,7 @@ const PaymentMethodContent: React.FC = () => {
             <Feather name="check-circle" size={28} color="#10B981" />
           </View>
           <Text className="text-xl font-semibold text-gray-900 mb-4">
-            Success! 🎉
+            Success!
           </Text>
           <Text className="text-sm text-gray-600 text-center mb-6">
             {successMessage}
