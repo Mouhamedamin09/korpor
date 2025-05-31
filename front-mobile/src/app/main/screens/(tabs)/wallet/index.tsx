@@ -167,7 +167,7 @@ const WalletScreen: React.FC = () => {
                 {
                   icon: "credit-card",
                   label: "Settings",
-                  route: "/main/screens/(tabs)/wallet/settings",
+                  route: "/main/components/wallet/walletscreens/settings",
                 },
               ].map(({ icon, label, route }) => (
                 <TouchableOpacity

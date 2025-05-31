@@ -6,18 +6,24 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { CardField, useConfirmSetupIntent } from "@stripe/stripe-react-native";
+import {
+  CardField,
+  useConfirmSetupIntent,
+  SetupIntent,
+} from "@stripe/stripe-react-native";
 import Feather from "react-native-vector-icons/Feather";
 import Card from "@main/components/profileScreens/components/ui/card";
 
 interface StripeCardFormProps {
-  onSuccess: (paymentMethod: any) => void;
+  onSuccess: (setupIntent: any) => void;
   onCancel: () => void;
+  clientSecret?: string;
 }
 
 const StripeCardForm: React.FC<StripeCardFormProps> = ({
   onSuccess,
   onCancel,
+  clientSecret,
 }) => {
   const [loading, setLoading] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
@@ -30,43 +36,101 @@ const StripeCardForm: React.FC<StripeCardFormProps> = ({
       return;
     }
 
+    if (!clientSecret) {
+      Alert.alert("Error", "Setup intent not available. Please try again.");
+      return;
+    }
+
+    console.log("Card details before confirmation:", {
+      complete: cardComplete,
+      brand: cardDetails.brand,
+      last4: cardDetails.last4,
+      validNumber: cardDetails.validNumber,
+      validCVC: cardDetails.validCVC,
+      validExpiryDate: cardDetails.validExpiryDate,
+    });
+
     try {
       setLoading(true);
 
-      // In a real implementation, you would:
-      // 1. Call your backend to create a setup intent
-      // 2. Get the client secret
-      // 3. Confirm the setup intent with the card
+      // Try confirming setup intent with payment method type
+      // CardField should automatically create and attach the payment method
+      const { error, setupIntent } = await confirmSetupIntent(clientSecret, {
+        paymentMethodType: "Card",
+      });
 
-      // For now, we'll simulate this process
-      Alert.alert(
-        "Demo Mode",
-        "In a real implementation, this would save your card securely with Stripe. The card details would be tokenized and stored safely.",
-        [
-          {
-            text: "Simulate Success",
-            onPress: () => {
-              const mockPaymentMethod = {
-                id: `pm_${Date.now()}`,
-                type: "card",
-                card: {
-                  brand: cardDetails.brand || "visa",
-                  last4: cardDetails.last4 || "4242",
-                  expiryMonth: cardDetails.expiryMonth || 12,
-                  expiryYear: cardDetails.expiryYear || 2025,
-                },
-              };
-              onSuccess(mockPaymentMethod);
-            },
-          },
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-        ]
-      );
+      console.log("Setup intent confirmation result:", { error, setupIntent });
+
+      if (error) {
+        console.error("Setup intent confirmation error:", error);
+        throw new Error(error.message);
+      }
+
+      if (setupIntent) {
+        console.log("Setup intent status:", setupIntent.status);
+
+        switch (String(setupIntent.status)) {
+          case "Succeeded":
+            console.log("✅ Setup intent succeeded");
+            onSuccess(setupIntent);
+            break;
+
+          case "Processing":
+            console.log("⏳ Setup intent is processing");
+            Alert.alert(
+              "Processing",
+              "Your payment method is being processed. This may take a few moments.",
+              [{ text: "OK" }]
+            );
+            // For processing status, we can still treat this as success
+            // since the payment method will be available once processing completes
+            onSuccess(setupIntent);
+            break;
+
+          case "RequiresAction":
+            console.log("🔐 Setup intent requires additional action");
+            Alert.alert(
+              "Authentication Required",
+              "Please complete the authentication process to save your payment method.",
+              [{ text: "OK" }]
+            );
+            throw new Error(
+              "Additional authentication required. Please try again."
+            );
+
+          case "RequiresConfirmation":
+            console.log("⚠️ Setup intent requires confirmation");
+            throw new Error(
+              "Payment method setup requires confirmation. Please try again."
+            );
+
+          case "RequiresPaymentMethod":
+            console.log("❌ Setup intent requires new payment method");
+            throw new Error("Please check your payment details and try again.");
+
+          case "Canceled":
+            console.log("🚫 Setup intent was canceled");
+            throw new Error(
+              "Payment method setup was canceled. Please try again."
+            );
+
+          default:
+            console.warn("❓ Unknown setup intent status:", setupIntent.status);
+            throw new Error(
+              `Setup intent has unexpected status: ${setupIntent.status}. Please try again.`
+            );
+        }
+      } else {
+        throw new Error("No setup intent returned from confirmation");
+      }
     } catch (error) {
-      Alert.alert("Error", "Failed to save card information");
+      console.error("Error confirming setup intent:", error);
+      Alert.alert(
+        "Error",
+        error instanceof Error
+          ? error.message
+          : "Failed to save card information"
+      );
     } finally {
       setLoading(false);
     }

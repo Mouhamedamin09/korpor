@@ -1,14 +1,35 @@
 const axios = require("axios");
 const config = require("../paymee/paymee.config");
 
-exports.createPayment = async ({ amount, note }) => {
+// PayMe service - Currently in "Coming Soon" mode
+exports.createPayment = async ({ amount, note, userReference }) => {
+  // For now, return a coming soon response
+  return {
+    status: "coming_soon",
+    message:
+      "PayMe integration is coming soon! We're working hard to bring you this payment option.",
+    payment_url: null,
+    amount: amount,
+    token: null,
+    features_planned: [
+      "Mobile wallet payments",
+      "Bank transfers",
+      "Local payment methods",
+      "QR code payments",
+      "Instant transfers",
+    ],
+  };
+
+  // TODO: Uncomment when PayMe is ready for production
+  /*
   const body = {
     vendor: process.env.PAYMEE_MERCHANT_ID, // Merchant ID from Paymee
     amount,
     note,
     currency: "TND", // Tunisian Dinar (change if using another currency)
-    back_url: "https://example.com/success", // URL to redirect after payment
+    back_url: process.env.PAYMEE_SUCCESS_URL, // URL to redirect after payment
     notify_url: process.env.PAYMEE_CALLBACK_URL, // Callback URL for Paymee to notify the status
+    reference: userReference, // Custom reference for tracking
   };
 
   try {
@@ -31,6 +52,7 @@ exports.createPayment = async ({ amount, note }) => {
 
       // Return payment URL and amount
       return {
+        status: "success",
         payment_url: paymentUrl,
         amount: res.data.data.amount,
         token: paymeeRef, // Return the token (paymee_ref)
@@ -42,4 +64,35 @@ exports.createPayment = async ({ amount, note }) => {
     console.error("Paymee error:", error.response?.data || error.message);
     throw new Error("Failed to create payment with Paymee");
   }
+  */
+};
+
+// Check payment status
+exports.checkPaymentStatus = async (reference) => {
+  // For now, return coming soon
+  return {
+    status: "coming_soon",
+    message: "PayMe status checking will be available soon",
+    reference: reference,
+  };
+
+  // TODO: Uncomment when PayMe is ready
+  /*
+  try {
+    const res = await axios.get(`${config.baseURL}/payments/status/${reference}`, {
+      headers: config.headers
+    });
+    
+    return res.data;
+  } catch (error) {
+    console.error("Paymee status check error:", error.response?.data || error.message);
+    throw new Error("Failed to check payment status");
+  }
+  */
+};
+
+// Verify webhook signature (when implemented)
+exports.verifyWebhookSignature = (payload, signature) => {
+  // TODO: Implement webhook signature verification
+  return true;
 };

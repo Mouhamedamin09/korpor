@@ -28,54 +28,24 @@ import {
   type UserSettings,
   fetchAccountData,
 } from "../../../services/api";
+import {
+  getSavedPaymentMethods,
+  formatCardDisplay,
+  type SavedPaymentMethod,
+} from "@main/services/payment.service";
 
 const MIN_DEPOSIT = 10.0;
 const MAX_DEPOSIT = 10000.0;
 
-type PaymentMethod = {
-  id: string;
-  label: string;
-  description: string;
-  fee: number;
-  processingTime: string;
-  icon: string;
-};
-
-const PAYMENT_METHODS: PaymentMethod[] = [
-  {
-    id: "card",
-    label: "Debit/Credit Card",
-    description: "••••1234",
-    fee: 0.0,
-    processingTime: "Instant",
-    icon: "credit-card",
-  },
-  {
-    id: "bank",
-    label: "Bank Transfer",
-    description: "••••5678",
-    fee: 0.0,
-    processingTime: "1-3 business days",
-    icon: "globe",
-  },
-  {
-    id: "wallet",
-    label: "Mobile Wallet",
-    description: "••••9012",
-    fee: 2.5,
-    processingTime: "Instant",
-    icon: "smartphone",
-  },
-];
-
 const DepositScreen: React.FC = () => {
   const router = useRouter();
   const [amount, setAmount] = useState<string>("");
-  const [selectedMethod, setSelectedMethod] = useState<string>(
-    PAYMENT_METHODS[0].id
-  );
+  const [selectedMethod, setSelectedMethod] = useState<string>("");
   const [walletData, setWalletData] = useState<WalletBalance | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [savedPaymentMethods, setSavedPaymentMethods] = useState<
+    SavedPaymentMethod[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [depositing, setDepositing] = useState(false);
   const [error, setError] = useState<string>("");
@@ -94,13 +64,23 @@ const DepositScreen: React.FC = () => {
       const accountData = await fetchAccountData();
       const userEmail = accountData.email;
 
-      const [wallet, settings] = await Promise.all([
+      const [wallet, settings, paymentMethods] = await Promise.all([
         fetchWalletBalance(),
         fetchUserSettings(userEmail),
+        getSavedPaymentMethods().catch(() => []),
       ]);
 
       setWalletData(wallet);
       setUserSettings(settings);
+      setSavedPaymentMethods(paymentMethods);
+
+      // Auto-select default payment method
+      const defaultMethod = paymentMethods.find((method) => method.is_default);
+      if (defaultMethod) {
+        setSelectedMethod(defaultMethod.id);
+      } else if (paymentMethods.length > 0) {
+        setSelectedMethod(paymentMethods[0].id);
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load wallet data"
@@ -111,10 +91,12 @@ const DepositScreen: React.FC = () => {
     }
   };
 
-  const selectedMethodData =
-    PAYMENT_METHODS.find((m) => m.id === selectedMethod) || PAYMENT_METHODS[0];
+  const selectedMethodData = savedPaymentMethods.find(
+    (m) => m.id === selectedMethod
+  );
   const numAmount = parseFloat(amount) || 0;
-  const totalWithFee = numAmount + selectedMethodData.fee;
+  const processingFee = 0.0; // No fee for deposits
+  const totalWithFee = numAmount + processingFee;
 
   const valid =
     numAmount >= MIN_DEPOSIT &&
@@ -123,7 +105,7 @@ const DepositScreen: React.FC = () => {
     !depositing;
 
   const handleDeposit = async () => {
-    if (!valid || !walletData) return;
+    if (!valid || !walletData || !selectedMethodData) return;
 
     try {
       setDepositing(true);
@@ -131,8 +113,10 @@ const DepositScreen: React.FC = () => {
       // Prepare deposit data
       const depositData: DepositRequest = {
         amount: numAmount,
-        description: `Deposit via ${selectedMethodData.label}`,
-        reference: `DEP_${Date.now()}_${selectedMethod.toUpperCase()}`,
+        description: `Deposit via ${getPaymentMethodDisplayName(
+          selectedMethodData
+        )}`,
+        reference: `DEP_${Date.now()}_${selectedMethodData.type.toUpperCase()}`,
       };
 
       // Show confirmation dialog
@@ -140,13 +124,15 @@ const DepositScreen: React.FC = () => {
         "Confirm Deposit",
         `Add ${getCurrencySymbol(
           userSettings?.currency || walletData.currency
-        )} ${numAmount.toFixed(2)} to your wallet using ${
-          selectedMethodData.label
-        }?\n\nProcessing time: ${
-          selectedMethodData.processingTime
-        }\nFee: ${getCurrencySymbol(
+        )} ${numAmount.toFixed(
+          2
+        )} to your wallet using ${getPaymentMethodDisplayName(
+          selectedMethodData
+        )}?\n\nProcessing time: ${getProcessingTime(
+          selectedMethodData
+        )}\nFee: ${getCurrencySymbol(
           userSettings?.currency || walletData.currency
-        )} ${selectedMethodData.fee.toFixed(2)}`,
+        )} ${processingFee.toFixed(2)}`,
         [
           {
             text: "Cancel",
@@ -183,7 +169,9 @@ const DepositScreen: React.FC = () => {
             text: "View Transactions",
             onPress: () => {
               setAmount("");
-              setSelectedMethod(PAYMENT_METHODS[0].id);
+              setSelectedMethod(
+                savedPaymentMethods.find((m) => m.is_default)?.id || ""
+              );
               router.push("transactions?filter=deposits");
             },
           },
@@ -192,7 +180,9 @@ const DepositScreen: React.FC = () => {
             style: "default",
             onPress: () => {
               setAmount("");
-              setSelectedMethod(PAYMENT_METHODS[0].id);
+              setSelectedMethod(
+                savedPaymentMethods.find((m) => m.is_default)?.id || ""
+              );
               router.back();
             },
           },
@@ -225,6 +215,24 @@ const DepositScreen: React.FC = () => {
     return `${getCurrencySymbol(
       userSettings.currency
     )} ${convertedAmount.toFixed(2)}`;
+  };
+
+  const getPaymentMethodDisplayName = (method: SavedPaymentMethod): string => {
+    if (method.type === "stripe" && method.card) {
+      return formatCardDisplay(
+        method.card.brand,
+        method.card.last4,
+        method.card.exp_month,
+        method.card.exp_year
+      );
+    } else if (method.type === "payme" && method.payme) {
+      return `PayMe ${method.payme.phone_number}`;
+    }
+    return "Payment Method";
+  };
+
+  const getProcessingTime = (method: SavedPaymentMethod): string => {
+    return method.type === "stripe" ? "Instant" : "1-3 business days";
   };
 
   if (loading) {
@@ -307,102 +315,140 @@ const DepositScreen: React.FC = () => {
               Payment Method
             </Text>
 
-            {PAYMENT_METHODS.map((method) => {
-              const isSelected = selectedMethod === method.id;
+            {savedPaymentMethods.length > 0 ? (
+              savedPaymentMethods.map((method) => {
+                const isSelected = selectedMethod === method.id;
 
-              return (
-                <Pressable
-                  key={method.id}
-                  onPress={() => setSelectedMethod(method.id)}
-                  android_ripple={{ color: "#d1fae5", borderless: false }}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: isSelected }}
-                  className={`flex-row items-center p-3 rounded-xl mb-2 ${
-                    isSelected
-                      ? "border-2 border-green-600 bg-green-50"
-                      : "border border-gray-200"
-                  }`}
-                >
-                  <View
-                    className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${
-                      isSelected ? "bg-green-100" : "bg-gray-100"
+                return (
+                  <Pressable
+                    key={method.id}
+                    onPress={() => setSelectedMethod(method.id)}
+                    android_ripple={{ color: "#d1fae5", borderless: false }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: isSelected }}
+                    className={`flex-row items-center p-3 rounded-xl mb-2 ${
+                      isSelected
+                        ? "border-2 border-green-600 bg-green-50"
+                        : "border border-gray-200"
                     }`}
                   >
+                    <View
+                      className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${
+                        isSelected ? "bg-green-100" : "bg-gray-100"
+                      }`}
+                    >
+                      <Feather
+                        name={
+                          method.type === "stripe"
+                            ? "credit-card"
+                            : "smartphone"
+                        }
+                        size={20}
+                        color={isSelected ? "#10B981" : "#6B7280"}
+                      />
+                    </View>
+
+                    <View className="flex-1">
+                      <View className="flex-row items-center">
+                        <Text className="text-base font-medium text-gray-900">
+                          {getPaymentMethodDisplayName(method)}
+                        </Text>
+                        {method.is_default && (
+                          <View className="ml-2 px-2 py-1 bg-green-100 rounded">
+                            <Text className="text-xs text-green-600 font-medium">
+                              Default
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text className="text-sm text-gray-500">
+                        {method.type === "stripe"
+                          ? "Credit/Debit Card"
+                          : "PayMe Account"}
+                      </Text>
+                      <Text className="text-xs text-gray-400 mt-1">
+                        {getProcessingTime(method)} • No fees
+                      </Text>
+                    </View>
+
                     <Feather
-                      name={method.icon}
-                      size={20}
-                      color={isSelected ? "#10B981" : "#6B7280"}
+                      name={isSelected ? "check-circle" : "circle"}
+                      size={22}
+                      color={isSelected ? "#10B981" : "#9CA3AF"}
                     />
-                  </View>
+                  </Pressable>
+                );
+              })
+            ) : (
+              <View className="text-center py-8">
+                <Feather name="credit-card" size={48} color="#9CA3AF" />
+                <Text className="text-gray-500 mt-2 mb-4">
+                  No saved payment methods
+                </Text>
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push(
+                      "/main/components/wallet/walletscreens/PaymentMethodScreen"
+                    )
+                  }
+                  className="bg-green-600 px-4 py-2 rounded-lg"
+                >
+                  <Text className="text-white font-medium">
+                    Add Payment Method
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
-                  <View className="flex-1">
-                    <Text className="text-base font-medium text-gray-900">
-                      {method.label}
-                    </Text>
-                    <Text className="text-sm text-gray-500">
-                      {method.description}
-                    </Text>
-                    <Text className="text-xs text-gray-400 mt-1">
-                      {method.processingTime}
-                      {method.fee > 0 &&
-                        ` • Fee: ${getCurrencySymbol(
-                          userSettings?.currency ||
-                            walletData?.currency ||
-                            "TND"
-                        )} ${method.fee.toFixed(2)}`}
-                    </Text>
-                  </View>
-
-                  <Feather
-                    name={isSelected ? "check-circle" : "circle"}
-                    size={22}
-                    color={isSelected ? "#10B981" : "#9CA3AF"}
-                  />
-                </Pressable>
-              );
-            })}
-
-            <Pressable
-              onPress={() => router.push("addPaymentMethod")}
-              android_ripple={{ color: "#e5e7eb", borderless: false }}
-              className="flex-row items-center pt-3 mt-1 border-t border-gray-100"
-            >
-              <Feather name="plus-circle" size={20} color="#374151" />
-              <Text className="ml-2 text-sm font-medium text-gray-700">
-                Add new payment method
-              </Text>
-            </Pressable>
+            {savedPaymentMethods.length > 0 && (
+              <Pressable
+                onPress={() =>
+                  router.push(
+                    "/main/components/wallet/walletscreens/PaymentMethodScreen"
+                  )
+                }
+                android_ripple={{ color: "#e5e7eb", borderless: false }}
+                className="flex-row items-center pt-3 mt-1 border-t border-gray-100"
+              >
+                <Feather name="plus-circle" size={20} color="#374151" />
+                <Text className="ml-2 text-sm font-medium text-gray-700">
+                  Add new payment method
+                </Text>
+              </Pressable>
+            )}
           </Card>
 
           {/* ── Processing Info ────────────────────────────────── */}
-          <Card extraStyle="p-4 bg-white rounded-2xl shadow-sm mx-4 mb-4">
-            <View className="flex-row justify-between mb-1">
-              <Text className="text-sm text-gray-600">Processing time</Text>
-              <Text className="text-sm font-medium text-gray-900">
-                {selectedMethodData.processingTime}
-              </Text>
-            </View>
-            <View className="flex-row justify-between mb-1">
-              <Text className="text-sm text-gray-600">Processing fee</Text>
-              <Text className="text-sm font-medium text-gray-900">
-                {formatDisplayAmount(
-                  selectedMethodData.fee,
-                  walletData?.currency || "TND"
-                )}
-              </Text>
-            </View>
-            <View className="flex-row justify-between pt-2 border-t border-gray-100">
-              <Text className="text-sm font-medium text-gray-900">
-                Total to pay
-              </Text>
-              <Text className="text-sm font-medium text-gray-900">
-                {formatDisplayAmount(
-                  totalWithFee,
-                  walletData?.currency || "TND"
-                )}
-              </Text>
-            </View>
-          </Card>
+          {selectedMethodData && (
+            <Card extraStyle="p-4 bg-white rounded-2xl shadow-sm mx-4 mb-4">
+              <View className="flex-row justify-between mb-1">
+                <Text className="text-sm text-gray-600">Processing time</Text>
+                <Text className="text-sm font-medium text-gray-900">
+                  {getProcessingTime(selectedMethodData)}
+                </Text>
+              </View>
+              <View className="flex-row justify-between mb-1">
+                <Text className="text-sm text-gray-600">Processing fee</Text>
+                <Text className="text-sm font-medium text-gray-900">
+                  {formatDisplayAmount(
+                    processingFee,
+                    walletData?.currency || "TND"
+                  )}
+                </Text>
+              </View>
+              <View className="flex-row justify-between pt-2 border-t border-gray-100">
+                <Text className="text-sm font-medium text-gray-900">
+                  Total to pay
+                </Text>
+                <Text className="text-sm font-medium text-gray-900">
+                  {formatDisplayAmount(
+                    totalWithFee,
+                    walletData?.currency || "TND"
+                  )}
+                </Text>
+              </View>
+            </Card>
+          )}
 
           {/* ── Validation Messages ─────────────────────────────── */}
           {numAmount > 0 && numAmount < MIN_DEPOSIT && (
@@ -443,8 +489,7 @@ const DepositScreen: React.FC = () => {
               </Text>
               <Text className="text-sm text-gray-600">
                 All deposits are secured with bank-level encryption. Funds are
-                typically available instantly for card deposits or within 1-3
-                business days for bank transfers.
+                typically available instantly for card deposits.
               </Text>
             </View>
           </View>

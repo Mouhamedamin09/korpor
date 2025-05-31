@@ -34,3 +34,7 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# CNG/Prebuild - auto-generated native folders
+/android
+/ios

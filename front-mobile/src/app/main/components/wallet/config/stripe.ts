@@ -2,8 +2,9 @@
 // Replace these with your actual Stripe keys from your Stripe Dashboard
 
 export const STRIPE_CONFIG = {
-  // Test publishable key - replace with your actual key
-  publishableKey: "pk_test_51YOUR_STRIPE_KEY_HERE",
+  // Test publishable key - using a valid test key format to prevent getConstants errors
+  // Replace with your actual key from Stripe Dashboard
+  publishableKey: "pk_test_TYooMQauvdEDq54NiTphI7jx",
 
   // For production, use your live keys
   // publishableKey: "pk_live_YOUR_LIVE_KEY_HERE",
