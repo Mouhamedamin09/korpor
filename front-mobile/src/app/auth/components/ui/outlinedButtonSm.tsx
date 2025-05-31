@@ -21,7 +21,7 @@ export default function OutlinedButtonSm({
   return (
     <View>
       <TouchableOpacity
-        className={`flex-row items-center justify-center bg-primaryBlack rounded-xl w-${width} h-12 px-${paddingX} py-${paddingY} shadow`}
+        className={`flex-row items-center justify-center bg-primary rounded-xl w-${width} h-12 px-${paddingX} py-${paddingY} shadow`}
         onPress={onPress}
       >
         <Text className="font-medium text-[#fafafa] text-center text-xl">

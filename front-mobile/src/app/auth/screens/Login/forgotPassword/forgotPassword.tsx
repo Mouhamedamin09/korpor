@@ -1,14 +1,11 @@
 import React, { useState } from "react";
 import { View, Text, Image, TouchableOpacity } from "react-native";
-import { ForgotPasswordCard } from "@auth/components/complex";
 import { router } from "expo-router";
 const BackButton = require("@assets/angle-left.png");
 const Logo = require("@assets/korporBlack.png");
 
 import {
-  SolidButton,
   EmailInput,
-  OutlinedButton,
   OutlinedButtonSm,
   GoogleButton,
   DividerWithText,

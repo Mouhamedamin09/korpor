@@ -10,7 +10,7 @@ import {
   RememberMeCheckbox,
   PressableText,
   OutlinedButtonSm,
-} from "../ui";
+} from "../ui/index";
 import { signin } from "@auth/services/signin";
 
 export default function LoginCard(): JSX.Element {
