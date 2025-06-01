@@ -12,7 +12,7 @@ export default function Input({
   return (
     <View>
       <TextInput
-        className="border border-[#3f3f46] rounded-xl px-4 h-12 text-base text-[#fafafa] w-full py-3 bg-[#09090b] mb-3"
+        className="border border-border rounded-xl px-4 h-12 text-base text-text w-full py-3 bg-background mb-3"
         placeholder={placeholder}
         placeholderTextColor="#A0A0A0"
         multiline={false}

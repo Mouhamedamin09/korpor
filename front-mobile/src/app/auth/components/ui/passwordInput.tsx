@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import { View, TextInput, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 interface PasswordInputProps {
@@ -19,9 +19,9 @@ export default function PasswordInput({
 
   return (
     <View className="w-full">
-      <View className="relative">
+      <View className="border border-border rounded-xl px-4 h-12 flex-row items-center justify-between mb-3">
         <TextInput
-          className="border border-[#3f3f46] rounded-xl px-4 h-12 text-base text-[#fafafa] w-full py-3 bg-[#09090b] mb-3"
+          className="flex-1 text-base text-primary bg-background"
           placeholder={placeholder}
           placeholderTextColor="#A0A0A0"
           secureTextEntry={!isPasswordVisible}
@@ -30,7 +30,6 @@ export default function PasswordInput({
           editable={editable}
         />
         <TouchableOpacity
-          className="absolute right-4 top-3"
           onPress={() => setIsPasswordVisible(!isPasswordVisible)}
           disabled={!editable}
         >

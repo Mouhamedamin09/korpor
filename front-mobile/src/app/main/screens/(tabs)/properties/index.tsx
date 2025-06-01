@@ -6,11 +6,11 @@ import {
   PropertyCard,
   PropertyCardSkeleton,
 } from "@main/components/complex/index";
-import { getAllProperties } from "@main/services/getListings";
+import { getAllProperties } from "@/app/main/services/getListings";
 import {
   filterByCategory,
   PropertyCategory,
-} from "@main/services/propertyUtils";
+} from "@/app/main/services/propertyUtils";
 import { Property } from "@shared/types/property";
 
 type CategorizedProperty = Property & { category: PropertyCategory };

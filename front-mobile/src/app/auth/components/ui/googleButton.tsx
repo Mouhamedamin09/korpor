@@ -10,7 +10,7 @@ export default function GoogleButton({
 }) {
   return (
     <TouchableOpacity
-      className="flex-row items-center justify-center bg-[#09090b] border border-[#3f3f46] rounded-xl py-3 "
+      className="flex-row items-center justify-center bg-background border border-border rounded-xl py-3 "
       onPress={onPress}
     >
       <Image
@@ -19,7 +19,7 @@ export default function GoogleButton({
         resizeMode="contain"
       />
 
-      <Text className="text-[#fafafa] text-md font-bold">{text}</Text>
+      <Text className="text-text text-md font-bold">{text}</Text>
     </TouchableOpacity>
   );
 }

@@ -6,7 +6,7 @@ import {
   NotificationBell,
   ShoppingCart,
 } from "../ui/index";
-import { PropertyCategory } from "@main/services/propertyUtils";
+import { PropertyCategory } from "@/app/main/services/propertyUtils";
 const Logo = require("@assets/korporBlack.png");
 
 interface Props {

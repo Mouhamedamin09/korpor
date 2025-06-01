@@ -1,6 +1,6 @@
 import axios from "axios";
-import API_URL from "../../../shared/constants/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import API_URL from "@shared/constants/api";
+import * as SecureStore from "expo-secure-store";
 
 // Signin API Call
 export const signin = async (credentials: {
@@ -43,10 +43,9 @@ export const signin = async (credentials: {
       console.log("💾 Stored refreshToken");
     }
 
-    // Also store user data for convenience
-    if (responseData.user) {
-      await AsyncStorage.setItem("userData", JSON.stringify(responseData.user));
-      console.log("💾 Stored userData");
+    // Store the authentication token securely
+    if (responseData.token) {
+      await SecureStore.setItemAsync("authToken", responseData.token);
     }
 
     return responseData; // Return the response data to handle in your component
@@ -84,10 +83,10 @@ export const signin = async (credentials: {
   }
 };
 
-// Function to retrieve the token (if needed)
+// Function to retrieve the token
 export const getAuthToken = async () => {
   try {
-    return await AsyncStorage.getItem("accessToken"); // Retrieve the access token
+    return await SecureStore.getItemAsync("authToken");
   } catch (error) {
     console.error("Error retrieving auth token:", error);
     return null;
@@ -97,9 +96,7 @@ export const getAuthToken = async () => {
 // Function to remove the tokens (Logout)
 export const removeAuthToken = async () => {
   try {
-    await AsyncStorage.removeItem("accessToken"); // Remove the access token
-    await AsyncStorage.removeItem("refreshToken"); // Remove the refresh token
-    await AsyncStorage.removeItem("userData"); // Remove user data
+    await SecureStore.deleteItemAsync("authToken");
   } catch (error) {
     console.error("Error removing auth token:", error);
   }

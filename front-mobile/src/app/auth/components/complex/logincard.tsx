@@ -5,12 +5,12 @@ import { router } from "expo-router";
 import {
   EmailInput,
   PasswordInput,
-  SolidButton,
   GoogleButton,
   DividerWithText,
   RememberMeCheckbox,
   PressableText,
-} from "../ui";
+  OutlinedButtonSm,
+} from "../ui/index";
 import { signin } from "@auth/services/signin";
 
 export default function LoginCard(): JSX.Element {
@@ -20,18 +20,17 @@ export default function LoginCard(): JSX.Element {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleSignin = async (): Promise<void> => {
-    // Reset error message on each signin attempt
     setErrorMessage("");
     setIsLoading(true);
 
-    // Validate fields
+    // Basic validation
     if (!email.trim() || !password.trim()) {
       setErrorMessage("Please fill out all required fields.");
       setIsLoading(false);
       return;
     }
 
-    // Validate email format
+    // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setErrorMessage("Please enter a valid email address.");
@@ -43,14 +42,10 @@ export default function LoginCard(): JSX.Element {
       const responseData = await signin({ email, password });
       console.log("Sign-in successful:", responseData);
 
-      // Show success message
       Alert.alert("Success", "You have successfully logged in!", [
         {
           text: "OK",
-          onPress: () => {
-            // Navigate to properties page after successful login
-            router.replace("/main/screens/(tabs)/properties");
-          },
+          onPress: () => router.replace("/main/screens/(tabs)/properties"),
         },
       ]);
     } catch (error: any) {
@@ -62,18 +57,18 @@ export default function LoginCard(): JSX.Element {
   };
 
   return (
-    <View className="w-[90%] h-auto bg-[#09090b] rounded-2xl border border-[#3f3f46] p-5">
-      <Text className="text-4xl font-bold text-[#fafafa] mb-1 ml-1">
-        Sign in to your Account
+    <View className="w-[90%] h-auto bg-background rounded-2xl border shadow border-border p-5">
+      <Text className="text-3xl font-semibold text-text mb-1 ml-1">
+        Welcome back
       </Text>
-      <Text className="ml-1 text-[#a1a1aa] mb-6 text-small">
+      <Text className="ml-1 text-[#a1a1aa] mb-6">
         Enter your email and password to log in
       </Text>
+
+      {/* Google OAuth */}
       <GoogleButton
         text="Continue with Google"
-        onPress={() => {
-          console.log("Google button pressed");
-        }}
+        onPress={() => console.log("Google button pressed")}
       />
 
       <DividerWithText text="Or login with" />
@@ -84,7 +79,7 @@ export default function LoginCard(): JSX.Element {
         value={email}
         onChangeText={(text: string) => {
           setEmail(text);
-          setErrorMessage(""); // Clear error when user types
+          setErrorMessage("");
         }}
         editable={!isLoading}
       />
@@ -95,34 +90,35 @@ export default function LoginCard(): JSX.Element {
         value={password}
         onChangeText={(text: string) => {
           setPassword(text);
-          setErrorMessage(""); // Clear error when user types
+          setErrorMessage("");
         }}
         editable={!isLoading}
       />
 
       {/* Login Button */}
-      <SolidButton
+      <OutlinedButtonSm
         title={isLoading ? "Signing in..." : "Log in"}
         onPress={handleSignin}
         disabled={isLoading}
       />
 
-      {/* Show loading indicator */}
+      {/* Loading spinner */}
       {isLoading && (
         <View className="items-center mt-2">
           <ActivityIndicator size="small" color="#fafafa" />
         </View>
       )}
 
-      {/* Show error message if any */}
+      {/* Error message */}
       {errorMessage ? (
         <Text className="text-red-500 text-sm mt-2 mb-2 text-center">
           {errorMessage}
         </Text>
       ) : null}
 
+      {/* Options */}
       <View className="flex-row items-center pt-1 justify-between mx-1">
-        <RememberMeCheckbox />
+        <RememberMeCheckbox disabled={isLoading} />
         <PressableText
           text="Forgot password?"
           onPress={() => {
@@ -133,6 +129,7 @@ export default function LoginCard(): JSX.Element {
         />
       </View>
 
+      {/* Sign-up */}
       <View className="flex-row justify-center items-center pt-4">
         <Text className="ml-2 text-gray-400 text-xs font-semibold">
           Don't have an account?{" "}
