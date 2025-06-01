@@ -1,3 +1,4 @@
+import { View } from "moti";
 import { Text, TouchableOpacity } from "react-native";
 
 interface SolidButtonProps {
@@ -18,13 +19,15 @@ export default function SolidButtonLg({
   paddingY = "py-3",
 }: SolidButtonProps) {
   return (
-    <TouchableOpacity
-      className={`flex-row items-center justify-center bg-[#fafafa] rounded-xl w-${width} h-14 px-${paddingX} py-${paddingY}`}
-      onPress={onPress}
-    >
-      <Text className="font-medium text-[#09090b] text-center text-xl">
-        {title}
-      </Text>
-    </TouchableOpacity>
+    <View>
+      <TouchableOpacity
+        className={`mb-3 flex-row items-center rounded-xl bg-background border-border border justify-center h-14 w-auto`}
+        onPress={onPress}
+      >
+        <Text className="font-medium text-[#09090b] text-center text-xl">
+          {title}
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 }

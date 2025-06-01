@@ -1,6 +1,6 @@
 // @shared/types/property.ts
 
-import { PropertyCategory } from "@main/services/propertyUtils";
+import { PropertyCategory } from "@/app/main/services/propertyUtils";
 
 export interface Property {
   /* identity & meta */

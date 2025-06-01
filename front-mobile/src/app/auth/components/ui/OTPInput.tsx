@@ -48,7 +48,7 @@ export default function OTPInput({ otp, setOtp }: OTPInputProps): JSX.Element {
      * - background color
      * We use overflow-hidden to ensure the inner borders line up nicely.
      */
-    <View className="flex-row w-52 h-15 rounded-lg border border-[#3f3f46] overflow-hidden bg-[#09090b]">
+    <View className="flex-row w-[80%] h-14 py-3 rounded-lg border border-border overflow-hidden bg-background shadow">
       {otp.map((digit, index) => (
         /**
          * Each column:
@@ -63,8 +63,8 @@ export default function OTPInput({ otp, setOtp }: OTPInputProps): JSX.Element {
           onKeyPress={(e) => handleKeyPress(e, index)}
           keyboardType="numeric"
           maxLength={1}
-          className={`flex-1 text-center text-white text-xl ${
-            index < numInputs - 1 ? "border-r border-[#3f3f46]" : ""
+          className={`flex-1 text-center text-primary text-xl ${
+            index < numInputs - 1 ? "border-r border-border" : ""
           }`}
           ref={(ref) => (inputs.current[index] = ref)}
         />

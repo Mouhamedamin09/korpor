@@ -170,7 +170,7 @@ const WalletScreen: React.FC = () => {
                 {
                   icon: "plus",
                   label: "Deposit",
-                  route: "/main/components/wallet/walletscreens/DepositScreen",
+                  route: "main/components/wallet/walletscreens/DepositScreen",
                 },
                 {
                   icon: "arrow-up-right",
@@ -212,7 +212,7 @@ const WalletScreen: React.FC = () => {
                 subtitle="Pick and choose properties yourself"
                 onPress={() => {
                   setInvestSheetOpen(false);
-                  router.push("/main/screens/(tabs)/properties");
+                  router.push("main/screens/properties");
                 }}
               />
               <SheetRow
