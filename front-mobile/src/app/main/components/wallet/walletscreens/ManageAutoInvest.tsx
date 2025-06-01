@@ -5,12 +5,12 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Feather from "react-native-vector-icons/Feather";
 import TopBar from "@main/components/profileScreens/components/ui/TopBar";
 import Card from "@main/components/profileScreens/components/ui/card";
+import BottomSheet from "@main/components/profileScreens/components/ui/SheetIndicator";
 import {
   AutoInvestPlan,
   AutoInvestStats,
@@ -124,6 +124,7 @@ const ActivePlanCard = ({
               onPress={() =>
                 onToggle(plan.status === "active" ? "pause" : "resume")
               }
+              activeOpacity={0.8}
             >
               <Text
                 className={`text-center font-medium ${
@@ -139,6 +140,7 @@ const ActivePlanCard = ({
             <TouchableOpacity
               className="flex-1 py-3 px-4 ml-2 rounded-lg border border-red-300 bg-red-50"
               onPress={onCancel}
+              activeOpacity={0.8}
             >
               <Text className="text-center font-medium text-red-700">
                 Cancel Plan
@@ -158,6 +160,17 @@ const ManageAutoInvest: React.FC = () => {
   const [plan, setPlan] = useState<AutoInvestPlan | null>(null);
   const [stats, setStats] = useState<AutoInvestStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Bottom sheet states
+  const [successSheetVisible, setSuccessSheetVisible] = useState(false);
+  const [errorSheetVisible, setErrorSheetVisible] = useState(false);
+  const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
+  const [cancelSuccessVisible, setCancelSuccessVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [currentAction, setCurrentAction] = useState<"pause" | "resume" | null>(
+    null
+  );
 
   const loadData = async (isRefresh = false) => {
     try {
@@ -188,43 +201,42 @@ const ManageAutoInvest: React.FC = () => {
 
   const handleToggle = async (action: "pause" | "resume") => {
     try {
+      setCurrentAction(action);
       await toggleAutoInvestPlan(action);
-      Alert.alert("Success", `AutoInvest plan ${action}d successfully`, [
-        { text: "OK", onPress: () => loadData() },
-      ]);
+      setSuccessMessage(`AutoInvest plan ${action}d successfully`);
+      setSuccessSheetVisible(true);
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : `Failed to ${action} plan`;
-      Alert.alert("Error", msg);
+      setErrorMessage(msg);
+      setErrorSheetVisible(true);
     }
   };
 
   const handleCancel = () => {
-    Alert.alert(
-      "Cancel AutoInvest Plan",
-      "Are you sure you want to cancel your AutoInvest plan? This action cannot be undone.",
-      [
-        { text: "Keep Plan", style: "cancel" },
-        {
-          text: "Cancel Plan",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await cancelAutoInvestPlan();
-              Alert.alert(
-                "Plan Cancelled",
-                "Your AutoInvest plan has been cancelled successfully.",
-                [{ text: "OK", onPress: () => router.back() }]
-              );
-            } catch (err) {
-              const msg =
-                err instanceof Error ? err.message : "Failed to cancel plan";
-              Alert.alert("Error", msg);
-            }
-          },
-        },
-      ]
-    );
+    setCancelConfirmVisible(true);
+  };
+
+  const confirmCancel = async () => {
+    try {
+      setCancelConfirmVisible(false);
+      await cancelAutoInvestPlan();
+      setCancelSuccessVisible(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to cancel plan";
+      setErrorMessage(msg);
+      setErrorSheetVisible(true);
+    }
+  };
+
+  const handleSuccessOk = () => {
+    setSuccessSheetVisible(false);
+    loadData();
+  };
+
+  const handleCancelSuccessOk = () => {
+    setCancelSuccessVisible(false);
+    router.back();
   };
 
   if (loading) {
@@ -290,6 +302,7 @@ const ManageAutoInvest: React.FC = () => {
                     "/main/components/wallet/walletscreens/StartAutoInvest"
                   )
                 }
+                activeOpacity={0.8}
               >
                 <Feather
                   name="plus"
@@ -325,6 +338,7 @@ const ManageAutoInvest: React.FC = () => {
                   "/main/components/wallet/walletscreens/StartAutoInvest"
                 )
               }
+              activeOpacity={0.8}
             >
               <Text className="text-white font-semibold text-center">
                 Create AutoInvest Plan
@@ -364,6 +378,114 @@ const ManageAutoInvest: React.FC = () => {
           </Card>
         )}
       </ScrollView>
+
+      {/* Success Bottom Sheet */}
+      <BottomSheet
+        visible={successSheetVisible}
+        onClose={() => setSuccessSheetVisible(false)}
+      >
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-green-100 items-center justify-center mb-4">
+            <Feather name="check-circle" size={28} color="#10B981" />
+          </View>
+          <Text className="text-xl font-semibold text-gray-900 mb-4">
+            Success
+          </Text>
+          <Text className="text-sm text-gray-600 text-center mb-6">
+            {successMessage}
+          </Text>
+          <TouchableOpacity
+            onPress={handleSuccessOk}
+            className="bg-green-600 rounded-lg p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">OK</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* Error Bottom Sheet */}
+      <BottomSheet
+        visible={errorSheetVisible}
+        onClose={() => setErrorSheetVisible(false)}
+      >
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-4">
+            <Feather name="x-circle" size={28} color="#EF4444" />
+          </View>
+          <Text className="text-xl font-semibold text-gray-900 mb-4">
+            Error
+          </Text>
+          <Text className="text-sm text-gray-600 text-center mb-6">
+            {errorMessage}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setErrorSheetVisible(false)}
+            className="bg-red-600 rounded-lg p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">OK</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* Cancel Confirmation Bottom Sheet */}
+      <BottomSheet
+        visible={cancelConfirmVisible}
+        onClose={() => setCancelConfirmVisible(false)}
+      >
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-4">
+            <Feather name="alert-triangle" size={28} color="#EF4444" />
+          </View>
+          <Text className="text-xl font-semibold text-gray-900 mb-4">
+            Cancel AutoInvest Plan
+          </Text>
+          <Text className="text-sm text-gray-600 text-center mb-6">
+            Are you sure you want to cancel your AutoInvest plan? This action
+            cannot be undone.
+          </Text>
+          <TouchableOpacity
+            onPress={confirmCancel}
+            className="bg-black rounded-lg p-4 w-full items-center mb-3"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">Cancel Plan</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setCancelConfirmVisible(false)}
+            className="p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-gray-600">Keep Plan</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* Cancel Success Bottom Sheet */}
+      <BottomSheet
+        visible={cancelSuccessVisible}
+        onClose={() => setCancelSuccessVisible(false)}
+      >
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-green-100 items-center justify-center mb-4">
+            <Feather name="check-circle" size={28} color="#10B981" />
+          </View>
+          <Text className="text-xl font-semibold text-gray-900 mb-4">
+            Plan Cancelled
+          </Text>
+          <Text className="text-sm text-gray-600 text-center mb-6">
+            Your AutoInvest plan has been cancelled successfully.
+          </Text>
+          <TouchableOpacity
+            onPress={handleCancelSuccessOk}
+            className="bg-green-600 rounded-lg p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">OK</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </View>
   );
 };

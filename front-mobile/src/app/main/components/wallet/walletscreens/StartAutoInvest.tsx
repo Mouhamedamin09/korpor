@@ -19,13 +19,36 @@ const GREEN = "#10B981";
 
 export default function StartAutoInvest() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ step?: string; theme?: ThemeKey }>();
+  const params = useLocalSearchParams<{
+    step?: string;
+    theme?: ThemeKey;
+    amount?: string;
+  }>();
 
   /* ---------- wizard state ---------- */
   const initialStep = params.step ? (Number(params.step) as 1 | 2 | 3 | 4) : 1;
   const [step, setStep] = useState<1 | 2 | 3 | 4>(initialStep);
 
-  const [amount, setAmount] = useState<number>(2000);
+  // Initialize amount from URL params if available, otherwise use default
+  const initialAmount = params.amount ? Number(params.amount) : 2000;
+  const [amount, setAmount] = useState<number>(initialAmount);
+  const amountRef = useRef<number>(initialAmount);
+  const [confirmAmount, setConfirmAmount] = useState<number>(initialAmount);
+
+  // Debug logging for URL params
+  useEffect(() => {
+    console.log("StartAutoInvest: URL params:", params);
+    console.log("StartAutoInvest: Initial amount from params:", initialAmount);
+  }, []);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    amountRef.current = amount;
+    setConfirmAmount(amount);
+    console.log("Amount ref updated to:", amountRef.current);
+    console.log("Confirm amount updated to:", amount);
+  }, [amount]);
+
   const [selectedTheme, setSelectedTheme] = useState<ThemeKey | null>(
     params.theme || null
   );
@@ -61,6 +84,7 @@ export default function StartAutoInvest() {
   /* ---------- handlers for each stage ---------- */
   const handleAmountNext = () => {
     if (amount > 0) {
+      console.log("Passed amount is :", amount);
       setStep(2);
     }
   };
@@ -91,32 +115,8 @@ export default function StartAutoInvest() {
       console.log("Debug - selectedTheme:", selectedTheme);
       console.log("Debug - amount:", amount);
 
-      // Parse the date more reliably
-      let depositDay: number;
-
-      // If startDate is in format "15 Jun 2025", parse it carefully
-      const dateStr = deposit.startDate;
-      const depositDate = new Date(dateStr);
-
-      console.log("Debug - dateStr:", dateStr);
-      console.log("Debug - depositDate:", depositDate);
-
-      if (isNaN(depositDate.getTime())) {
-        // If date parsing fails, try to extract day number from string
-        const dayMatch = dateStr.match(/^(\d+)/);
-        if (dayMatch) {
-          depositDay = parseInt(dayMatch[1]);
-        } else {
-          console.error("Could not parse deposit day from:", dateStr);
-          Alert.alert(
-            "Error",
-            "Invalid deposit date. Please go back and select a valid date."
-          );
-          return;
-        }
-      } else {
-        depositDay = depositDate.getDate();
-      }
+      // Use the depositDay directly from the deposit data
+      const depositDay = deposit.depositDay;
 
       console.log("Debug - depositDay:", depositDay);
 
@@ -186,6 +186,26 @@ export default function StartAutoInvest() {
     }
   };
 
+  // Debug logging to track amount changes
+  useEffect(() => {
+    console.log("StartAutoInvest: Amount changed to:", amount);
+  }, [amount]);
+
+  // Debug logging to track step changes
+  useEffect(() => {
+    console.log(
+      "StartAutoInvest: Step changed to:",
+      step,
+      "with amount:",
+      amount
+    );
+  }, [step]);
+
+  // Debug logging to track deposit data
+  useEffect(() => {
+    console.log("StartAutoInvest: Deposit data changed:", deposit);
+  }, [deposit]);
+
   /* ---------- render ---------- */
   return (
     <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
@@ -247,6 +267,7 @@ export default function StartAutoInvest() {
             <ThemeSetupSelect
               selectedTheme={selectedTheme}
               onSelectTheme={handleThemeNext}
+              amount={amount}
             />
           </View>
         )}
@@ -256,20 +277,40 @@ export default function StartAutoInvest() {
         )}
 
         {step === 4 && (
-          <ConfirmAutoInvest
-            amount={amount}
-            theme={selectedTheme as ThemeKey}
-            deposit={
-              deposit || {
-                startDate: "",
-                frequency: "",
-                paymentMethod: "",
-                verification: "Pending",
+          <>
+            {/* Debug logging right before rendering ConfirmAutoInvest */}
+            {(() => {
+              console.log(
+                "About to render ConfirmAutoInvest with amount:",
+                amount
+              );
+              console.log("Confirm amount value:", confirmAmount);
+              console.log("Amount ref value:", amountRef.current);
+              console.log("Step 4 - Current state:", {
+                amount,
+                confirmAmount,
+                selectedTheme,
+                deposit,
+              });
+              return null;
+            })()}
+            <ConfirmAutoInvest
+              key={`confirm-${amount}-${step}`}
+              amount={confirmAmount}
+              theme={selectedTheme as ThemeKey}
+              deposit={
+                deposit || {
+                  startDate: "",
+                  depositDay: 1,
+                  frequency: "",
+                  paymentMethod: "",
+                  verification: "Pending",
+                }
               }
-            }
-            onBack={() => setStep(3)}
-            onLaunch={handleLaunch}
-          />
+              onBack={() => setStep(3)}
+              onLaunch={handleLaunch}
+            />
+          </>
         )}
       </View>
 

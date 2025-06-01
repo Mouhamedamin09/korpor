@@ -167,7 +167,7 @@ const WalletScreen: React.FC = () => {
                 {
                   icon: "credit-card",
                   label: "Settings",
-                  route: "/main/screens/(tabs)/wallet/settings",
+                  route: "/main/components/wallet/walletscreens/settings",
                 },
               ].map(({ icon, label, route }) => (
                 <TouchableOpacity
@@ -246,7 +246,14 @@ const WalletScreen: React.FC = () => {
                 Debit&nbsp;Card
               </Text>
 
-              <TouchableOpacity className="bg-[#000000] rounded-2xl py-4 items-center active:opacity-80">
+              <TouchableOpacity
+                className="bg-[#000000] rounded-2xl py-4 items-center active:opacity-80"
+                onPress={() =>
+                  router.push(
+                    "/main/components/wallet/walletscreens/PaymentMethodScreen"
+                  )
+                }
+              >
                 <Text className="text-white text-base font-semibold">
                   Add payment method
                 </Text>
@@ -276,10 +283,10 @@ const WalletScreen: React.FC = () => {
               <View className="h-px bg-gray-200 mb-4" />
 
               {[
-                { icon: "shield", txt: "We're regulated by the DFSA" },
+                { icon: "shield", txt: "We're regulated by the CMF" },
                 {
                   icon: "archive",
-                  txt: "Investments are registered in DIFC",
+                  txt: "Investments are registered in AMF",
                 },
                 {
                   icon: "dollar-sign",
@@ -292,7 +299,14 @@ const WalletScreen: React.FC = () => {
                 </View>
               ))}
 
-              <TouchableOpacity className="flex-row items-center mt-4 pt-4 border-t border-gray-200">
+              <TouchableOpacity
+                className="flex-row items-center mt-4 pt-4 border-t border-gray-200"
+                onPress={() =>
+                  router.push(
+                    "/main/components/profileScreens/profile/SecurityPrivacyScreen"
+                  )
+                }
+              >
                 <Text className="text-base font-semibold text-green-700 flex-1">
                   Read more about our security
                 </Text>
@@ -317,31 +331,46 @@ const WalletScreen: React.FC = () => {
                   icon: "credit-card",
                   title: "Learn about deposits\nand withdrawals",
                   read: true,
-                  onPress: () => console.log("open article 1"),
+                  onPress: () =>
+                    router.push(
+                      "/main/components/profileScreens/profile/DepositsWithdrawalsGuide"
+                    ),
                 },
                 {
                   icon: "shield",
-                  title: "How does DFSA\nprotect my money?",
+                  title: "How does CMF\nprotect my money?",
                   read: false,
-                  onPress: () => console.log("open article 2"),
+                  onPress: () =>
+                    router.push(
+                      "/main/components/profileScreens/profile/DFSAProtectionGuide"
+                    ),
                 },
                 {
                   icon: "user",
-                  title: "How does DFSA protect user Money?",
+                  title: "How does AMF\nprotect user Money?",
                   read: false,
-                  onPress: () => console.log("open article 3"),
+                  onPress: () =>
+                    router.push(
+                      "/main/components/profileScreens/profile/UserMoneyProtectionGuide"
+                    ),
                 },
                 {
                   icon: "lock",
                   title: "How does Korpor protect my data?",
                   read: false,
-                  onPress: () => console.log("open article 4"),
+                  onPress: () =>
+                    router.push(
+                      "/main/components/profileScreens/profile/DataProtectionGuide"
+                    ),
                 },
                 {
                   icon: "info",
                   title: "What is DIFC?",
                   read: false,
-                  onPress: () => console.log("open article 5"),
+                  onPress: () =>
+                    router.push(
+                      "/main/components/profileScreens/profile/DIFCGuide"
+                    ),
                 },
               ].map(({ icon, title, read, onPress }, idx, arr) => (
                 <View

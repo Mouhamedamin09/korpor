@@ -75,6 +75,10 @@ const options = {
         description: "Payment processing and transaction management",
       },
       {
+        name: "Backers",
+        description: "Backer management operations",
+      },
+      {
         name: "Health",
         description: "API health check endpoints",
       },
@@ -84,7 +88,7 @@ const options = {
       url: "https://korpor.com/docs",
     },
   },
-  apis: ["./src/routes/*.js", "./src/models/*.js"],
+  apis: ["./src/routes/*.js", "./src/routes/*.routes.js", "./src/models/*.js"],
 };
 
 const swaggerSpec = swaggerJSDoc(options);
@@ -102,7 +106,7 @@ module.exports = (app) => {
   app.use(
     "/api-docs",
     swaggerUi.serve,
-    swaggerUi.setup(swaggerSpec, swaggerOptions),
+    swaggerUi.setup(swaggerSpec, swaggerOptions)
   );
 
   // Serve Swagger JSON

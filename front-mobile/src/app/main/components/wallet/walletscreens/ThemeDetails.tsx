@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------------
    🔹  ThemeDetails — Tailwind version with full-width gradient
-       • “Select this theme” sends to StartAutoInvest?step=3&theme=…
+       • "Select this theme" sends to StartAutoInvest?step=3&theme=…
    -------------------------------------------------------------------------- */
 
 import React from "react";
@@ -84,12 +84,17 @@ const strategyIcons: Record<"Balanced" | "Capital Growth" | "High Yield", any> =
   };
 
 /* helper to build gradient */
-const buildGradient = (hex: string) => [hex, hex + "66", "#FFFFFF"];
+const buildGradient = (hex: string): [string, string, string] => [
+  hex,
+  hex + "66",
+  "#FFFFFF",
+];
 
 export default function ThemeDetails() {
   const router = useRouter();
-  const { theme = "diversified" } = useLocalSearchParams<{
+  const { theme = "diversified", amount } = useLocalSearchParams<{
     theme?: ThemeKey;
+    amount?: string;
   }>();
   const data = THEMES[theme as ThemeKey];
 
@@ -220,11 +225,20 @@ export default function ThemeDetails() {
           {/* CTA buttons */}
           <TouchableOpacity
             className="mx-4 mt-6 h-14 rounded-xl bg-[#000] items-center justify-center"
-            onPress={() =>
+            onPress={() => {
+              // Build URL with theme and optional amount
+              const params = new URLSearchParams({
+                step: "3",
+                theme: theme as string,
+              });
+              if (amount) {
+                params.append("amount", amount);
+              }
+
               router.push(
-                `/main/components/wallet/walletscreens/StartAutoInvest?step=3&theme=${theme}`
-              )
-            }
+                `/main/components/wallet/walletscreens/StartAutoInvest?${params.toString()}`
+              );
+            }}
           >
             <Text className="text-white font-bold">Select this theme</Text>
           </TouchableOpacity>

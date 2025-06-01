@@ -42,8 +42,7 @@ module.exports = {
       },
 
       release: () => {
-        // Nothing to do here since Sequelize manages its own connection pool
-        // This function is just for compatibility
+        //to ghassen(hethi taamel release lel connection) fer8a 5ater sequilaze manage its own connection pool
       },
     };
 

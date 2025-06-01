@@ -3,7 +3,7 @@
    • Adds onNext(data) callback so the wizard can advance to ConfirmAutoInvest
 ──────────────────────────────────────────────────────────────────────────── */
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,11 +13,17 @@ import {
   Modal,
   FlatList,
   RefreshControl,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import Feather from "react-native-vector-icons/Feather";
 import { fetchAccountData, AccountData } from "@main/services/api";
+import {
+  getSavedPaymentMethods,
+  formatCardDisplay,
+  type SavedPaymentMethod,
+} from "@main/services/payment.service";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
@@ -36,7 +42,8 @@ const PressableRow: React.FC<{
   );
 
 type VerificationProgress = { completed: number; total: number };
-interface ExtendedAccountData extends AccountData {
+interface ExtendedAccountData
+  extends Omit<AccountData, "verificationProgress"> {
   verificationProgress?: VerificationProgress;
 }
 
@@ -62,6 +69,7 @@ export type DepositData = {
   depositDay: number; // e.g. 15 (the day of the month)
   frequency: string; // e.g. "Monthly"
   paymentMethod: string; // e.g. "Visa •••• 1234"
+  paymentMethodId: string; // ID of the selected payment method
   verification: "Verified" | "Pending";
 };
 
@@ -103,16 +111,94 @@ const DepositSettings: React.FC<Props> = ({ onNext, deposit }) => {
   const [account, setAccount] = useState<ExtendedAccountData | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
+  /* ───────── Payment methods state ───────── */
+  const [savedPaymentMethods, setSavedPaymentMethods] = useState<
+    SavedPaymentMethod[]
+  >([]);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] =
+    useState<string>("");
+  const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true);
+
   useEffect(() => {
     fetchAccountData().then(setAccount).catch(console.error);
+    loadPaymentMethods();
   }, []);
+
+  // Refresh payment methods when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadPaymentMethods();
+    }, [])
+  );
+
+  const loadPaymentMethods = async () => {
+    try {
+      console.log("🔄 DepositSettings: Loading saved payment methods...");
+      setLoadingPaymentMethods(true);
+
+      const paymentMethods = await getSavedPaymentMethods();
+
+      console.log(
+        "💳 DepositSettings: Loaded payment methods:",
+        paymentMethods.length
+      );
+      setSavedPaymentMethods(paymentMethods);
+
+      // Auto-select existing payment method or default
+      if (deposit?.paymentMethodId) {
+        setSelectedPaymentMethod(deposit.paymentMethodId);
+      } else if (paymentMethods.length > 0) {
+        const defaultMethod = paymentMethods.find(
+          (method) => method.is_default
+        );
+        if (defaultMethod) {
+          setSelectedPaymentMethod(defaultMethod.id);
+          console.log(
+            "✅ DepositSettings: Auto-selected default method:",
+            defaultMethod.id
+          );
+        } else {
+          setSelectedPaymentMethod(paymentMethods[0].id);
+          console.log(
+            "✅ DepositSettings: Auto-selected first method:",
+            paymentMethods[0].id
+          );
+        }
+      } else {
+        // If no saved payment methods, default to PayMe for convenience
+        setSelectedPaymentMethod("payme");
+        console.log(
+          "✅ DepositSettings: Auto-selected PayMe (no saved methods)"
+        );
+      }
+    } catch (err) {
+      console.error("❌ DepositSettings: Error loading payment methods:", err);
+    } finally {
+      setLoadingPaymentMethods(false);
+    }
+  };
 
   const onRefresh = () => {
     setIsRefreshing(true);
-    fetchAccountData()
-      .then(setAccount)
-      .catch(console.error)
-      .finally(() => setIsRefreshing(false));
+    Promise.all([
+      fetchAccountData().then(setAccount).catch(console.error),
+      loadPaymentMethods(),
+    ]).finally(() => setIsRefreshing(false));
+  };
+
+  // Helper to get payment method display name
+  const getPaymentMethodDisplayName = (method: SavedPaymentMethod): string => {
+    if (method.type === "stripe" && method.card) {
+      return formatCardDisplay(
+        method.card.brand,
+        method.card.last4,
+        method.card.exp_month,
+        method.card.exp_year
+      );
+    } else if (method.type === "payme" && method.payme) {
+      return `PayMe ${method.payme.phone_number}`;
+    }
+    return "Payment Method";
   };
 
   /* ───────── Derived schedule text ───────── */
@@ -142,6 +228,26 @@ const DepositSettings: React.FC<Props> = ({ onNext, deposit }) => {
   const completed = account?.verificationProgress?.completed ?? 4;
   const total = account?.verificationProgress?.total ?? 4;
 
+  // Check if we can continue
+  const canContinue = selectedPaymentMethod && completed === total;
+
+  // Helper to get payment method display name for recurring deposits
+  const getRecurringPaymentMethodDisplay = (): string => {
+    if (selectedPaymentMethod === "payme") {
+      return "PayMe.tn";
+    }
+
+    const selectedMethod = savedPaymentMethods.find(
+      (method) => method.id === selectedPaymentMethod
+    );
+
+    if (selectedMethod) {
+      return getPaymentMethodDisplayName(selectedMethod);
+    }
+
+    return "Payment method required";
+  };
+
   /* ───────── Helper to build DepositData ───────── */
   const buildDepositData = (): DepositData => {
     const start = new Date(today);
@@ -150,11 +256,13 @@ const DepositSettings: React.FC<Props> = ({ onNext, deposit }) => {
       start.setDate(selectedDay);
     }
     const startDate = formatDateFull(start);
+
     return {
       startDate,
       depositDay: selectedDay,
       frequency: "Monthly",
-      paymentMethod: "Visa •••• 1234", // replace with real method when chosen
+      paymentMethod: getRecurringPaymentMethodDisplay(),
+      paymentMethodId: selectedPaymentMethod,
       verification: completed === total ? "Verified" : "Pending",
     };
   };
@@ -186,12 +294,138 @@ const DepositSettings: React.FC<Props> = ({ onNext, deposit }) => {
             <Text className="font-semibold text-[#0A0E23] mb-3">
               Deposit with
             </Text>
-            <TouchableOpacity className="bg-[#000] rounded-2xl py-4 flex-row items-center justify-center active:opacity-80">
-              <Feather name="plus" size={18} color="#fff" />
-              <Text className="ml-2 text-base font-semibold text-white">
-                Add payment method
-              </Text>
-            </TouchableOpacity>
+
+            {loadingPaymentMethods ? (
+              <View className="bg-gray-100 rounded-2xl py-4 items-center">
+                <Text className="text-gray-500">
+                  Loading payment methods...
+                </Text>
+              </View>
+            ) : (
+              <View>
+                {/* PayMe Option */}
+                <Pressable
+                  onPress={() => setSelectedPaymentMethod("payme")}
+                  className={`flex-row items-center p-3 rounded-2xl mb-2 ${
+                    selectedPaymentMethod === "payme"
+                      ? "border-2 border-[#10B981] bg-green-50"
+                      : "border border-[#E5E7EB] bg-white"
+                  }`}
+                >
+                  <View
+                    className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${
+                      selectedPaymentMethod === "payme"
+                        ? "bg-green-100"
+                        : "bg-gray-100"
+                    }`}
+                  >
+                    <Feather
+                      name="smartphone"
+                      size={20}
+                      color={
+                        selectedPaymentMethod === "payme"
+                          ? "#10B981"
+                          : "#6B7280"
+                      }
+                    />
+                  </View>
+
+                  <View className="flex-1">
+                    <View className="flex-row items-center">
+                      <Text className="text-base font-medium text-[#0A0E23]">
+                        PayMe.tn
+                      </Text>
+                      <View className="ml-2 px-2 py-1 bg-blue-100 rounded">
+                        <Text className="text-xs text-blue-600 font-medium">
+                          Redirect
+                        </Text>
+                      </View>
+                    </View>
+                    <Text className="text-sm text-[#6B7280]">
+                      Tunisian mobile payment solution
+                    </Text>
+                  </View>
+
+                  <Feather
+                    name={
+                      selectedPaymentMethod === "payme"
+                        ? "check-circle"
+                        : "circle"
+                    }
+                    size={22}
+                    color={
+                      selectedPaymentMethod === "payme" ? "#10B981" : "#9CA3AF"
+                    }
+                  />
+                </Pressable>
+
+                {/* Saved Payment Methods */}
+                {savedPaymentMethods.map((method) => {
+                  const isSelected = selectedPaymentMethod === method.id;
+                  return (
+                    <Pressable
+                      key={method.id}
+                      onPress={() => setSelectedPaymentMethod(method.id)}
+                      className={`flex-row items-center p-3 rounded-2xl mb-2 ${
+                        isSelected
+                          ? "border-2 border-[#10B981] bg-green-50"
+                          : "border border-[#E5E7EB] bg-white"
+                      }`}
+                    >
+                      <View
+                        className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${
+                          isSelected ? "bg-green-100" : "bg-gray-100"
+                        }`}
+                      >
+                        <Feather
+                          name={
+                            method.type === "stripe"
+                              ? "credit-card"
+                              : "smartphone"
+                          }
+                          size={20}
+                          color={isSelected ? "#10B981" : "#6B7280"}
+                        />
+                      </View>
+
+                      <View className="flex-1">
+                        <View className="flex-row items-center">
+                          <Text className="text-base font-medium text-[#0A0E23]">
+                            {getPaymentMethodDisplayName(method)}
+                          </Text>
+                        </View>
+                        <Text className="text-sm text-[#6B7280]">
+                          {method.type === "stripe"
+                            ? "Credit/Debit Card"
+                            : "PayMe Account"}
+                        </Text>
+                      </View>
+
+                      <Feather
+                        name={isSelected ? "check-circle" : "circle"}
+                        size={22}
+                        color={isSelected ? "#10B981" : "#9CA3AF"}
+                      />
+                    </Pressable>
+                  );
+                })}
+
+                {/* Add new payment method option */}
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push(
+                      "/main/components/wallet/walletscreens/PaymentMethodScreen"
+                    )
+                  }
+                  className="flex-row items-center pt-3 mt-2 border-t border-[#E5E7EB]"
+                >
+                  <Feather name="plus-circle" size={20} color="#6B7280" />
+                  <Text className="ml-2 text-sm font-medium text-[#6B7280]">
+                    Add new payment method
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* divider */}
@@ -227,9 +461,11 @@ const DepositSettings: React.FC<Props> = ({ onNext, deposit }) => {
               <Switch
                 value={startToday}
                 disabled={selectedDay === todayDay}
-                onValueChange={(v) =>
-                  selectedDay !== todayDay && setStartToday(v)
-                }
+                onValueChange={(v) => {
+                  if (selectedDay !== todayDay) {
+                    setStartToday(v);
+                  }
+                }}
                 trackColor={{ false: "#E5E7EB", true: "#A7F3D0" }}
                 thumbColor="#10B981"
               />
@@ -279,6 +515,33 @@ const DepositSettings: React.FC<Props> = ({ onNext, deposit }) => {
               <Feather name="chevron-right" size={24} color="#9CA3AF" />
             </View>
           </PressableRow>
+        ) : !selectedPaymentMethod ? (
+          <View className="mx-4 mt-5">
+            <View className="rounded-2xl bg-yellow-50 border border-yellow-200 p-4 mb-4">
+              <View className="flex-row items-center">
+                <Feather name="alert-circle" size={20} color="#F59E0B" />
+                <Text className="ml-2 text-sm font-medium text-yellow-800">
+                  Payment method required
+                </Text>
+              </View>
+              <Text className="text-sm text-yellow-700 mt-1">
+                Please select a payment method to continue with your recurring
+                deposit setup.
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() =>
+                router.push(
+                  "/main/components/wallet/walletscreens/PaymentMethodScreen"
+                )
+              }
+              className="bg-primary rounded-2xl py-4 items-center shadow-sm"
+            >
+              <Text className="text-primaryText font-semibold text-base">
+                Add Payment Method
+              </Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <View className="mx-4 mt-5">
             <TouchableOpacity
