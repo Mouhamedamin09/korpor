@@ -31,12 +31,11 @@ const sendVerificationEmail = async (
   userLocation,
   userIp,
   date,
-  time,
+  time
 ) => {
   try {
     const transporter = createTransporter();
 
-    // Example icons (replace with your own if desired)
     const locationIcon =
       "https://cdn-icons-png.flaticon.com/512/684/684908.png";
     const ipIcon = "https://cdn-icons-png.flaticon.com/512/841/841364.png";
@@ -145,7 +144,7 @@ const generateTokens = (user) => {
     process.env.JWT_SECRET,
     {
       expiresIn: "1h", // 1 hour
-    },
+    }
   );
 
   // Generate refresh token - longer lived (e.g., 7 days)
@@ -157,7 +156,7 @@ const generateTokens = (user) => {
     process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
     {
       expiresIn: "7d", // 7 days
-    },
+    }
   );
 
   return { accessToken, refreshToken };
@@ -210,7 +209,7 @@ exports.signUp = async (req, res) => {
               resetCode: verificationCode,
               resetCodeExpires: expiryTime,
             },
-            { where: { email } },
+            { where: { email } }
           );
 
           // Try to send verification email, but don't block the response
@@ -219,9 +218,9 @@ exports.signUp = async (req, res) => {
             verificationCode,
             `${name} ${surname}`,
             req.ip,
-            req.headers["user-agent"],
+            req.headers["user-agent"]
           ).catch((error) =>
-            console.error("Failed to send verification email:", error),
+            console.error("Failed to send verification email:", error)
           );
 
           return res.status(200).json({
@@ -300,9 +299,9 @@ exports.signUp = async (req, res) => {
       verificationCode,
       `${name} ${surname}`,
       req.headers["x-forwarded-for"] || req.ip,
-      req.headers["user-agent"],
+      req.headers["user-agent"]
     ).catch((error) =>
-      console.error("Failed to send verification email:", error),
+      console.error("Failed to send verification email:", error)
     );
 
     // Respond with success
@@ -368,7 +367,7 @@ exports.verifyEmail = async (req, res) => {
       },
       {
         where: { id: user.id },
-      },
+      }
     );
 
     res.json({
@@ -413,7 +412,7 @@ exports.signIn = async (req, res) => {
     // Check if account is locked due to too many failed attempts
     if (user.lockedUntil && new Date() < new Date(user.lockedUntil)) {
       const lockoutMinutes = Math.ceil(
-        (new Date(user.lockedUntil) - new Date()) / 60000,
+        (new Date(user.lockedUntil) - new Date()) / 60000
       );
 
       return res.status(423).json({
@@ -481,7 +480,7 @@ exports.signIn = async (req, res) => {
         refreshTokenExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
         lastLogin: new Date(),
       },
-      { where: { id: user.id } },
+      { where: { id: user.id } }
     );
 
     // Determine dashboard route based on role
@@ -565,7 +564,7 @@ exports.refreshToken = async (req, res) => {
     try {
       const decoded = jwt.verify(
         refreshToken,
-        process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+        process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET
       );
       console.log("Refresh token verified:", decoded);
 
@@ -631,7 +630,7 @@ exports.logout = async (req, res) => {
         },
         {
           where: { id: userId },
-        },
+        }
       );
     }
 
@@ -692,7 +691,7 @@ exports.forgotPassword = async (req, res) => {
       },
       {
         where: { id: user.id },
-      },
+      }
     );
 
     // Get client info for email
@@ -709,7 +708,7 @@ exports.forgotPassword = async (req, res) => {
       userLocation,
       userIp,
       date,
-      time,
+      time
     );
 
     res.json({
@@ -758,7 +757,7 @@ exports.resetPassword = async (req, res) => {
       },
       {
         where: { id: user.id },
-      },
+      }
     );
 
     res.json({ message: "Password reset successfully" });
@@ -814,7 +813,7 @@ exports.resendVerificationCode = async (req, res) => {
       },
       {
         where: { id: user.id },
-      },
+      }
     );
 
     // Send verification email
@@ -830,7 +829,7 @@ exports.resendVerificationCode = async (req, res) => {
       userLocation,
       userIp,
       date,
-      time,
+      time
     );
 
     // Return success message (don't confirm if email exists)

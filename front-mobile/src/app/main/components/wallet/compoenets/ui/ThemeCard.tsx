@@ -1,6 +1,6 @@
 /* -----------------------------------------------------------
    🔹  ThemeCard — 40 % white → fade → 60 % accent
-       • Displays a single “group badge” image (top-right)
+       • Displays a single "group badge" image (top-right)
    ----------------------------------------------------------- */
 
 import React from "react";
@@ -23,6 +23,7 @@ interface Props {
 
   icon?: React.ReactNode;
   iconName?: string; // fallback Feather icon name
+  amount?: number; // amount to pass to ThemeDetails
 }
 
 const ThemeCard: React.FC<Props> = ({
@@ -35,17 +36,26 @@ const ThemeCard: React.FC<Props> = ({
   groupSrc,
   icon,
   iconName,
+  amount,
 }) => {
   const fadeTint = accentColor + "33"; // 20 % alpha tint
   const router = useRouter();
 
+  const handlePress = () => {
+    // Build URL with theme and optional amount
+    const params = new URLSearchParams({ theme: id });
+    if (amount !== undefined) {
+      params.append("amount", amount.toString());
+    }
+
+    router.push(
+      `/main/components/wallet/walletscreens/ThemeDetails?${params.toString()}`
+    );
+  };
+
   return (
     <TouchableOpacity
-      onPress={() =>
-        router.push(
-          `/main/components/wallet/walletscreens/ThemeDetails?theme=${id}`
-        )
-      }
+      onPress={handlePress}
       className={`rounded-2xl mb-4 overflow-hidden ${
         selected ? "border-2 border-[#10B981]" : "border border-gray-200"
       }`}
@@ -73,7 +83,9 @@ const ThemeCard: React.FC<Props> = ({
 
         {/* main icon */}
         <View className="mb-4">
-          {icon ?? <Feather name={iconName} size={40} color={accentColor} />}
+          {icon ?? (
+            <Feather name={iconName || "star"} size={40} color={accentColor} />
+          )}
         </View>
 
         {/* text */}

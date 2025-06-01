@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -15,6 +14,7 @@ import Feather from "react-native-vector-icons/Feather";
 import SetupCard from "../compoenets/ui/SetupCard";
 import TopBar from "@main/components/profileScreens/components/ui/TopBar";
 import Card from "@main/components/profileScreens/components/ui/card";
+import BottomSheet from "@main/components/profileScreens/components/ui/SheetIndicator";
 import HowItWorks from "../compoenets/ui/HowItWorks";
 import {
   fetchAutoInvestPlan,
@@ -56,6 +56,10 @@ const AutoInvestScreen: React.FC = () => {
   const [walletData, setWalletData] = useState<WalletBalance | null>(null);
   const [accountData, setAccountData] = useState<AccountData | null>(null);
   const [stats, setStats] = useState<AutoInvestStats | null>(null);
+
+  // Bottom sheet states
+  const [errorSheetVisible, setErrorSheetVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const loadData = useCallback(async () => {
     try {
@@ -105,18 +109,23 @@ const AutoInvestScreen: React.FC = () => {
       console.error("Error loading AutoInvest data:", error);
 
       // Show user-friendly error message
-      Alert.alert(
-        "Connection Error",
-        "Unable to load your AutoInvest data. Please check your connection and try again.",
-        [
-          { text: "Retry", onPress: () => loadData() },
-          { text: "Continue", style: "cancel" },
-        ]
+      setErrorMessage(
+        "Unable to load your AutoInvest data. Please check your connection and try again."
       );
+      setErrorSheetVisible(true);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const handleRetry = () => {
+    setErrorSheetVisible(false);
+    loadData();
+  };
+
+  const handleContinue = () => {
+    setErrorSheetVisible(false);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -173,6 +182,38 @@ const AutoInvestScreen: React.FC = () => {
         />
         <HowItWorks type="invest" />
       </ScrollView>
+
+      {/* Connection Error Bottom Sheet */}
+      <BottomSheet
+        visible={errorSheetVisible}
+        onClose={() => setErrorSheetVisible(false)}
+      >
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-4">
+            <Feather name="wifi-off" size={28} color="#EF4444" />
+          </View>
+          <Text className="text-xl font-semibold text-gray-900 mb-4">
+            Connection Error
+          </Text>
+          <Text className="text-sm text-gray-600 text-center mb-6">
+            {errorMessage}
+          </Text>
+          <TouchableOpacity
+            onPress={handleRetry}
+            className="bg-blue-600 rounded-lg p-4 w-full items-center mb-3"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">Retry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleContinue}
+            className="p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-gray-600">Continue</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </View>
   );
 };

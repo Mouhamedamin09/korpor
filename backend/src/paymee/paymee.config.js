@@ -1,8 +1,18 @@
 module.exports = {
-  baseURL: "https://sandbox.paymee.tn/api/v1",
+  // Use v2 API as per PayMe documentation
+  baseURL:
+    process.env.NODE_ENV === "production"
+      ? "https://app.paymee.tn/api/v2"
+      : "https://sandbox.paymee.tn/api/v2",
   headers: {
     "Content-Type": "application/json",
-    // Mock token for CI debugging
-    Authorization: `Token MOCK_PAYMEE_API_KEY_FOR_CI_DEBUG`,
+    Authorization: `Token ${
+      process.env.PAYMEE_API_KEY || "your_paymee_api_key_here"
+    }`,
+  },
+  // Test credentials for sandbox
+  testCredentials: {
+    phone: "11111111",
+    password: "11111111",
   },
 };

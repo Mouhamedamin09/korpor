@@ -14,10 +14,10 @@ exports.getWallet = async (req, res) => {
       include: [
         {
           model: User,
-          as: 'walletUser',
-          attributes: ['currency']
-        }
-      ]
+          as: "walletUser",
+          attributes: ["currency"],
+        },
+      ],
     });
 
     if (!wallet) {
@@ -25,14 +25,15 @@ exports.getWallet = async (req, res) => {
       const user = await User.findByPk(userId);
       wallet = await Wallet.create({
         userId,
-        currency: user.currency || 'TND',
-        cashBalance: 0.00,
-        rewardsBalance: 0.00
+        currency: user.currency || "TND",
+        cashBalance: 0.0,
+        rewardsBalance: 0.0,
       });
     }
 
     // Calculate total balance
-    const totalBalance = parseFloat(wallet.cashBalance) + parseFloat(wallet.rewardsBalance);
+    const totalBalance =
+      parseFloat(wallet.cashBalance) + parseFloat(wallet.rewardsBalance);
 
     res.json({
       success: true,
@@ -43,15 +44,15 @@ exports.getWallet = async (req, res) => {
         rewardsBalance: parseFloat(wallet.rewardsBalance),
         totalBalance: totalBalance,
         currency: wallet.currency,
-        lastTransactionAt: wallet.lastTransactionAt
-      }
+        lastTransactionAt: wallet.lastTransactionAt,
+      },
     });
   } catch (error) {
     console.error("Error fetching wallet:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: "Error fetching wallet data",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -72,22 +73,22 @@ exports.getTransactions = async (req, res) => {
 
     const transactions = await Transaction.findAndCountAll({
       where: whereClause,
-      order: [['created_at', 'DESC']],
+      order: [["created_at", "DESC"]],
       limit: parseInt(limit),
       offset: parseInt(offset),
       include: [
         {
           model: Wallet,
-          as: 'wallet',
-          attributes: ['id', 'currency']
-        }
-      ]
+          as: "wallet",
+          attributes: ["id", "currency"],
+        },
+      ],
     });
 
     res.json({
       success: true,
       data: {
-        transactions: transactions.rows.map(tx => ({
+        transactions: transactions.rows.map((tx) => ({
           id: tx.id,
           type: tx.type,
           amount: parseFloat(tx.amount),
@@ -98,22 +99,22 @@ exports.getTransactions = async (req, res) => {
           balanceType: tx.balanceType,
           metadata: tx.metadata,
           processedAt: tx.processedAt,
-          createdAt: tx.created_at
+          createdAt: tx.created_at,
         })),
         pagination: {
           total: transactions.count,
           page: parseInt(page),
           limit: parseInt(limit),
-          totalPages: Math.ceil(transactions.count / limit)
-        }
-      }
+          totalPages: Math.ceil(transactions.count / limit),
+        },
+      },
     });
   } catch (error) {
     console.error("Error fetching transactions:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: "Error fetching transaction history",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -123,7 +124,7 @@ exports.getTransactions = async (req, res) => {
  */
 exports.deposit = async (req, res) => {
   const t = await sequelize.transaction();
-  
+
   try {
     const userId = req.user.userId;
     const { amount, description, reference } = req.body;
@@ -131,7 +132,7 @@ exports.deposit = async (req, res) => {
     if (!amount || amount <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Invalid amount"
+        message: "Invalid amount",
       });
     }
 
@@ -139,27 +140,33 @@ exports.deposit = async (req, res) => {
     let wallet = await Wallet.findOne({ where: { userId }, transaction: t });
     if (!wallet) {
       const user = await User.findByPk(userId);
-      wallet = await Wallet.create({
-        userId,
-        currency: user.currency || 'TND',
-        cashBalance: 0.00,
-        rewardsBalance: 0.00
-      }, { transaction: t });
+      wallet = await Wallet.create(
+        {
+          userId,
+          currency: user.currency || "TND",
+          cashBalance: 0.0,
+          rewardsBalance: 0.0,
+        },
+        { transaction: t }
+      );
     }
 
     // Create transaction record
-    const transaction = await Transaction.create({
-      userId,
-      walletId: wallet.id,
-      type: 'deposit',
-      amount,
-      currency: wallet.currency,
-      status: 'completed', // In real app, this would be 'pending' until payment is confirmed
-      description: description || 'Cash deposit',
-      reference,
-      balanceType: 'cash',
-      processedAt: new Date()
-    }, { transaction: t });
+    const transaction = await Transaction.create(
+      {
+        userId,
+        walletId: wallet.id,
+        type: "deposit",
+        amount,
+        currency: wallet.currency,
+        status: "completed", // In real app, this would be 'pending' until payment is confirmed
+        description: description || "Cash deposit",
+        reference,
+        balanceType: "cash",
+        processedAt: new Date(),
+      },
+      { transaction: t }
+    );
 
     // Update wallet balance
     wallet.cashBalance = parseFloat(wallet.cashBalance) + parseFloat(amount);
@@ -176,22 +183,23 @@ exports.deposit = async (req, res) => {
           id: transaction.id,
           amount: parseFloat(transaction.amount),
           currency: transaction.currency,
-          status: transaction.status
+          status: transaction.status,
         },
         newBalance: {
           cashBalance: parseFloat(wallet.cashBalance),
           rewardsBalance: parseFloat(wallet.rewardsBalance),
-          totalBalance: parseFloat(wallet.cashBalance) + parseFloat(wallet.rewardsBalance)
-        }
-      }
+          totalBalance:
+            parseFloat(wallet.cashBalance) + parseFloat(wallet.rewardsBalance),
+        },
+      },
     });
   } catch (error) {
     await t.rollback();
     console.error("Error processing deposit:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: "Error processing deposit",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -201,7 +209,7 @@ exports.deposit = async (req, res) => {
  */
 exports.withdraw = async (req, res) => {
   const t = await sequelize.transaction();
-  
+
   try {
     const userId = req.user.userId;
     const { amount, description, reference } = req.body;
@@ -209,7 +217,7 @@ exports.withdraw = async (req, res) => {
     if (!amount || amount <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Invalid amount"
+        message: "Invalid amount",
       });
     }
 
@@ -218,7 +226,7 @@ exports.withdraw = async (req, res) => {
     if (!wallet) {
       return res.status(404).json({
         success: false,
-        message: "Wallet not found"
+        message: "Wallet not found",
       });
     }
 
@@ -226,23 +234,26 @@ exports.withdraw = async (req, res) => {
     if (parseFloat(wallet.cashBalance) < parseFloat(amount)) {
       return res.status(400).json({
         success: false,
-        message: "Insufficient balance"
+        message: "Insufficient balance",
       });
     }
 
     // Create transaction record
-    const transaction = await Transaction.create({
-      userId,
-      walletId: wallet.id,
-      type: 'withdrawal',
-      amount,
-      currency: wallet.currency,
-      status: 'completed', // In real app, this might be 'pending' for processing
-      description: description || 'Cash withdrawal',
-      reference,
-      balanceType: 'cash',
-      processedAt: new Date()
-    }, { transaction: t });
+    const transaction = await Transaction.create(
+      {
+        userId,
+        walletId: wallet.id,
+        type: "withdrawal",
+        amount,
+        currency: wallet.currency,
+        status: "completed", // In real app, this might be 'pending' for processing
+        description: description || "Cash withdrawal",
+        reference,
+        balanceType: "cash",
+        processedAt: new Date(),
+      },
+      { transaction: t }
+    );
 
     // Update wallet balance
     wallet.cashBalance = parseFloat(wallet.cashBalance) - parseFloat(amount);
@@ -259,22 +270,23 @@ exports.withdraw = async (req, res) => {
           id: transaction.id,
           amount: parseFloat(transaction.amount),
           currency: transaction.currency,
-          status: transaction.status
+          status: transaction.status,
         },
         newBalance: {
           cashBalance: parseFloat(wallet.cashBalance),
           rewardsBalance: parseFloat(wallet.rewardsBalance),
-          totalBalance: parseFloat(wallet.cashBalance) + parseFloat(wallet.rewardsBalance)
-        }
-      }
+          totalBalance:
+            parseFloat(wallet.cashBalance) + parseFloat(wallet.rewardsBalance),
+        },
+      },
     });
   } catch (error) {
     await t.rollback();
     console.error("Error processing withdrawal:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: "Error processing withdrawal",
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -284,15 +296,15 @@ exports.withdraw = async (req, res) => {
  */
 exports.addRewards = async (req, res) => {
   const t = await sequelize.transaction();
-  
+
   try {
     const userId = req.user.userId;
-    const { amount, description, reference, type = 'reward' } = req.body;
+    const { amount, description, reference, type = "reward" } = req.body;
 
     if (!amount || amount <= 0) {
       return res.status(400).json({
         success: false,
-        message: "Invalid amount"
+        message: "Invalid amount",
       });
     }
 
@@ -300,30 +312,37 @@ exports.addRewards = async (req, res) => {
     let wallet = await Wallet.findOne({ where: { userId }, transaction: t });
     if (!wallet) {
       const user = await User.findByPk(userId);
-      wallet = await Wallet.create({
-        userId,
-        currency: user.currency || 'TND',
-        cashBalance: 0.00,
-        rewardsBalance: 0.00
-      }, { transaction: t });
+      wallet = await Wallet.create(
+        {
+          userId,
+          currency: user.currency || "TND",
+          cashBalance: 0.0,
+          rewardsBalance: 0.0,
+        },
+        { transaction: t }
+      );
     }
 
     // Create transaction record
-    const transaction = await Transaction.create({
-      userId,
-      walletId: wallet.id,
-      type,
-      amount,
-      currency: wallet.currency,
-      status: 'completed',
-      description: description || 'Rewards earned',
-      reference,
-      balanceType: 'rewards',
-      processedAt: new Date()
-    }, { transaction: t });
+    const transaction = await Transaction.create(
+      {
+        userId,
+        walletId: wallet.id,
+        type,
+        amount,
+        currency: wallet.currency,
+        status: "completed",
+        description: description || "Rewards earned",
+        reference,
+        balanceType: "rewards",
+        processedAt: new Date(),
+      },
+      { transaction: t }
+    );
 
     // Update wallet balance
-    wallet.rewardsBalance = parseFloat(wallet.rewardsBalance) + parseFloat(amount);
+    wallet.rewardsBalance =
+      parseFloat(wallet.rewardsBalance) + parseFloat(amount);
     wallet.lastTransactionAt = new Date();
     await wallet.save({ transaction: t });
 
@@ -337,22 +356,23 @@ exports.addRewards = async (req, res) => {
           id: transaction.id,
           amount: parseFloat(transaction.amount),
           currency: transaction.currency,
-          status: transaction.status
+          status: transaction.status,
         },
         newBalance: {
           cashBalance: parseFloat(wallet.cashBalance),
           rewardsBalance: parseFloat(wallet.rewardsBalance),
-          totalBalance: parseFloat(wallet.cashBalance) + parseFloat(wallet.rewardsBalance)
-        }
-      }
+          totalBalance:
+            parseFloat(wallet.cashBalance) + parseFloat(wallet.rewardsBalance),
+        },
+      },
     });
   } catch (error) {
     await t.rollback();
     console.error("Error adding rewards:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: "Error adding rewards",
-      error: error.message 
+      error: error.message,
     });
   }
-}; 
+};

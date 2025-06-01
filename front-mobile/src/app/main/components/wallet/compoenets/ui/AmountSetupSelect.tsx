@@ -13,7 +13,7 @@ import { fetchUserSettings } from "../../../../services/settings";
 const { width } = Dimensions.get("window");
 const NAVY = "#0A0E23";
 const GREEN = "#10B981";
-const quickAmounts = [2000, 5000, 15000];
+const quickAmounts = [1000, 2000, 5000];
 
 // hard‐code or pull from your auth context
 const USER_EMAIL = "mouhamedaminkraiem09@gmail.com";
@@ -27,12 +27,26 @@ const AmountSetupSelect: React.FC<Props> = ({ amount, setAmount }) => {
   const [currency, setCurrency] = useState<"USD" | "EUR" | "TND">("USD");
   const router = useRouter();
 
+  // Add debugging
+  console.log("AmountSetupSelect rendered with amount:", amount);
+
   // 1) fetch user settings once
   useEffect(() => {
     fetchUserSettings(USER_EMAIL).then((settings) => {
       setCurrency(settings.currency);
     });
   }, []);
+
+  // Helper function to track amount changes
+  const handleSetAmount = (newAmount: number) => {
+    console.log(
+      "AmountSetupSelect: Setting amount from",
+      amount,
+      "to",
+      newAmount
+    );
+    setAmount(newAmount);
+  };
 
   // 2) map code → symbol
   const symbolMap: Record<"USD" | "EUR" | "TND", string> = {
@@ -57,7 +71,7 @@ const AmountSetupSelect: React.FC<Props> = ({ amount, setAmount }) => {
       <View className="flex-row items-center">
         <TouchableOpacity
           className="h-12 w-12 rounded-xl bg-black items-center justify-center mr-3"
-          onPress={() => setAmount(Math.max(0, amount - 500))}
+          onPress={() => handleSetAmount(Math.max(0, amount - 500))}
         >
           <Feather name="minus" size={20} color="#fff" />
         </TouchableOpacity>
@@ -80,7 +94,7 @@ const AmountSetupSelect: React.FC<Props> = ({ amount, setAmount }) => {
 
         <TouchableOpacity
           className="h-12 w-12 rounded-xl bg-black items-center justify-center ml-3"
-          onPress={() => setAmount(amount + 500)}
+          onPress={() => handleSetAmount(amount + 500)}
         >
           <Feather name="plus" size={20} color="#fff" />
         </TouchableOpacity>
@@ -103,7 +117,7 @@ const AmountSetupSelect: React.FC<Props> = ({ amount, setAmount }) => {
                   ? "border-[#10B981] bg-[#10B9811A]"
                   : "border-gray-200 bg-white"
               }`}
-              onPress={() => setAmount(amt)}
+              onPress={() => handleSetAmount(amt)}
             >
               <Text
                 className={`text-sm font-semibold ${
