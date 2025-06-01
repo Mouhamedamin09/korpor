@@ -19,7 +19,9 @@
     },
     "android": {
       "permissions": [
-        "VIBRATE"
+        "VIBRATE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
@@ -30,19 +32,16 @@
     "web": {
       "favicon": "./src/assets/favicon.png"
     },
-    "plugins": [
-      "expo-router",
-      "expo-camera",
-      "expo-font"
-      "expo-secure-store"
-    ],
+    "plugins": ["expo-router", "expo-camera", "expo-secure-store", "expo-font"],
     "extra": {
       "router": {
         "origin": false
       },
       "eas": {
-        "projectId": "d0b7aaf4-fe95-46ee-a917-59ba2485d574"
+        "projectId": "d0b7aaf4-fe95-46ee-a917-59ba2485d574",
+        "owner": "korpor"
       }
-    }
+    },
+    "owner": "korpor"
   }
 }

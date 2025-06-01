@@ -1,7 +1,7 @@
 // @main/services/Preferences.ts
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import API_URL from '../../../shared/constants/api';
+import { useAuthStore } from "@auth/services/authStore";
+import API_URL from "../../../shared/constants/api";
 
 export type Market = "Tunisia" | "France";
 export type Preference = "all" | "local";
@@ -15,17 +15,17 @@ export interface UserPreferences {
 const getAuthToken = async (): Promise<string | null> => {
   try {
     // Try to get real token from AsyncStorage first
-    const token = await AsyncStorage.getItem('accessToken');
+    const token = useAuthStore.getState().accessToken;
     if (token) {
       return token;
     }
-    
+
     // For development, use mock token for user ID 1
-    return 'mock-token-user-1';
+    return "mock-token-user-1";
   } catch (error) {
-    console.error('Error getting auth token:', error);
+    console.error("Error getting auth token:", error);
     // Fallback to mock token for development
-    return 'mock-token-user-1';
+    return "mock-token-user-1";
   }
 };
 
@@ -35,46 +35,49 @@ const getAuthToken = async (): Promise<string | null> => {
 export async function getUserPreferences(): Promise<UserPreferences> {
   try {
     const token = await getAuthToken();
-    
+
     if (!token) {
-      throw new Error('Authentication required');
+      throw new Error("Authentication required");
     }
 
-    console.log('📱 Fetching user preferences from:', `${API_URL}/api/preferences`);
-    
+    console.log(
+      "📱 Fetching user preferences from:",
+      `${API_URL}/api/preferences`
+    );
+
     const response = await fetch(`${API_URL}/api/preferences`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     });
 
-    console.log('📱 Preferences response status:', response.status);
+    console.log("📱 Preferences response status:", response.status);
 
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid
-        await AsyncStorage.removeItem('accessToken');
-        throw new Error('Session expired. Please login again.');
+        await AsyncStorage.removeItem("accessToken");
+        throw new Error("Session expired. Please login again.");
       }
       throw new Error(`Server error: ${response.status}`);
     }
 
     const result = await response.json();
-    console.log('📱 Preferences data received:', result);
-    
+    console.log("📱 Preferences data received:", result);
+
     return {
       region: result.data.region as Market,
-      preference: result.data.preference as Preference
+      preference: result.data.preference as Preference,
     };
   } catch (error) {
-    console.error('Error fetching user preferences:', error);
-    
+    console.error("Error fetching user preferences:", error);
+
     // Return default preferences on error
     return {
       region: "Tunisia",
-      preference: "all"
+      preference: "all",
     };
   }
 }
@@ -87,42 +90,42 @@ export async function setUserPreference(
 ): Promise<UserPreferences> {
   try {
     const token = await getAuthToken();
-    
+
     if (!token) {
-      throw new Error('Authentication required');
+      throw new Error("Authentication required");
     }
 
-    console.log('📱 Updating user preference to:', preference);
-    
+    console.log("📱 Updating user preference to:", preference);
+
     const response = await fetch(`${API_URL}/api/preferences/preference`, {
-      method: 'PUT',
+      method: "PUT",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ preference })
+      body: JSON.stringify({ preference }),
     });
 
-    console.log('📱 Update preference response status:', response.status);
+    console.log("📱 Update preference response status:", response.status);
 
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid
-        await AsyncStorage.removeItem('accessToken');
-        throw new Error('Session expired. Please login again.');
+        await AsyncStorage.removeItem("accessToken");
+        throw new Error("Session expired. Please login again.");
       }
       throw new Error(`Server error: ${response.status}`);
     }
 
     const result = await response.json();
-    console.log('📱 Update preference result:', result);
-    
+    console.log("📱 Update preference result:", result);
+
     return {
       region: result.data.region as Market,
-      preference: result.data.preference as Preference
+      preference: result.data.preference as Preference,
     };
   } catch (error) {
-    console.error('Error updating user preference:', error);
+    console.error("Error updating user preference:", error);
     throw error;
   }
 }
@@ -130,47 +133,45 @@ export async function setUserPreference(
 /**
  * Update the region on the server
  */
-export async function setUserRegion(
-  region: Market
-): Promise<UserPreferences> {
+export async function setUserRegion(region: Market): Promise<UserPreferences> {
   try {
     const token = await getAuthToken();
-    
+
     if (!token) {
-      throw new Error('Authentication required');
+      throw new Error("Authentication required");
     }
 
-    console.log('📱 Updating user region to:', region);
-    
+    console.log("📱 Updating user region to:", region);
+
     const response = await fetch(`${API_URL}/api/preferences/region`, {
-      method: 'PUT',
+      method: "PUT",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ region })
+      body: JSON.stringify({ region }),
     });
 
-    console.log('📱 Update region response status:', response.status);
+    console.log("📱 Update region response status:", response.status);
 
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid
-        await AsyncStorage.removeItem('accessToken');
-        throw new Error('Session expired. Please login again.');
+        await AsyncStorage.removeItem("accessToken");
+        throw new Error("Session expired. Please login again.");
       }
       throw new Error(`Server error: ${response.status}`);
     }
 
     const result = await response.json();
-    console.log('📱 Update region result:', result);
-    
+    console.log("📱 Update region result:", result);
+
     return {
       region: result.data.region as Market,
-      preference: result.data.preference as Preference
+      preference: result.data.preference as Preference,
     };
   } catch (error) {
-    console.error('Error updating user region:', error);
+    console.error("Error updating user region:", error);
     throw error;
   }
 }

@@ -66,7 +66,7 @@ const AutoInvestScreen: React.FC = () => {
       setLoading(true);
 
       // Debug: Check authentication status
-      const token = await AsyncStorage.getItem("accessToken");
+      const token = useAuthStore.getState().accessToken;
       const userData = await AsyncStorage.getItem("userData");
       console.log("🔍 AutoInvest Screen - Auth Debug:");
       console.log("- Token exists:", !!token);

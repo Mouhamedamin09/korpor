@@ -12,6 +12,7 @@ import {
   OutlinedButtonSm,
 } from "../ui/index";
 import { signin } from "@auth/services/signin";
+import { handleBiometricAuth } from "@/shared/utils/biometricAuth";
 
 export default function LoginCard(): JSX.Element {
   const [email, setEmail] = useState<string>("");
@@ -23,14 +24,12 @@ export default function LoginCard(): JSX.Element {
     setErrorMessage("");
     setIsLoading(true);
 
-    // Basic validation
     if (!email.trim() || !password.trim()) {
       setErrorMessage("Please fill out all required fields.");
       setIsLoading(false);
       return;
     }
 
-    // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setErrorMessage("Please enter a valid email address.");
@@ -42,12 +41,13 @@ export default function LoginCard(): JSX.Element {
       const responseData = await signin({ email, password });
       console.log("Sign-in successful:", responseData);
 
-      Alert.alert("Success", "You have successfully logged in!", [
-        {
-          text: "OK",
-          onPress: () => router.replace("/main/screens/(tabs)/properties"),
-        },
-      ]);
+      // Prompt biometric authentication
+      const result = await handleBiometricAuth();
+      if (result.success) {
+        router.replace("/main/screens/(tabs)/properties");
+      } else {
+        setErrorMessage("Biometric authentication failed.");
+      }
     } catch (error: any) {
       console.error("Sign-in error:", error);
       setErrorMessage(error.message || "Unable to sign in. Please try again.");
@@ -65,7 +65,6 @@ export default function LoginCard(): JSX.Element {
         Enter your email and password to log in
       </Text>
 
-      {/* Google OAuth */}
       <GoogleButton
         text="Continue with Google"
         onPress={() => console.log("Google button pressed")}
@@ -73,7 +72,6 @@ export default function LoginCard(): JSX.Element {
 
       <DividerWithText text="Or login with" />
 
-      {/* Email Input */}
       <EmailInput
         placeholder="Email"
         value={email}
@@ -84,7 +82,6 @@ export default function LoginCard(): JSX.Element {
         editable={!isLoading}
       />
 
-      {/* Password Input */}
       <PasswordInput
         placeholder="Password"
         value={password}
@@ -95,28 +92,24 @@ export default function LoginCard(): JSX.Element {
         editable={!isLoading}
       />
 
-      {/* Login Button */}
       <OutlinedButtonSm
         title={isLoading ? "Signing in..." : "Log in"}
         onPress={handleSignin}
         disabled={isLoading}
       />
 
-      {/* Loading spinner */}
       {isLoading && (
         <View className="items-center mt-2">
           <ActivityIndicator size="small" color="#fafafa" />
         </View>
       )}
 
-      {/* Error message */}
       {errorMessage ? (
         <Text className="text-red-500 text-sm mt-2 mb-2 text-center">
           {errorMessage}
         </Text>
       ) : null}
 
-      {/* Options */}
       <View className="flex-row items-center pt-1 justify-between mx-1">
         <RememberMeCheckbox disabled={isLoading} />
         <PressableText
@@ -129,7 +122,6 @@ export default function LoginCard(): JSX.Element {
         />
       </View>
 
-      {/* Sign-up */}
       <View className="flex-row justify-center items-center pt-4">
         <Text className="ml-2 text-gray-400 text-xs font-semibold">
           Don't have an account?{" "}
