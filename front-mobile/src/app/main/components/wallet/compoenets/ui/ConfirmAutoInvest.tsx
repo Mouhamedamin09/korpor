@@ -2,7 +2,7 @@
 /* --------------------------------------------------------------------------
    🔹  ConfirmAutoInvest — step-4 review & launch screen
    -------------------------------------------------------------------------- */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,19 +11,31 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Feather from "react-native-vector-icons/Feather";
 import { WebView } from "react-native-webview";
 import Card from "@main/components/profileScreens/components/ui/card";
 import { ThemeKey } from "./ThemeCard";
-import { fetchAccountData, AccountData } from "@main/services/account";
-import { fetchWalletBalance, WalletBalance } from "@main/services/wallet";
+import {
+  fetchAccountData,
+  fetchUserSettings,
+  type UserSettings,
+  type AccountData,
+} from "@main/services/api";
+import {
+  fetchWalletBalance,
+  type WalletBalance,
+  depositFunds,
+  type DepositRequest,
+} from "@main/services/wallet";
 import {
   createPaymeDeposit,
   type CreatePaymeDepositRequest,
   type PaymeDepositResponse,
 } from "@main/services/payment.service";
+import { useFocusEffect } from "expo-router";
 
 export type DepositData = {
   startDate: string;
@@ -68,6 +80,7 @@ const ConfirmAutoInvest: React.FC<Props> = ({
 }) => {
   const [accountData, setAccountData] = useState<AccountData | null>(null);
   const [walletData, setWalletData] = useState<WalletBalance | null>(null);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   // PayMe WebView states
@@ -89,12 +102,16 @@ const ConfirmAutoInvest: React.FC<Props> = ({
     const loadUserData = async () => {
       try {
         setLoading(true);
-        const [account, wallet] = await Promise.all([
-          fetchAccountData(),
-          fetchWalletBalance(),
-        ]);
+        const account = await fetchAccountData();
         setAccountData(account);
+
+        const [wallet, settings] = await Promise.all([
+          fetchWalletBalance(),
+          fetchUserSettings(account.email),
+        ]);
+
         setWalletData(wallet);
+        setUserSettings(settings);
       } catch (error) {
         Alert.alert(
           "Notice",
@@ -109,6 +126,26 @@ const ConfirmAutoInvest: React.FC<Props> = ({
     loadUserData();
   }, []);
 
+  // Refresh user settings when screen comes into focus to pick up currency changes
+  useFocusEffect(
+    useCallback(() => {
+      const refreshUserSettings = async () => {
+        if (accountData) {
+          try {
+            const settings = await fetchUserSettings(accountData.email);
+            setUserSettings(settings);
+          } catch (err) {
+            console.error(
+              "❌ ConfirmAutoInvest: Error refreshing user settings:",
+              err
+            );
+          }
+        }
+      };
+      refreshUserSettings();
+    }, [accountData])
+  );
+
   const formatThemeName = (themeKey: ThemeKey): string => {
     switch (themeKey) {
       case "growth":
@@ -122,11 +159,28 @@ const ConfirmAutoInvest: React.FC<Props> = ({
     }
   };
 
-  const currency = walletData?.currency || "TND";
+  // Use user's preferred currency from settings, fallback to wallet currency, then TND
+  const currency = userSettings?.currency || walletData?.currency || "TND";
   const isAccountVerified = accountData?.isVerified ?? false;
   const actualVerificationStatus = isAccountVerified ? "Verified" : "Pending";
   const availableBalance = walletData?.cashBalance ?? 0;
   const hasSufficientFunds = availableBalance >= amount;
+
+  // Get currency symbol
+  const getCurrencySymbol = (curr: string) => {
+    switch (curr) {
+      case "USD":
+        return "$";
+      case "EUR":
+        return "€";
+      case "TND":
+        return "TND";
+      default:
+        return curr;
+    }
+  };
+
+  const currencySymbol = getCurrencySymbol(currency);
 
   // Check if PayMe is selected as payment method
   const isPaymeSelected = deposit.paymentMethodId === "payme";
@@ -312,7 +366,7 @@ const ConfirmAutoInvest: React.FC<Props> = ({
               Monthly Investment
             </Text>
             <Text className="text-2xl font-bold text-gray-900">
-              {currency} {amount.toLocaleString()}
+              {currencySymbol} {amount.toLocaleString()}
             </Text>
           </View>
 
@@ -406,8 +460,8 @@ const ConfirmAutoInvest: React.FC<Props> = ({
               />
               <Text className="text-sm text-red-800 flex-1">
                 Insufficient funds for the first monthly investment. Please
-                deposit at least {currency} {amount.toLocaleString()} to your
-                wallet.
+                deposit at least {currencySymbol} {amount.toLocaleString()} to
+                your wallet.
               </Text>
             </View>
           </View>
