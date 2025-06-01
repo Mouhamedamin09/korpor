@@ -43,6 +43,14 @@ import {
 } from "@main/services/payment.service";
 import { fetchAccountData } from "@main/services/account";
 
+// Card brand images
+const cardBrandImages = {
+  visa: require("@assets/visa.png"),
+  mastercard: require("@assets/mastercard.png"),
+  payme: require("@assets/payme.png"),
+  stripe: require("@assets/stripe.png"),
+};
+
 type PaymentMethodOption = {
   id: PaymentMethodType;
   type: PaymentMethodType;
@@ -515,6 +523,17 @@ const PaymentMethodContent: React.FC = () => {
     setTestCardsSheetVisible(true);
   };
 
+  // Helper function to get card brand image
+  const getCardBrandImage = (method: SavedPaymentMethod) => {
+    if (method.type === "stripe" && method.card) {
+      const brand = method.card.brand.toLowerCase();
+      if (brand === "visa") return cardBrandImages.visa;
+      if (brand === "mastercard") return cardBrandImages.mastercard;
+      return cardBrandImages.stripe;
+    }
+    return cardBrandImages.payme;
+  };
+
   // Convert backend payment methods to local format
   const getPaymentMethodOptions = (): PaymentMethodOption[] => {
     if (!paymentMethods) return [];
@@ -598,64 +617,66 @@ const PaymentMethodContent: React.FC = () => {
             {savedPaymentMethods.map((method) => (
               <Card
                 key={method.id}
-                extraStyle="mb-3 p-4 bg-white rounded-2xl shadow-sm"
+                extraStyle={`mb-3 p-0 rounded-2xl shadow-sm overflow-hidden ${
+                  method.is_default
+                    ? "border-2 border-green-500"
+                    : "border border-gray-200"
+                }`}
               >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <View className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center mr-4">
-                      <Feather
-                        name={
-                          method.type === "stripe"
-                            ? "credit-card"
-                            : "smartphone"
-                        }
-                        size={24}
-                        color="#374151"
-                      />
-                    </View>
-                    <View className="flex-1">
-                      {method.type === "stripe" && method.card && (
-                        <>
-                          <View className="flex-row items-center">
-                            <Text className="text-base font-semibold text-gray-900">
-                              {formatCardDisplay(
-                                method.card.brand,
-                                method.card.last4,
-                                method.card.exp_month,
-                                method.card.exp_year
+                <View className="p-4 bg-white">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1">
+                      <View className="w-16 h-10 rounded-lg bg-white shadow-sm items-center justify-center mr-4 border border-gray-100">
+                        <Image
+                          source={getCardBrandImage(method)}
+                          className="w-10 h-6"
+                          resizeMode="contain"
+                        />
+                      </View>
+                      <View className="flex-1">
+                        {method.type === "stripe" && method.card && (
+                          <>
+                            <View className="flex-row items-center">
+                              <Text className="text-base font-semibold text-gray-900">
+                                {formatCardDisplay(
+                                  method.card.brand,
+                                  method.card.last4,
+                                  method.card.exp_month,
+                                  method.card.exp_year
+                                )}
+                              </Text>
+                              {method.is_default && (
+                                <View className="ml-2 px-2 py-1 bg-green-100 rounded">
+                                  <Text className="text-xs text-green-600 font-medium">
+                                    Default
+                                  </Text>
+                                </View>
                               )}
+                            </View>
+                            <Text className="text-sm text-gray-600">
+                              Credit/Debit Card
                             </Text>
-                            {method.is_default && (
-                              <View className="ml-2 px-2 py-1 bg-green-100 rounded">
-                                <Text className="text-xs text-green-600 font-medium">
-                                  Default
-                                </Text>
-                              </View>
-                            )}
-                          </View>
-                          <Text className="text-sm text-gray-600">
-                            Credit/Debit Card
-                          </Text>
-                        </>
-                      )}
+                          </>
+                        )}
+                      </View>
                     </View>
-                  </View>
 
-                  <View className="flex-row items-center">
-                    {!method.is_default && (
+                    <View className="flex-row items-center">
+                      {!method.is_default && (
+                        <TouchableOpacity
+                          onPress={() => handleSetDefault(method.id)}
+                          className="p-2 mr-2"
+                        >
+                          <Feather name="star" size={18} color="#6B7280" />
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity
-                        onPress={() => handleSetDefault(method.id)}
-                        className="p-2 mr-2"
+                        onPress={() => handleRemoveCard(method)}
+                        className="p-2"
                       >
-                        <Feather name="star" size={18} color="#6B7280" />
+                        <Feather name="trash-2" size={18} color="#EF4444" />
                       </TouchableOpacity>
-                    )}
-                    <TouchableOpacity
-                      onPress={() => handleRemoveCard(method)}
-                      className="p-2"
-                    >
-                      <Feather name="trash-2" size={18} color="#EF4444" />
-                    </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               </Card>
@@ -746,10 +767,10 @@ const PaymentMethodContent: React.FC = () => {
             {paymentMethodOptions.map((method) => (
               <Card
                 key={method.id}
-                extraStyle="mb-4 p-4 bg-white rounded-2xl shadow-sm"
+                extraStyle="mb-4 p-0 bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200"
               >
                 <TouchableOpacity
-                  className={`flex-row items-center ${
+                  className={`p-4 flex-row items-center ${
                     !method.enabled ? "opacity-50" : ""
                   }`}
                   onPress={() => {
@@ -763,8 +784,16 @@ const PaymentMethodContent: React.FC = () => {
                   }}
                   disabled={!method.enabled || loading}
                 >
-                  <View className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center mr-4">
-                    <Feather name={method.icon} size={24} color="#374151" />
+                  <View className="w-16 h-10 rounded-lg bg-white shadow-sm items-center justify-center mr-4 border border-gray-100">
+                    <Image
+                      source={
+                        method.type === "stripe"
+                          ? cardBrandImages.stripe
+                          : cardBrandImages.payme
+                      }
+                      className="w-10 h-6"
+                      resizeMode="contain"
+                    />
                   </View>
 
                   <View className="flex-1">

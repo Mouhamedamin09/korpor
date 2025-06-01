@@ -1,5 +1,5 @@
 // components/AmountSetup.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,12 @@ import {
   Dimensions,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
-import { useRouter } from "expo-router";
-import { fetchUserSettings } from "../../../../services/settings";
+import { useRouter, useFocusEffect } from "expo-router";
+import {
+  fetchUserSettings,
+  fetchAccountData,
+  UserSettings,
+} from "@main/services/api";
 
 const { width } = Dimensions.get("window");
 const NAVY = "#0A0E23";
@@ -26,14 +30,40 @@ interface Props {
 const AmountSetup: React.FC<Props> = ({ onNext }) => {
   const [amount, setAmount] = useState<number>(2000);
   const [currency, setCurrency] = useState<"USD" | "EUR" | "TND">("USD");
+  const [userAccount, setUserAccount] = useState<any>(null);
   const router = useRouter();
 
-  // 1) fetch user settings once
+  // Load initial account data
   useEffect(() => {
-    fetchUserSettings(USER_EMAIL).then((settings) => {
-      setCurrency(settings.currency);
-    });
+    const loadAccount = async () => {
+      try {
+        const account = await fetchAccountData();
+        setUserAccount(account);
+        const settings = await fetchUserSettings(account.email);
+        setCurrency(settings.currency);
+      } catch (error) {
+        console.error("Error loading account data:", error);
+      }
+    };
+    loadAccount();
   }, []);
+
+  // Refresh currency when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      const refreshCurrency = async () => {
+        if (userAccount) {
+          try {
+            const settings = await fetchUserSettings(userAccount.email);
+            setCurrency(settings.currency);
+          } catch (error) {
+            console.error("Error refreshing currency:", error);
+          }
+        }
+      };
+      refreshCurrency();
+    }, [userAccount])
+  );
 
   // 2) map code → symbol
   const symbolMap: Record<"USD" | "EUR" | "TND", string> = {
@@ -43,7 +73,7 @@ const AmountSetup: React.FC<Props> = ({ onNext }) => {
   };
   const symbol = symbolMap[currency];
 
-  // 3) compute the “approx” exactly as before
+  // 3) compute the "approx" exactly as before
   //    (you could swap in a real EUR‐rate if you like)
   const approxValue = Math.round(amount * 0.32).toLocaleString();
 
@@ -69,7 +99,7 @@ const AmountSetup: React.FC<Props> = ({ onNext }) => {
         >
           <View className="flex-row items-center">
             <Text className="text-sm font-semibold text-[#0A0E23] mr-2">
-              TND
+              {currency}
             </Text>
             <Text className="text-2xl font-bold text-[#0A0E23] ml-10">
               {amount.toLocaleString()}
@@ -78,7 +108,9 @@ const AmountSetup: React.FC<Props> = ({ onNext }) => {
 
           {/* ← only this line changed */}
           <Text className="text-sm text-gray-500">
-            {`~${symbol} ${approxValue}`}
+            {currency !== "USD"
+              ? `~${symbol} ${approxValue}`
+              : `${symbol} ${amount.toLocaleString()}`}
           </Text>
         </View>
 
@@ -114,7 +146,7 @@ const AmountSetup: React.FC<Props> = ({ onNext }) => {
                   active ? "text-[#10B981]" : "text-[#0A0E23]"
                 }`}
               >
-                TND {amt.toLocaleString()}
+                {currency} {amt.toLocaleString()}
               </Text>
             </Pressable>
           );

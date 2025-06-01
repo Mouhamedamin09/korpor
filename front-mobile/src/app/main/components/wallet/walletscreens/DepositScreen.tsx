@@ -117,6 +117,26 @@ const DepositScreen: React.FC = () => {
     }, [])
   );
 
+  // Refresh user settings when screen comes into focus to pick up currency changes
+  useFocusEffect(
+    useCallback(() => {
+      const refreshUserSettings = async () => {
+        if (userAccount) {
+          try {
+            const settings = await fetchUserSettings(userAccount.email);
+            setUserSettings(settings);
+          } catch (err) {
+            console.error(
+              "❌ DepositScreen: Error refreshing user settings:",
+              err
+            );
+          }
+        }
+      };
+      refreshUserSettings();
+    }, [userAccount])
+  );
+
   const loadInitialData = async () => {
     try {
       setLoading(true);
@@ -226,11 +246,20 @@ const DepositScreen: React.FC = () => {
     }
   };
 
-  const selectedMethodData = savedPaymentMethods.find(
-    (m) => m.id === selectedMethod
-  );
+  const selectedMethodData: SavedPaymentMethod | undefined =
+    selectedMethod === "payme"
+      ? ({
+          id: "payme",
+          type: "payme",
+          is_default: false,
+          payme: {
+            phone_number: "N/A",
+          },
+        } as SavedPaymentMethod)
+      : savedPaymentMethods.find((m) => m.id === selectedMethod);
   const numAmount = parseFloat(amount) || 0;
-  const processingFee = 0.0; // No fee for deposits
+  const processingFee =
+    selectedMethod === "payme" ? 0.5 + numAmount * 0.015 : 0.0;
   const totalWithFee = numAmount + processingFee;
 
   const valid =
@@ -496,7 +525,7 @@ const DepositScreen: React.FC = () => {
   };
 
   const getProcessingTime = (method: SavedPaymentMethod): string => {
-    return method.type === "stripe" ? "Instant" : "1-3 business days";
+    return method.type === "stripe" ? "Instant" : "1-3 minutes";
   };
 
   if (loading) {
@@ -580,9 +609,15 @@ const DepositScreen: React.FC = () => {
             </Text>
 
             {/* Paymee Option */}
-            <Card extraStyle="mb-4 p-0 bg-white rounded-2xl shadow-sm overflow-hidden">
+            <Card
+              extraStyle={`mb-4 p-0 bg-white rounded-2xl shadow-sm overflow-hidden ${
+                selectedMethod === "payme"
+                  ? "border-2 border-green-500"
+                  : "border border-gray-200"
+              }`}
+            >
               <TouchableOpacity
-                className="bg-white"
+                className=" bg-white"
                 onPress={() => setSelectedMethod("payme")}
                 disabled={depositing}
               >
@@ -599,11 +634,6 @@ const DepositScreen: React.FC = () => {
                       <Text className="text-base font-semibold text-gray-900">
                         PayMe.tn
                       </Text>
-                      <View className="ml-2 px-2 py-1 bg-blue-100 rounded">
-                        <Text className="text-xs text-blue-600 font-medium">
-                          Redirect
-                        </Text>
-                      </View>
                     </View>
                     <Text className="text-sm text-gray-600">
                       Tunisian mobile payment solution
@@ -612,11 +642,6 @@ const DepositScreen: React.FC = () => {
                       Processing: 1-3 minutes • Fee: 1.5% + 0.5 TND
                     </Text>
                   </View>
-                  {selectedMethod === "payme" && (
-                    <View className="w-6 h-6 rounded-full bg-green-500 items-center justify-center">
-                      <Feather name="check" size={14} color="white" />
-                    </View>
-                  )}
                 </View>
               </TouchableOpacity>
             </Card>
@@ -632,9 +657,7 @@ const DepositScreen: React.FC = () => {
                 }`}
               >
                 <TouchableOpacity
-                  className={`p-4 ${
-                    selectedMethod === method.id ? "bg-green-50" : "bg-white"
-                  }`}
+                  className=" bg-white"
                   onPress={() => setSelectedMethod(method.id)}
                   disabled={depositing}
                 >
@@ -642,7 +665,7 @@ const DepositScreen: React.FC = () => {
                     <View className="w-16 h-10 rounded-lg bg-white shadow-sm items-center justify-center mr-4 border border-gray-100">
                       <Image
                         source={getCardBrandImage(method)}
-                        className="w-12 h-6"
+                        className="w-10 h-6"
                         resizeMode="contain"
                       />
                     </View>
@@ -665,11 +688,6 @@ const DepositScreen: React.FC = () => {
                           : "PayMe Account"}
                       </Text>
                     </View>
-                    {selectedMethod === method.id && (
-                      <View className="w-6 h-6 rounded-full bg-green-500 items-center justify-center">
-                        <Feather name="check" size={14} color="white" />
-                      </View>
-                    )}
                   </View>
                 </TouchableOpacity>
               </Card>
@@ -980,7 +998,7 @@ const DepositScreen: React.FC = () => {
             <Feather name="check" size={28} color="#10B981" />
           </View>
           <Text className="text-xl font-semibold text-gray-900 mb-4">
-            Deposit Successful! 🎉
+            Deposit Successful!
           </Text>
           <Text className="text-center text-gray-600 mb-6">
             {getCurrencySymbol(successData?.currency || "TND")}{" "}

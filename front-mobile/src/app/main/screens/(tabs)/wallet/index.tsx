@@ -23,6 +23,8 @@ import AcademyVideoCard from "@main/components/wallet/compoenets/ui/AcademyVideo
 import SecurityResourceCard from "@main/components/wallet/compoenets/ui/SecurityResourceCard";
 
 import { fetchWalletBalance, WalletBalance } from "@main/services/wallet";
+import { fetchAccountData } from "@main/services/account";
+import { fetchUserSettings } from "@main/services/api";
 
 const { width } = Dimensions.get("window");
 const ACTION_W = width / 4;
@@ -63,14 +65,23 @@ const PulseBlock = ({
 const WalletScreen: React.FC = () => {
   const router = useRouter();
   const [walletData, setWalletData] = useState<WalletBalance | null>(null);
+  const [userSettings, setUserSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [investSheetOpen, setInvestSheetOpen] = useState(false);
 
   const loadWalletData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchWalletBalance();
+      const [data, account] = await Promise.all([
+        fetchWalletBalance(),
+        fetchAccountData(),
+      ]);
+
       setWalletData(data);
+
+      // Fetch user settings for currency preference
+      const settings = await fetchUserSettings(account.email);
+      setUserSettings(settings);
     } catch (e) {
       console.warn("Failed to load wallet data:", e);
     } finally {
@@ -84,7 +95,9 @@ const WalletScreen: React.FC = () => {
     }, [loadWalletData])
   );
 
-  const currency = walletData?.currency || "TND";
+  // Use user's preferred currency from settings, fallback to wallet currency, then TND
+  const currency: "USD" | "EUR" | "TND" =
+    userSettings?.currency || walletData?.currency || "TND";
   const cur = CURRENCY[currency];
 
   return (
