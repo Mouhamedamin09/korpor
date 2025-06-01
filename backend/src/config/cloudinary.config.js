@@ -23,23 +23,28 @@ const uploadBuffer = async (buffer, options = {}) => {
     // If Cloudinary credentials are not set, log a warning and return a mock response
     if (!process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
       console.warn(
-        "Cloudinary credentials not set. Using mock upload response.",
+        "Cloudinary credentials not set. Using mock upload response."
       );
+      //to ghassen(hethi taamel upload lel image lel Cloudinary cloud ama mock!!)
       return {
-        secure_url: `https://placeholder.com/${options.public_id || 'image'}.jpg`,
+        secure_url: `https://placeholder.com/${
+          options.public_id || "image"
+        }.jpg`,
         public_id: options.public_id || "placeholder-id",
         ...options,
       };
     }
 
     return new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(options, (error, result) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(result);
-        }
-      }).end(buffer);
+      cloudinary.uploader
+        .upload_stream(options, (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        })
+        .end(buffer);
     });
   } catch (error) {
     console.error("Error uploading buffer to Cloudinary:", error);
@@ -50,4 +55,4 @@ const uploadBuffer = async (buffer, options = {}) => {
 module.exports = {
   ...cloudinary,
   uploadBuffer,
-}; 
+};

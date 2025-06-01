@@ -95,13 +95,52 @@ export interface CreatePaymePaymentRequest {
   amount: number;
   walletAddress: string;
   note?: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  projectId?: string;
 }
 
 export interface PaymePaymentResponse {
   status: string;
   payment_method: string;
   message: string;
-  features_planned: string[];
+  token: string;
+  order_id: string;
+  payment_url: string;
+  amount: number;
+  currency: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  note: string;
+  test_credentials: {
+    phone: string;
+    password: string;
+  };
+  instructions: string[];
+}
+
+export interface PaymePaymentStatusRequest {
+  token: string;
+}
+
+export interface PaymePaymentStatusResponse {
+  status: string;
+  payment: {
+    token: string;
+    order_id: string;
+    amount: number;
+    currency: string;
+    status: "pending" | "completed" | "failed";
+    created_at: string;
+    completed_at?: string;
+    transaction_id?: number;
+    received_amount?: number;
+    transaction_fee?: number;
+  };
 }
 
 // Add PayMe Account Save Types
@@ -138,6 +177,89 @@ export interface PaymentStatus {
     created_at: string;
     updated_at: string;
   };
+}
+
+// Add PayMe Deposit Types
+export interface CreatePaymeDepositRequest {
+  amount: number;
+  walletAddress: string;
+  note?: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+}
+
+export interface PaymeDepositResponse {
+  status: string;
+  payment_method: string;
+  message: string;
+  token: string;
+  order_id: string;
+  payment_url: string;
+  amount: number;
+  currency: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  note: string;
+  test_credentials: {
+    phone: string;
+    password: string;
+  };
+  instructions: string[];
+}
+
+// Add PayMe Withdrawal Types
+export interface CreatePaymeWithdrawalRequest {
+  amount: number;
+  walletAddress: string;
+  note?: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  bank_account?: {
+    account_number: string;
+    bank_name: string;
+    account_holder: string;
+  };
+}
+
+export interface PaymeWithdrawalResponse {
+  status: string;
+  message: string;
+  withdrawal_id: string;
+  amount: number;
+  currency: string;
+  processing_time: string;
+  fees: number;
+  net_amount: number;
+  bank_account: {
+    account_number: string;
+    bank_name: string;
+    account_holder: string;
+  };
+}
+
+// Add PayMe Refund Types
+export interface CreatePaymeRefundRequest {
+  original_payment_token: string;
+  amount?: number; // If not provided, full refund
+  reason?: string;
+  walletAddress: string;
+}
+
+export interface PaymeRefundResponse {
+  status: string;
+  message: string;
+  refund_id: string;
+  original_payment_token: string;
+  refund_amount: number;
+  currency: string;
+  processing_time: string;
+  refund_status: "pending" | "completed" | "failed";
 }
 
 // Helper function to get authentication headers
@@ -577,11 +699,11 @@ export const createPaymentWithSavedStripeMethod = async (
 };
 
 // ================================
-// PAYME PAYMENTS (COMING SOON)
+// PAYME PAYMENTS (NOW LIVE)
 // ================================
 
 /**
- * Create PayMe payment (returns coming soon message)
+ * Create PayMe payment with real API integration
  */
 export const createPaymePayment = async (
   request: CreatePaymePaymentRequest
@@ -602,10 +724,148 @@ export const createPaymePayment = async (
       );
     }
 
-    return await response.json();
+    const result = await response.json();
+
+    if (result.status === "success") {
+      return result;
+    } else {
+      throw new Error(result.message || "Failed to create PayMe payment");
+    }
   } catch (error) {
     console.error("Error creating PayMe payment:", error);
     throw error;
+  }
+};
+
+/**
+ * Check PayMe payment status by token
+ */
+export const checkPaymePaymentStatus = async (
+  token: string
+): Promise<PaymePaymentStatusResponse> => {
+  try {
+    const response = await fetch(
+      `${API_URL}/api/payment/payme/status/${token}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+
+    if (result.status === "success") {
+      return result;
+    } else {
+      throw new Error(result.message || "Failed to check payment status");
+    }
+  } catch (error) {
+    console.error("Error checking PayMe payment status:", error);
+    throw error;
+  }
+};
+
+export const createPaymeDeposit = async (
+  request: CreatePaymeDepositRequest
+): Promise<PaymeDepositResponse> => {
+  try {
+    console.log("Creating PayMe deposit:", request);
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_URL}/api/payment/payme/deposit`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(request),
+    });
+
+    console.log("PayMe deposit response status:", response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("PayMe deposit created successfully:", result);
+    return result;
+  } catch (error) {
+    console.error("Error creating PayMe deposit:", error);
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to create PayMe deposit"
+    );
+  }
+};
+
+export const createPaymeWithdrawal = async (
+  request: CreatePaymeWithdrawalRequest
+): Promise<PaymeWithdrawalResponse> => {
+  try {
+    console.log("Creating PayMe withdrawal:", request);
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_URL}/api/payment/payme/withdrawal`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(request),
+    });
+
+    console.log("PayMe withdrawal response status:", response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("PayMe withdrawal created successfully:", result);
+    return result;
+  } catch (error) {
+    console.error("Error creating PayMe withdrawal:", error);
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "Failed to create PayMe withdrawal"
+    );
+  }
+};
+
+export const createPaymeRefund = async (
+  request: CreatePaymeRefundRequest
+): Promise<PaymeRefundResponse> => {
+  try {
+    console.log("Creating PayMe refund:", request);
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_URL}/api/payment/payme/refund`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(request),
+    });
+
+    console.log("PayMe refund response status:", response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("PayMe refund created successfully:", result);
+    return result;
+  } catch (error) {
+    console.error("Error creating PayMe refund:", error);
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to create PayMe refund"
+    );
   }
 };
 

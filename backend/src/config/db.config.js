@@ -1,4 +1,5 @@
 require("dotenv").config();
+//let nodejs interact with Myql
 const { Sequelize } = require("sequelize");
 const mysql = require("mysql2/promise");
 
@@ -25,9 +26,7 @@ if (INSTANCE_CONNECTION_NAME) {
 } else {
   console.log(`- Host: ${DB_HOST}`);
   console.log(`- Port: ${DB_PORT}`);
-  console.log(
-    "- Using direct database connection (no Cloud SQL instance specified)",
-  );
+  console.log("- Using direct database connection ");
 }
 
 // Sequelize setup with improved configuration
@@ -41,9 +40,9 @@ const sequelizeConfig = {
     idle: 10000,
   },
   define: {
-    underscored: true,
-    timestamps: true,
-    paranoid: false,
+    underscored: true, // Converts camelCase field names to snake_case in the DB exp(createdAt,createdat)
+    timestamps: true, // Adds createdAt and updatedAt columns to the table
+    paranoid: false, // Adds deletedAt column to the table
   },
   dialectOptions: {
     connectTimeout: 60000, // 60 second timeout
@@ -110,26 +109,26 @@ const testConnection = async () => {
     // Add specific error handling for common issues
     if (error.name === "SequelizeConnectionRefusedError") {
       console.error(
-        "The database server refused the connection. Please check if the database server is running.",
+        "The database server refused the connection. Please check if the database server is running."
       );
     } else if (error.name === "SequelizeHostNotFoundError") {
       console.error(
-        "The database host could not be found. Please check your DB_HOST setting.",
+        "The database host could not be found. Please check your DB_HOST setting."
       );
     } else if (error.name === "SequelizeAccessDeniedError") {
       console.error(
-        "Access denied. Please check your database username and password.",
+        "Access denied. Please check your database username and password."
       );
     } else if (error.name === "SequelizeConnectionTimedOutError") {
       console.error(
-        "Connection timed out. Please check network connectivity to the database.",
+        "Connection timed out. Please check network connectivity to the database."
       );
     }
 
     // Recommend checking Cloud SQL proxy if using Cloud SQL
     if (INSTANCE_CONNECTION_NAME) {
       console.error(
-        "For Cloud SQL connections, verify that the instance connection name is correct and the service account has proper permissions.",
+        "For Cloud SQL connections, verify that the instance connection name is correct and the service account has proper permissions."
       );
     }
 
@@ -138,6 +137,7 @@ const testConnection = async () => {
 };
 
 // Execute raw SQL query
+//to ghassen(hethi taamel execute lel query lel raw) , in normal ways when user called a data base connection it creates new connection but in pool we create 5 ready connection to reuse them with multiple request this will help to reduce the time of connection and improve the performance
 const rawQuery = async (sql, params) => {
   try {
     // Initialize pool if not already created

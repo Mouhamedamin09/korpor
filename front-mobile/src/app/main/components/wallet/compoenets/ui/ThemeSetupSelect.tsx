@@ -51,9 +51,14 @@ const themes: Record<
 interface Props {
   selectedTheme: ThemeKey | null;
   onSelectTheme: (theme: ThemeKey) => void;
+  amount?: number;
 }
 
-const ThemeSetupSelect: React.FC<Props> = ({ selectedTheme, onSelectTheme }) => {
+const ThemeSetupSelect: React.FC<Props> = ({
+  selectedTheme,
+  onSelectTheme,
+  amount,
+}) => {
   const router = useRouter();
 
   return (
@@ -99,6 +104,7 @@ const ThemeSetupSelect: React.FC<Props> = ({ selectedTheme, onSelectTheme }) => 
             selected={selectedTheme === key}
             onSelect={onSelectTheme}
             iconName={themes[key].iconName}
+            amount={amount}
           />
         );
       })}
@@ -106,4 +112,4 @@ const ThemeSetupSelect: React.FC<Props> = ({ selectedTheme, onSelectTheme }) => 
   );
 };
 
-export default ThemeSetupSelect; 
+export default ThemeSetupSelect;

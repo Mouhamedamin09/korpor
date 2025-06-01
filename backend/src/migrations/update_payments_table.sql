@@ -10,11 +10,22 @@ ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(100) NULL,
 ADD COLUMN IF NOT EXISTS crypto_address VARCHAR(100) NULL,
 ADD COLUMN IF NOT EXISTS crypto_currency VARCHAR(10) NULL,
 ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP NULL,
-ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+-- PayMe specific fields
+ADD COLUMN IF NOT EXISTS payme_token VARCHAR(100) NULL,
+ADD COLUMN IF NOT EXISTS payme_order_id VARCHAR(100) NULL,
+ADD COLUMN IF NOT EXISTS payme_transaction_id INT NULL,
+ADD COLUMN IF NOT EXISTS received_amount DECIMAL(10,2) NULL,
+ADD COLUMN IF NOT EXISTS transaction_fee DECIMAL(10,2) NULL,
+ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255) NULL,
+ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(20) NULL,
+ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255) NULL,
+ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP NULL,
+ADD COLUMN IF NOT EXISTS webhook_data JSON NULL;
 
 -- Update existing status enum to include more states
 ALTER TABLE payments 
-MODIFY COLUMN status ENUM('pending', 'confirmed', 'failed', 'expired', 'cancelled', 'refunded') DEFAULT 'pending';
+MODIFY COLUMN status ENUM('pending', 'confirmed', 'completed', 'failed', 'expired', 'cancelled', 'refunded') DEFAULT 'pending';
 
 -- Add indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_payments_method ON payments(payment_method);
@@ -23,6 +34,11 @@ CREATE INDEX IF NOT EXISTS idx_payments_user_address ON payments(user_address);
 CREATE INDEX IF NOT EXISTS idx_payments_stripe_customer ON payments(stripe_customer_id);
 CREATE INDEX IF NOT EXISTS idx_payments_crypto_currency ON payments(crypto_currency);
 CREATE INDEX IF NOT EXISTS idx_payments_created_at ON payments(created_at);
+-- PayMe indexes
+CREATE INDEX IF NOT EXISTS idx_payments_payme_token ON payments(payme_token);
+CREATE INDEX IF NOT EXISTS idx_payments_payme_order_id ON payments(payme_order_id);
+CREATE INDEX IF NOT EXISTS idx_payments_payme_transaction_id ON payments(payme_transaction_id);
+CREATE INDEX IF NOT EXISTS idx_payments_customer_email ON payments(customer_email);
 
 -- Create investments table if it doesn't exist (for backward compatibility)
 CREATE TABLE IF NOT EXISTS investments (

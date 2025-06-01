@@ -7,9 +7,11 @@ import {
   ActivityIndicator,
   Image,
   Platform,
+  Modal,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { useRouter } from "expo-router";
+import { WebView } from "react-native-webview";
 import {
   StripeProvider,
   useStripe,
@@ -25,6 +27,7 @@ import StripeCardForm from "../compoenets/ui/StripeCardForm";
 import {
   getPaymentMethods,
   createPaymePayment,
+  checkPaymePaymentStatus,
   getStripeTestCards,
   getSavedPaymentMethods,
   createStripeSetupIntent,
@@ -36,6 +39,7 @@ import {
   type StripeTestCards,
   type SavedPaymentMethod,
   type PaymentMethod as PaymentMethodType,
+  type PaymePaymentResponse,
 } from "@main/services/payment.service";
 import { fetchAccountData } from "@main/services/account";
 
@@ -84,6 +88,14 @@ const PaymentMethodContent: React.FC = () => {
     useState<SavedPaymentMethod | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  // PayMe specific states
+  const [paymeWebViewVisible, setPaymeWebViewVisible] = useState(false);
+  const [paymePaymentData, setPaymePaymentData] =
+    useState<PaymePaymentResponse | null>(null);
+  const [paymePaymentStatus, setPaymePaymentStatus] = useState<
+    "pending" | "completed" | "failed" | null
+  >(null);
 
   // Load payment methods and test data on component mount
   useEffect(() => {
@@ -348,17 +360,102 @@ const PaymentMethodContent: React.FC = () => {
     try {
       setLoading(true);
 
-      // Call the backend to get PayMe status
+      if (!userAccount) {
+        throw new Error("User account not loaded. Please reload the page.");
+      }
+
+      // Extract user information from account
+      const firstName =
+        userAccount.name?.split(" ")[0] ||
+        userAccount.email?.split("@")[0] ||
+        "User";
+      const lastName =
+        userAccount.name?.split(" ").slice(1).join(" ") || "Account";
+      const email = userAccount.email || "user@example.com";
+      const phone = userAccount.phone || "+21600000000"; // Default Tunisian number format
+
+      // Create PayMe payment with real API
       const response = await createPaymePayment({
-        amount: 100, // Mock amount
-        walletAddress: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", // Mock wallet
-        note: "Payment method setup",
+        amount: 100, // Mock amount for testing
+        walletAddress:
+          userAccount.walletAddress ||
+          "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+        note: "Korpor investment payment",
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        phone: phone,
+        projectId: "test_project_123",
       });
 
-      setPaymeSheetVisible(true);
+      console.log("PayMe payment created:", response);
+
+      // Store payment data and show webview
+      setPaymePaymentData(response);
+      setPaymePaymentStatus("pending");
+      setPaymeWebViewVisible(true);
     } catch (error) {
       console.error("PayMe error:", error);
-      setPaymeSheetVisible(true);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Failed to create PayMe payment"
+      );
+      setErrorSheetVisible(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle PayMe webview navigation
+  const handlePaymeWebViewNavigationStateChange = (navState: any) => {
+    console.log("PayMe WebView URL:", navState.url);
+
+    // Check if the URL contains "/loader" which indicates payment completion
+    if (navState.url.includes("/loader")) {
+      console.log("PayMe payment process completed, closing webview");
+      setPaymeWebViewVisible(false);
+
+      // Start checking payment status
+      if (paymePaymentData?.token) {
+        checkPaymentStatus(paymePaymentData.token);
+      }
+    }
+  };
+
+  // Check PayMe payment status
+  const checkPaymentStatus = async (token: string) => {
+    try {
+      setLoading(true);
+
+      // Wait a moment for the webhook to process
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const statusResponse = await checkPaymePaymentStatus(token);
+      const status = statusResponse.payment.status;
+
+      setPaymePaymentStatus(status);
+
+      if (status === "completed") {
+        setSuccessMessage(
+          `PayMe payment completed successfully! Transaction ID: ${
+            statusResponse.payment.transaction_id || "N/A"
+          }`
+        );
+        setSuccessSheetVisible(true);
+      } else if (status === "failed") {
+        setErrorMessage("PayMe payment failed. Please try again.");
+        setErrorSheetVisible(true);
+      } else {
+        // Still pending, continue checking
+        setTimeout(() => checkPaymentStatus(token), 3000);
+      }
+    } catch (error) {
+      console.error("Error checking PayMe status:", error);
+      setErrorMessage(
+        "Unable to verify payment status. Please contact support if payment was deducted."
+      );
+      setErrorSheetVisible(true);
     } finally {
       setLoading(false);
     }
@@ -433,16 +530,6 @@ const PaymentMethodContent: React.FC = () => {
         test_mode: paymentMethods.stripe.test_mode,
         processing_time: paymentMethods.stripe.processing_time,
         fees: paymentMethods.stripe.fees,
-      },
-      {
-        id: "payme" as PaymentMethodType,
-        type: "payme" as PaymentMethodType,
-        name: paymentMethods.payme.name,
-        description: paymentMethods.payme.description,
-        icon: "smartphone",
-        enabled: paymentMethods.payme.enabled,
-        processing_time: paymentMethods.payme.processing_time,
-        fees: paymentMethods.payme.fees,
       },
     ];
 
@@ -548,16 +635,6 @@ const PaymentMethodContent: React.FC = () => {
                           </View>
                           <Text className="text-sm text-gray-600">
                             Credit/Debit Card
-                          </Text>
-                        </>
-                      )}
-                      {method.type === "payme" && method.payme && (
-                        <>
-                          <Text className="text-base font-semibold text-gray-900">
-                            PayMe {method.payme.phone_number}
-                          </Text>
-                          <Text className="text-sm text-gray-600">
-                            {method.payme.account_name}
                           </Text>
                         </>
                       )}
@@ -963,43 +1040,108 @@ const PaymentMethodContent: React.FC = () => {
         </View>
       </BottomSheet>
 
-      {/* PayMe Coming Soon Bottom Sheet */}
+      {/* PayMe WebView Modal */}
+      <Modal
+        visible={paymeWebViewVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setPaymeWebViewVisible(false)}
+      >
+        <View className="flex-1 bg-white">
+          <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
+            <TouchableOpacity
+              onPress={() => setPaymeWebViewVisible(false)}
+              className="p-2"
+            >
+              <Feather name="x" size={24} color="#374151" />
+            </TouchableOpacity>
+            <Text className="text-lg font-semibold text-gray-900">
+              PayMe Payment
+            </Text>
+            <View className="w-8" />
+          </View>
+
+          {paymePaymentData && (
+            <View className="p-4 bg-blue-50 border-b border-blue-200">
+              <Text className="text-sm font-semibold text-blue-900 mb-2">
+                Test Mode - Use Sandbox Credentials
+              </Text>
+              <Text className="text-xs text-blue-700">
+                Phone: {paymePaymentData.test_credentials.phone}
+              </Text>
+              <Text className="text-xs text-blue-700">
+                Password: {paymePaymentData.test_credentials.password}
+              </Text>
+              <Text className="text-xs text-blue-600 mt-2">
+                Payment will close automatically when complete
+              </Text>
+            </View>
+          )}
+
+          {paymePaymentData?.payment_url && (
+            <WebView
+              source={{ uri: paymePaymentData.payment_url }}
+              style={{ flex: 1 }}
+              onNavigationStateChange={handlePaymeWebViewNavigationStateChange}
+              startInLoadingState={true}
+              renderLoading={() => (
+                <View className="flex-1 justify-center items-center bg-white">
+                  <ActivityIndicator size="large" color="#10B981" />
+                  <Text className="text-gray-600 mt-4">Loading PayMe...</Text>
+                </View>
+              )}
+              onError={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                console.error("WebView error: ", nativeEvent);
+                setPaymeWebViewVisible(false);
+                setErrorMessage(
+                  "Failed to load PayMe payment page. Please try again."
+                );
+                setErrorSheetVisible(true);
+              }}
+            />
+          )}
+        </View>
+      </Modal>
+
+      {/* PayMe Status Bottom Sheet (updated) */}
       <BottomSheet
         visible={paymeSheetVisible}
         onClose={() => setPaymeSheetVisible(false)}
       >
         <View className="items-center pb-6">
-          <View className="w-16 h-16 rounded-full bg-orange-100 items-center justify-center mb-4">
-            <Feather name="smartphone" size={28} color="#F59E0B" />
+          <View className="w-16 h-16 rounded-full bg-green-100 items-center justify-center mb-4">
+            <Feather name="smartphone" size={28} color="#10B981" />
           </View>
           <Text className="text-xl font-semibold text-gray-900 mb-4">
-            PayMe - Coming Soon! 🚧
+            PayMe.tn Integration ✅
           </Text>
           <Text className="text-sm text-gray-600 text-center mb-4">
-            PayMe integration is coming soon! We're working hard to bring you
-            this payment option.
+            PayMe.tn is now live and ready to use! Tunisia's leading mobile
+            payment solution.
           </Text>
           <Text className="text-sm font-semibold text-gray-900 mb-2">
-            Features planned:
+            Available features:
           </Text>
           <View className="w-full mb-6">
             {[
-              "Mobile wallet payments",
-              "Bank transfers",
-              "Local payment methods",
-              "QR code payments",
+              "✅ Mobile wallet payments",
+              "✅ Bank transfers",
+              "✅ Local payment methods",
+              "✅ QR code payments",
+              "✅ Real-time payment processing",
             ].map((feature, index) => (
               <Text key={index} className="text-sm text-gray-600 mb-1">
-                • {feature}
+                {feature}
               </Text>
             ))}
           </View>
           <TouchableOpacity
             onPress={() => setPaymeSheetVisible(false)}
-            className="bg-orange-600 rounded-lg p-4 w-full items-center"
+            className="bg-green-600 rounded-lg p-4 w-full items-center"
             activeOpacity={0.8}
           >
-            <Text className="text-white font-semibold">OK</Text>
+            <Text className="text-white font-semibold">Got it!</Text>
           </TouchableOpacity>
         </View>
       </BottomSheet>

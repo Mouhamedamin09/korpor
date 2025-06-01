@@ -19,15 +19,27 @@ const GREEN = "#10B981";
 
 export default function StartAutoInvest() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ step?: string; theme?: ThemeKey }>();
+  const params = useLocalSearchParams<{
+    step?: string;
+    theme?: ThemeKey;
+    amount?: string;
+  }>();
 
   /* ---------- wizard state ---------- */
   const initialStep = params.step ? (Number(params.step) as 1 | 2 | 3 | 4) : 1;
   const [step, setStep] = useState<1 | 2 | 3 | 4>(initialStep);
 
-  const [amount, setAmount] = useState<number>(2000);
-  const amountRef = useRef<number>(500);
-  const [confirmAmount, setConfirmAmount] = useState<number>(500);
+  // Initialize amount from URL params if available, otherwise use default
+  const initialAmount = params.amount ? Number(params.amount) : 2000;
+  const [amount, setAmount] = useState<number>(initialAmount);
+  const amountRef = useRef<number>(initialAmount);
+  const [confirmAmount, setConfirmAmount] = useState<number>(initialAmount);
+
+  // Debug logging for URL params
+  useEffect(() => {
+    console.log("StartAutoInvest: URL params:", params);
+    console.log("StartAutoInvest: Initial amount from params:", initialAmount);
+  }, []);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -72,6 +84,7 @@ export default function StartAutoInvest() {
   /* ---------- handlers for each stage ---------- */
   const handleAmountNext = () => {
     if (amount > 0) {
+      console.log("Passed amount is :", amount);
       setStep(2);
     }
   };
@@ -254,6 +267,7 @@ export default function StartAutoInvest() {
             <ThemeSetupSelect
               selectedTheme={selectedTheme}
               onSelectTheme={handleThemeNext}
+              amount={amount}
             />
           </View>
         )}

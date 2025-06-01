@@ -38,6 +38,7 @@ const investmentRoutes = require("./routes/investmentRoutes"); // Import investm
 const preferencesRoutes = require("./routes/preferencesRoutes"); // Import preferences routes
 const twoFactorRoutes = require("./routes/twoFactorRoutes"); // Import 2FA routes
 const walletRoutes = require("./routes/walletRoutes"); // Import wallet routes
+const backerRoutes = require("./routes/backer.routes"); // Import backer routes
 
 const app = express();
 
@@ -115,6 +116,7 @@ app.use("/api/preferences", preferencesRoutes); // Add preferences routes
 app.use("/api/2fa", twoFactorRoutes); // Add 2FA routes
 app.use("/api/wallet", walletRoutes); // Add wallet routes
 app.use("/api/autoinvest", require("./routes/autoInvestRoutes")); // Add AutoInvest routes
+app.use("/api/backers", backerRoutes); // Add backer routes
 
 //blockchain APIs
 app.use("/api/payment", require("./routes/payment.routes"));

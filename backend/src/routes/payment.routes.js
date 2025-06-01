@@ -234,10 +234,69 @@ router.get("/stripe/test-cards", controller.getStripeTestCards);
 
 /**
  * @swagger
+ * /api/payment/payme/test-config:
+ *   get:
+ *     summary: Test PayMe configuration and API connectivity
+ *     tags: [Payments]
+ *     responses:
+ *       200:
+ *         description: PayMe configuration status and test data
+ */
+router.get("/payme/test-config", controller.testPaymeConfig);
+
+/**
+ * @swagger
+ * /api/payment/payme/test-payment:
+ *   post:
+ *     summary: Test PayMe payment creation with minimal data (Debug Only)
+ *     tags: [Payments]
+ *     description: Creates a test payment to debug PayMe API requirements
+ *     responses:
+ *       200:
+ *         description: Test payment created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 message:
+ *                   type: string
+ *                   example: "PayMe test payment created successfully"
+ *                 data:
+ *                   type: object
+ *                 test_data_sent:
+ *                   type: object
+ *       500:
+ *         description: PayMe API error with detailed debugging information
+ */
+router.post("/payme/test-payment", controller.testPaymePayment);
+
+/**
+ * @swagger
  * /api/payment/payme/create:
  *   post:
- *     summary: Create PayMe payment (Coming Soon)
+ *     summary: Create PayMe payment in development mode
  *     tags: [Payments]
+ *     description: |
+ *       Creates a new PayMe payment in sandbox mode.
+ *       PayMe.tn supports Tunisian Dinar (TND) payments with mobile wallet and bank transfers.
+ *
+ *       **Test Credentials (Sandbox):**
+ *       - Phone: 11111111
+ *       - Password: 11111111
+ *
+ *       **Features:**
+ *       - Mobile wallet payments
+ *       - Bank transfers
+ *       - Local payment methods
+ *       - QR code payments
+ *       - Webhook notifications
+ *
+ *       **Processing:** 1-3 minutes
+ *       **Fees:** 1.5% + 0.5 TND
  *     requestBody:
  *       required: true
  *       content:
@@ -247,19 +306,48 @@ router.get("/stripe/test-cards", controller.getStripeTestCards);
  *             required:
  *               - amount
  *               - walletAddress
+ *               - email
+ *               - phone
+ *               - first_name
+ *               - last_name
  *             properties:
  *               amount:
  *                 type: number
+ *                 minimum: 1
  *                 example: 100.50
+ *                 description: "Amount in Tunisian Dinar (TND)"
  *               note:
  *                 type: string
  *                 example: "Investment payment"
+ *                 description: "Payment description"
  *               walletAddress:
  *                 type: string
  *                 example: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+ *                 description: "User's wallet address for tracking"
+ *               first_name:
+ *                 type: string
+ *                 example: "Ahmed"
+ *                 description: "Customer's first name"
+ *               last_name:
+ *                 type: string
+ *                 example: "Ben Ali"
+ *                 description: "Customer's last name"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "ahmed@example.com"
+ *                 description: "Customer's email address"
+ *               phone:
+ *                 type: string
+ *                 example: "11222333"
+ *                 description: "Phone number (will be formatted to +216 for Tunisia)"
+ *               projectId:
+ *                 type: string
+ *                 example: "proj_123"
+ *                 description: "Project ID for investment tracking"
  *     responses:
  *       200:
- *         description: Coming soon response with planned features
+ *         description: PayMe payment created successfully
  *         content:
  *           application/json:
  *             schema:
@@ -267,9 +355,135 @@ router.get("/stripe/test-cards", controller.getStripeTestCards);
  *               properties:
  *                 status:
  *                   type: string
- *                   example: "coming_soon"
+ *                   example: "success"
+ *                 payment_method:
+ *                   type: string
+ *                   example: "payme"
+ *                 token:
+ *                   type: string
+ *                   example: "dfe54df34b54df3a854f3a53fc85a"
+ *                   description: "PayMe payment token"
+ *                 order_id:
+ *                   type: string
+ *                   example: "korpor_1640995200000_abc123"
+ *                   description: "Unique order identifier"
+ *                 payment_url:
+ *                   type: string
+ *                   example: "https://sandbox.paymee.tn/payment/dfe54df34b54df3a854f3a53fc85a"
+ *                   description: "URL to redirect user for payment"
+ *                 amount:
+ *                   type: number
+ *                   example: 100.50
+ *                   description: "Payment amount in TND"
+ *                 currency:
+ *                   type: string
+ *                   example: "TND"
+ *                   description: "Tunisian Dinar"
+ *                 first_name:
+ *                   type: string
+ *                   example: "Ahmed"
+ *                 last_name:
+ *                   type: string
+ *                   example: "Ben Ali"
+ *                 email:
+ *                   type: string
+ *                   example: "ahmed@example.com"
+ *                 phone:
+ *                   type: string
+ *                   example: "+21611222333"
+ *                 note:
+ *                   type: string
+ *                   example: "Investment payment"
+ *                 test_credentials:
+ *                   type: object
+ *                   properties:
+ *                     phone:
+ *                       type: string
+ *                       example: "11111111"
+ *                     password:
+ *                       type: string
+ *                       example: "11111111"
+ *                 instructions:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: [
+ *                     "Use the test credentials in sandbox mode:",
+ *                     "Phone: 11111111",
+ *                     "Password: 11111111",
+ *                     "Watch for '/loader' URL to know when payment is complete",
+ *                     "Payment status will be sent to webhook URL"
+ *                   ]
+ *       400:
+ *         description: Missing required fields or validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "error"
  *                 message:
  *                   type: string
+ *                   example: "Missing required fields: amount, walletAddress, email, phone, first_name, last_name"
+ *       500:
+ *         description: PayMe API error or server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "error"
+ *                 message:
+ *                   type: string
+ *                   example: "PayMe API validation error: Erroneous provided data"
+ *   tags:
+ *     - Payments
+ *   security: []
+ *   examples:
+ *     PayMePayment:
+ *       summary: PayMe payment for investment
+ *       value:
+ *         amount: 250.75
+ *         note: "Korpor investment payment"
+ *         walletAddress: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+ *         first_name: "Ahmed"
+ *         last_name: "Ben Ali"
+ *         email: "ahmed@example.com"
+ *         phone: "11222333"
+ *         projectId: "korpor_tech_fund_2024"
+ *       responses:
+ *         "200":
+ *           description: Success response
+ *           content:
+ *             application/json:
+ *               example:
+ *                 status: "success"
+ *                 payment_method: "payme"
+ *                 token: "dfe54df34b54df3a854f3a53fc85a"
+ *                 order_id: "korpor_1640995200000_abc123"
+ *                 payment_url: "https://sandbox.paymee.tn/payment/dfe54df34b54df3a854f3a53fc85a"
+ *                 amount: 250.75
+ *                 currency: "TND"
+ *                 first_name: "Ahmed"
+ *                 last_name: "Ben Ali"
+ *                 email: "ahmed@example.com"
+ *                 phone: "+21611222333"
+ *                 note: "Korpor investment payment"
+ *                 test_credentials:
+ *                   phone: "11111111"
+ *                   password: "11111111"
+ *                 instructions: [
+ *                   "Use the test credentials in sandbox mode:",
+ *                   "Phone: 11111111",
+ *                   "Password: 11111111",
+ *                   "Watch for '/loader' URL to know when payment is complete",
+ *                   "Payment status will be sent to webhook URL"
+ *                 ]
+ *                 message:
  *                   example: "PayMe integration is coming soon!"
  *                 features_planned:
  *                   type: array
@@ -280,10 +494,158 @@ router.post("/payme/create", controller.createPaymePayment);
 
 /**
  * @swagger
+ * /api/payment/payme/webhook:
+ *   post:
+ *     summary: PayMe webhook endpoint for payment status updates
+ *     tags: [Payments]
+ *     description: Receives payment status updates from PayMe.tn API
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - payment_status
+ *               - check_sum
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: "dfe54df34b54df3a854f3a53fc85a"
+ *               payment_status:
+ *                 type: boolean
+ *                 example: true
+ *               check_sum:
+ *                 type: string
+ *                 example: "14efe54d8664f34543a854f3a5213fc85a"
+ *               order_id:
+ *                 type: string
+ *                 example: "244557"
+ *               first_name:
+ *                 type: string
+ *                 example: "John"
+ *               last_name:
+ *                 type: string
+ *                 example: "Doe"
+ *               email:
+ *                 type: string
+ *                 example: "test@paymee.tn"
+ *               phone:
+ *                 type: string
+ *                 example: "+21611222333"
+ *               note:
+ *                 type: string
+ *                 example: "Order #123"
+ *               amount:
+ *                 type: number
+ *                 example: 220.25
+ *               transaction_id:
+ *                 type: number
+ *                 example: 5578
+ *               received_amount:
+ *                 type: number
+ *                 example: 210.25
+ *               cost:
+ *                 type: number
+ *                 example: 10
+ *     responses:
+ *       200:
+ *         description: Webhook processed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 message:
+ *                   type: string
+ *                   example: "Webhook processed successfully"
+ *                 token:
+ *                   type: string
+ *                   example: "dfe54df34b54df3a854f3a53fc85a"
+ *                 payment_status:
+ *                   type: string
+ *                   example: "completed"
+ */
+router.post("/payme/webhook", controller.handlePaymeWebhook);
+
+/**
+ * @swagger
+ * /api/payment/payme/status/{token}:
+ *   get:
+ *     summary: Check PayMe payment status by token
+ *     tags: [Payments]
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: PayMe payment token
+ *         example: "dfe54df34b54df3a854f3a53fc85a"
+ *     responses:
+ *       200:
+ *         description: Payment status information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 payment:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                       example: "dfe54df34b54df3a854f3a53fc85a"
+ *                     order_id:
+ *                       type: string
+ *                       example: "korpor_1234567890_abc123"
+ *                     amount:
+ *                       type: number
+ *                       example: 220.25
+ *                     currency:
+ *                       type: string
+ *                       example: "TND"
+ *                     status:
+ *                       type: string
+ *                       enum: [pending, completed, failed]
+ *                       example: "completed"
+ *                     created_at:
+ *                       type: string
+ *                       format: date-time
+ *                     completed_at:
+ *                       type: string
+ *                       format: date-time
+ *                     transaction_id:
+ *                       type: number
+ *                       example: 5578
+ *                     received_amount:
+ *                       type: number
+ *                       example: 210.25
+ *                     transaction_fee:
+ *                       type: number
+ *                       example: 10
+ *       404:
+ *         description: Payment not found
+ *       400:
+ *         description: Token is required
+ */
+router.get("/payme/status/:token", controller.checkPaymePaymentStatus);
+
+/**
+ * @swagger
  * /api/payment/payme/callback:
  *   post:
- *     summary: PayMe webhook callback (Legacy Support)
+ *     summary: PayMe webhook callback (Legacy Support - Deprecated)
  *     tags: [Payments]
+ *     deprecated: true
+ *     description: Legacy callback endpoint. Use /payme/webhook instead.
  *     requestBody:
  *       required: true
  *       content:
@@ -313,6 +675,288 @@ router.post("/payme/create", controller.createPaymePayment);
  *         description: Blockchain or DB error
  */
 router.post("/payme/callback", controller.handlePaymeCallback);
+
+/**
+ * @swagger
+ * /api/payment/payme/deposit:
+ *   post:
+ *     summary: Create PayMe deposit for wallet funding
+ *     tags: [Payments]
+ *     description: |
+ *       Creates a new PayMe payment for depositing funds into the user's wallet.
+ *       This follows the same flow as regular payments but is specifically for wallet deposits.
+ *
+ *       **Test Credentials (Sandbox):**
+ *       - Phone: 11111111
+ *       - Password: 11111111
+ *
+ *       **Features:**
+ *       - Mobile wallet payments
+ *       - Bank transfers
+ *       - Local payment methods
+ *       - QR code payments
+ *       - Webhook notifications
+ *
+ *       **Processing:** 1-3 minutes
+ *       **Fees:** 1.5% + 0.5 TND
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - amount
+ *               - walletAddress
+ *               - email
+ *               - phone
+ *               - first_name
+ *               - last_name
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 minimum: 1
+ *                 example: 100.50
+ *                 description: "Amount in Tunisian Dinar (TND) to deposit"
+ *               note:
+ *                 type: string
+ *                 example: "Wallet deposit"
+ *                 description: "Deposit description"
+ *               walletAddress:
+ *                 type: string
+ *                 example: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+ *                 description: "User's wallet address for tracking"
+ *               first_name:
+ *                 type: string
+ *                 example: "Ahmed"
+ *                 description: "Customer's first name"
+ *               last_name:
+ *                 type: string
+ *                 example: "Ben Ali"
+ *                 description: "Customer's last name"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "ahmed@example.com"
+ *                 description: "Customer's email address"
+ *               phone:
+ *                 type: string
+ *                 example: "11222333"
+ *                 description: "Phone number (will be formatted to +216 for Tunisia)"
+ *     responses:
+ *       200:
+ *         description: PayMe deposit created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 payment_method:
+ *                   type: string
+ *                   example: "payme"
+ *                 token:
+ *                   type: string
+ *                   example: "dfe54df34b54df3a854f3a53fc85a"
+ *                   description: "PayMe payment token"
+ *                 order_id:
+ *                   type: string
+ *                   example: "deposit_1640995200000_abc123"
+ *                   description: "Unique order identifier"
+ *                 payment_url:
+ *                   type: string
+ *                   example: "https://sandbox.paymee.tn/payment/dfe54df34b54df3a854f3a53fc85a"
+ *                   description: "URL to redirect user for payment"
+ *                 amount:
+ *                   type: number
+ *                   example: 100.50
+ *                   description: "Deposit amount in TND"
+ *                 currency:
+ *                   type: string
+ *                   example: "TND"
+ *                   description: "Tunisian Dinar"
+ *       400:
+ *         description: Missing required fields or validation error
+ *       500:
+ *         description: PayMe API error or server error
+ */
+router.post("/payme/deposit", controller.createPaymeDeposit);
+
+/**
+ * @swagger
+ * /api/payment/payme/withdrawal:
+ *   post:
+ *     summary: Create PayMe withdrawal from wallet
+ *     tags: [Payments]
+ *     description: |
+ *       Creates a PayMe withdrawal request to transfer funds from the user's wallet
+ *       to their bank account or mobile wallet.
+ *
+ *       **Features:**
+ *       - Bank account transfers
+ *       - Mobile wallet transfers
+ *       - Real-time processing
+ *
+ *       **Processing:** 1-3 minutes
+ *       **Fees:** 1.5% + 0.5 TND
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - amount
+ *               - walletAddress
+ *               - email
+ *               - phone
+ *               - first_name
+ *               - last_name
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 minimum: 1
+ *                 example: 50.00
+ *                 description: "Amount in TND to withdraw"
+ *               note:
+ *                 type: string
+ *                 example: "Wallet withdrawal"
+ *                 description: "Withdrawal description"
+ *               walletAddress:
+ *                 type: string
+ *                 example: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+ *                 description: "User's wallet address"
+ *               first_name:
+ *                 type: string
+ *                 example: "Ahmed"
+ *                 description: "Customer's first name"
+ *               last_name:
+ *                 type: string
+ *                 example: "Ben Ali"
+ *                 description: "Customer's last name"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "ahmed@example.com"
+ *                 description: "Customer's email address"
+ *               phone:
+ *                 type: string
+ *                 example: "11222333"
+ *                 description: "Phone number"
+ *               bank_account:
+ *                 type: object
+ *                 properties:
+ *                   account_number:
+ *                     type: string
+ *                     example: "1234567890"
+ *                   bank_name:
+ *                     type: string
+ *                     example: "Banque Centrale de Tunisie"
+ *                   account_holder:
+ *                     type: string
+ *                     example: "Ahmed Ben Ali"
+ *     responses:
+ *       200:
+ *         description: PayMe withdrawal created successfully
+ *       400:
+ *         description: Insufficient funds or validation error
+ *       500:
+ *         description: Server error
+ */
+router.post("/payme/withdrawal", controller.createPaymeWithdrawal);
+
+/**
+ * @swagger
+ * /api/payment/payme/refund:
+ *   post:
+ *     summary: Create PayMe refund
+ *     tags: [Payments]
+ *     description: |
+ *       Creates a refund request for a PayMe payment.
+ *       Supports both full and partial refunds.
+ *
+ *       **Processing:** 1-3 minutes
+ *       **Fees:** No additional fees for refunds
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - original_payment_token
+ *               - walletAddress
+ *             properties:
+ *               original_payment_token:
+ *                 type: string
+ *                 example: "dfe54df34b54df3a854f3a53fc85a"
+ *                 description: "Token of the original payment to refund"
+ *               amount:
+ *                 type: number
+ *                 example: 25.00
+ *                 description: "Amount to refund (if not provided, full refund)"
+ *               reason:
+ *                 type: string
+ *                 example: "Customer request"
+ *                 description: "Reason for refund"
+ *               walletAddress:
+ *                 type: string
+ *                 example: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+ *                 description: "User's wallet address"
+ *     responses:
+ *       200:
+ *         description: PayMe refund created successfully
+ *       400:
+ *         description: Invalid payment token or validation error
+ *       500:
+ *         description: Server error
+ */
+router.post("/payme/refund", controller.createPaymeRefund);
+
+/**
+ * @swagger
+ * /api/payment/payme/webhook/deposit:
+ *   post:
+ *     summary: PayMe webhook for deposit notifications
+ *     tags: [Payments]
+ *     description: |
+ *       Webhook endpoint for PayMe to send deposit payment status updates.
+ *       This endpoint processes successful deposit notifications and updates wallet balances.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: "dfe54df34b54df3a854f3a53fc85a"
+ *               payment_status:
+ *                 type: boolean
+ *                 example: true
+ *               order_id:
+ *                 type: string
+ *                 example: "deposit_1640995200000_abc123"
+ *               amount:
+ *                 type: number
+ *                 example: 100.50
+ *               transaction_id:
+ *                 type: number
+ *                 example: 5578
+ *               received_amount:
+ *                 type: number
+ *                 example: 98.50
+ *               cost:
+ *                 type: number
+ *                 example: 2.00
+ *     responses:
+ *       200:
+ *         description: Webhook processed successfully
+ */
+router.post("/payme/webhook/deposit", controller.handlePaymeDepositWebhook);
 
 // ================================
 // CRYPTO PAYMENTS
@@ -500,9 +1144,6 @@ router.get("/status/:ref", controller.getPaymentStatusByRef);
  *         description: Server error
  */
 router.get("/wallet/:walletAddress", controller.getPaymentsByWallet);
-
-// Legacy alias for PayMe callback
-router.post("/callback", controller.handlePaymeCallback);
 
 // ================================
 // SAVED PAYMENT METHODS

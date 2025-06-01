@@ -10,19 +10,27 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Feather from "react-native-vector-icons/Feather";
+import { WebView } from "react-native-webview";
 import Card from "@main/components/profileScreens/components/ui/card";
 import { ThemeKey } from "./ThemeCard";
 import { fetchAccountData, AccountData } from "@main/services/account";
 import { fetchWalletBalance, WalletBalance } from "@main/services/wallet";
+import {
+  createPaymeDeposit,
+  type CreatePaymeDepositRequest,
+  type PaymeDepositResponse,
+} from "@main/services/payment.service";
 
 export type DepositData = {
   startDate: string;
   depositDay: number; // e.g. 15 (the day of the month)
   frequency: string;
   paymentMethod: string;
+  paymentMethodId: string; // Add this to track the payment method ID
   verification: "Verified" | "Pending";
 };
 
@@ -34,6 +42,23 @@ interface Props {
   onLaunch: () => void;
 }
 
+// Helper function to generate a mock wallet address for PayMe integration
+const generateMockWalletAddress = (
+  userId: string | number,
+  email: string
+): string => {
+  // Create a deterministic wallet address based on user ID and email
+  // This is for tracking purposes in PayMe integration only
+  const hash = `${userId}-${email}`.split("").reduce((a, b) => {
+    a = (a << 5) - a + b.charCodeAt(0);
+    return a & a;
+  }, 0);
+
+  // Generate a mock Ethereum-style address
+  const hexHash = Math.abs(hash).toString(16).padStart(8, "0");
+  return `0x${hexHash}${"0".repeat(32)}`;
+};
+
 const ConfirmAutoInvest: React.FC<Props> = ({
   amount,
   theme,
@@ -44,6 +69,12 @@ const ConfirmAutoInvest: React.FC<Props> = ({
   const [accountData, setAccountData] = useState<AccountData | null>(null);
   const [walletData, setWalletData] = useState<WalletBalance | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // PayMe WebView states
+  const [paymeWebViewVisible, setPaymeWebViewVisible] = useState(false);
+  const [paymeDepositData, setPaymeDepositData] =
+    useState<PaymeDepositResponse | null>(null);
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   // Add debugging
   console.log("ConfirmAutoInvest rendered with amount:", amount);
@@ -96,6 +127,131 @@ const ConfirmAutoInvest: React.FC<Props> = ({
   const actualVerificationStatus = isAccountVerified ? "Verified" : "Pending";
   const availableBalance = walletData?.cashBalance ?? 0;
   const hasSufficientFunds = availableBalance >= amount;
+
+  // Check if PayMe is selected as payment method
+  const isPaymeSelected = deposit.paymentMethodId === "payme";
+
+  // Handle launching AutoInvest
+  const handleLaunchAutoInvest = async () => {
+    if (!isAccountVerified || !hasSufficientFunds) {
+      return;
+    }
+
+    if (isPaymeSelected) {
+      // Handle PayMe payment flow
+      await handlePaymePayment();
+    } else {
+      // Handle other payment methods (Stripe, etc.)
+      onLaunch();
+    }
+  };
+
+  // Handle PayMe payment for AutoInvest
+  const handlePaymePayment = async () => {
+    try {
+      setProcessingPayment(true);
+
+      if (!accountData) {
+        throw new Error("Account information not available");
+      }
+
+      // Generate a mock wallet address if none exists
+      const walletAddress = generateMockWalletAddress(
+        accountData.id || "user",
+        accountData.email
+      );
+
+      // Create PayMe deposit request for AutoInvest
+      const paymeRequest: CreatePaymeDepositRequest = {
+        amount: amount,
+        walletAddress,
+        note: "AutoInvest monthly deposit via PayMe",
+        first_name: accountData.name?.split(" ")[0] || "User",
+        last_name: accountData.name?.split(" ").slice(1).join(" ") || "Account",
+        email: accountData.email,
+        phone: accountData.phone || "",
+      };
+
+      console.log("Creating PayMe AutoInvest deposit with data:", paymeRequest);
+
+      const paymeResponse = await createPaymeDeposit(paymeRequest);
+      setPaymeDepositData(paymeResponse);
+
+      // Open PayMe WebView for payment
+      setPaymeWebViewVisible(true);
+    } catch (error) {
+      console.error("PayMe AutoInvest payment error:", error);
+      setProcessingPayment(false);
+      Alert.alert(
+        "PayMe Error",
+        error instanceof Error
+          ? error.message
+          : "Failed to initiate PayMe payment for AutoInvest"
+      );
+    }
+  };
+
+  // Handle PayMe WebView navigation
+  const handlePaymeWebViewNavigationStateChange = async (navState: any) => {
+    console.log("PayMe AutoInvest WebView URL:", navState.url);
+
+    // Check for completion indicators
+    const completionIndicators = [
+      "/loader",
+      "/payment-success",
+      "/wallet/deposit/success",
+      "success",
+      "completed",
+    ];
+
+    const isPaymentCompleted = completionIndicators.some((indicator) =>
+      navState.url.toLowerCase().includes(indicator.toLowerCase())
+    );
+
+    // Check for cancellation indicators
+    const cancellationIndicators = [
+      "/payment-cancel",
+      "/wallet/deposit/cancel",
+      "cancel",
+      "cancelled",
+      "abort",
+    ];
+
+    const isPaymentCancelled = cancellationIndicators.some((indicator) =>
+      navState.url.toLowerCase().includes(indicator.toLowerCase())
+    );
+
+    if (isPaymentCompleted) {
+      console.log("PayMe AutoInvest payment completed");
+      setPaymeWebViewVisible(false);
+      setProcessingPayment(false);
+
+      Alert.alert(
+        "AutoInvest Launched! 🎉",
+        `Your AutoInvest plan has been successfully launched with a ${currency} ${amount.toLocaleString()} monthly deposit via PayMe.\n\nYour first investment will be processed shortly!`,
+        [
+          {
+            text: "Continue",
+            style: "default",
+            onPress: () => {
+              // Call the original onLaunch to complete the flow
+              onLaunch();
+            },
+          },
+        ]
+      );
+    } else if (isPaymentCancelled) {
+      console.log("PayMe AutoInvest payment was cancelled");
+      setPaymeWebViewVisible(false);
+      setProcessingPayment(false);
+
+      Alert.alert(
+        "Payment Cancelled",
+        "Your AutoInvest setup was cancelled. No charges were made.",
+        [{ text: "OK" }]
+      );
+    }
+  };
 
   if (loading) {
     return (
@@ -259,21 +415,39 @@ const ConfirmAutoInvest: React.FC<Props> = ({
 
         <View className="mb-2">
           <TouchableOpacity
-            onPress={onLaunch}
+            onPress={handleLaunchAutoInvest}
             className="bg-black rounded-lg p-4 items-center mb-3 flex-row justify-center"
-            disabled={!isAccountVerified || !hasSufficientFunds}
+            disabled={
+              !isAccountVerified || !hasSufficientFunds || processingPayment
+            }
             style={{
-              opacity: isAccountVerified && hasSufficientFunds ? 1 : 0.6,
+              opacity:
+                isAccountVerified && hasSufficientFunds && !processingPayment
+                  ? 1
+                  : 0.6,
             }}
           >
-            <Text className="text-white font-semibold text-base mr-2">
-              {!isAccountVerified
-                ? "Pending Verification"
-                : !hasSufficientFunds
-                ? "Insufficient Funds"
-                : "Launch AutoInvest"}
-            </Text>
-            <Feather name="arrow-right" size={20} color="#fff" />
+            {processingPayment ? (
+              <View className="flex-row items-center">
+                <ActivityIndicator size="small" color="white" />
+                <Text className="text-white font-semibold text-base ml-2">
+                  Processing PayMe...
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Text className="text-white font-semibold text-base mr-2">
+                  {!isAccountVerified
+                    ? "Pending Verification"
+                    : !hasSufficientFunds
+                    ? "Insufficient Funds"
+                    : isPaymeSelected
+                    ? "Launch AutoInvest with PayMe"
+                    : "Launch AutoInvest"}
+                </Text>
+                <Feather name="arrow-right" size={20} color="#fff" />
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -285,6 +459,78 @@ const ConfirmAutoInvest: React.FC<Props> = ({
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* PayMe WebView Modal */}
+      <Modal
+        visible={paymeWebViewVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setPaymeWebViewVisible(false)}
+      >
+        <View className="flex-1 bg-white">
+          <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
+            <TouchableOpacity
+              onPress={() => {
+                setPaymeWebViewVisible(false);
+                setProcessingPayment(false);
+              }}
+              className="p-2"
+            >
+              <Feather name="x" size={24} color="#374151" />
+            </TouchableOpacity>
+            <Text className="text-lg font-semibold text-gray-900">
+              PayMe AutoInvest
+            </Text>
+            <View className="w-8" />
+          </View>
+
+          {paymeDepositData && (
+            <View className="p-4 bg-blue-50 border-b border-blue-200">
+              <Text className="text-sm font-semibold text-blue-900 mb-2">
+                AutoInvest Setup - Test Mode
+              </Text>
+              <Text className="text-xs text-blue-700">
+                Phone: {paymeDepositData.test_credentials.phone}
+              </Text>
+              <Text className="text-xs text-blue-700">
+                Password: {paymeDepositData.test_credentials.password}
+              </Text>
+              <Text className="text-xs text-blue-600 mt-2">
+                Monthly Amount: {paymeDepositData.amount}{" "}
+                {paymeDepositData.currency}
+              </Text>
+              <Text className="text-xs text-blue-600">
+                Theme: {formatThemeName(theme)}
+              </Text>
+            </View>
+          )}
+
+          {paymeDepositData?.payment_url && (
+            <WebView
+              source={{ uri: paymeDepositData.payment_url }}
+              style={{ flex: 1 }}
+              onNavigationStateChange={handlePaymeWebViewNavigationStateChange}
+              startInLoadingState={true}
+              renderLoading={() => (
+                <View className="flex-1 justify-center items-center bg-white">
+                  <ActivityIndicator size="large" color="#10B981" />
+                  <Text className="text-gray-600 mt-4">Loading PayMe...</Text>
+                </View>
+              )}
+              onError={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                console.error("PayMe AutoInvest WebView error: ", nativeEvent);
+                setPaymeWebViewVisible(false);
+                setProcessingPayment(false);
+                Alert.alert(
+                  "Error",
+                  "Failed to load PayMe payment page. Please try again."
+                );
+              }}
+            />
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

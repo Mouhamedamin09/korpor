@@ -22,17 +22,42 @@ export interface AutoInvestPlan {
 }
 
 export interface AutoInvestStats {
+  // Basic plan information
   hasActivePlan: boolean;
+  status?: "active" | "paused" | "cancelled";
+  theme?: "growth" | "income" | "index" | "balanced";
+  monthlyAmount?: number;
+  currency?: "TND" | "EUR";
+
+  // Financial metrics
   totalDeposited: number;
   totalInvested: number;
   totalReturns: number;
+  currentPortfolioValue?: number;
+
+  // Performance metrics
   monthsActive: number;
   averageMonthlyReturn: number;
   projectedAnnualReturn: number;
-  theme?: string;
-  monthlyAmount?: number;
+  returnOnInvestment?: number;
+  annualizedReturn?: number;
+
+  // Efficiency metrics
+  depositEfficiency?: number;
+  cashUtilization?: number;
+
+  // Future projections
+  projectedValueIn1Year?: number;
+
+  // Schedule information
   nextDepositDate?: string;
-  status?: string;
+  daysUntilNextDeposit?: number;
+  lastDepositDate?: string;
+
+  // Additional metadata
+  planCreatedDate?: string;
+  totalTransactions?: number;
+  investmentCount?: number;
 }
 
 export interface CreateAutoInvestRequest {
@@ -252,23 +277,85 @@ export async function cancelAutoInvestPlan(): Promise<{
 }
 
 /**
- * Get AutoInvest statistics
+ * Get AutoInvest statistics with comprehensive financial metrics
  */
 export async function fetchAutoInvestStats(): Promise<AutoInvestStats> {
   try {
-    const response = await fetch(`${API_URL}/api/autoinvest/stats`, {
-      method: "GET",
-      headers: await getAuthHeaders(),
+    const headers = await getAuthHeaders();
+    console.log("🔍 Fetching AutoInvest statistics with headers:", {
+      hasAuth: !!headers.Authorization,
+      authPreview: headers.Authorization
+        ? headers.Authorization.substring(0, 20) + "..."
+        : "none",
     });
 
+    const response = await fetch(`${API_URL}/api/autoinvest/stats`, {
+      method: "GET",
+      headers,
+    });
+
+    console.log("📊 AutoInvest Stats API response status:", response.status);
+
     if (!response.ok) {
+      if (response.status === 401) {
+        console.error(
+          "🔐 Authentication failed (401) - token may be expired or invalid"
+        );
+        throw new Error("Authentication failed");
+      }
+
+      console.error(`❌ AutoInvest Stats API error: ${response.status}`);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const result = await response.json();
 
     if (result.success) {
-      return result.data.stats;
+      console.log("✅ AutoInvest statistics fetched successfully:", {
+        hasActivePlan: result.data.stats.hasActivePlan,
+        totalDeposited: result.data.stats.totalDeposited,
+        totalReturns: result.data.stats.totalReturns,
+        monthsActive: result.data.stats.monthsActive,
+      });
+
+      return {
+        // Basic plan information
+        hasActivePlan: result.data.stats.hasActivePlan || false,
+        status: result.data.stats.status,
+        theme: result.data.stats.theme,
+        monthlyAmount: result.data.stats.monthlyAmount,
+        currency: result.data.stats.currency,
+
+        // Financial metrics
+        totalDeposited: result.data.stats.totalDeposited || 0,
+        totalInvested: result.data.stats.totalInvested || 0,
+        totalReturns: result.data.stats.totalReturns || 0,
+        currentPortfolioValue: result.data.stats.currentPortfolioValue,
+
+        // Performance metrics
+        monthsActive: result.data.stats.monthsActive || 0,
+        averageMonthlyReturn: result.data.stats.averageMonthlyReturn || 0,
+        projectedAnnualReturn: result.data.stats.projectedAnnualReturn || 0,
+        returnOnInvestment: result.data.stats.returnOnInvestment,
+        annualizedReturn: result.data.stats.annualizedReturn,
+
+        // Efficiency metrics
+        depositEfficiency: result.data.stats.depositEfficiency,
+        cashUtilization: result.data.stats.cashUtilization,
+
+        // Future projections
+        projectedValueIn1Year: result.data.stats.projectedValueIn1Year,
+
+        // Schedule information
+        nextDepositDate: result.data.stats.nextDepositDate,
+        daysUntilNextDeposit: result.data.stats.daysUntilNextDeposit,
+        lastDepositDate: result.data.stats.lastDepositDate,
+
+        // Additional metadata
+        planCreatedDate: result.data.stats.planCreatedDate,
+        totalTransactions: result.data.stats.totalTransactions,
+        investmentCount: result.data.stats.investmentCount,
+      };
     } else {
       throw new Error(
         result.message || "Failed to fetch AutoInvest statistics"
@@ -276,15 +363,46 @@ export async function fetchAutoInvestStats(): Promise<AutoInvestStats> {
     }
   } catch (error) {
     console.error("Error fetching AutoInvest stats:", error);
-    // Return fallback stats for development
+
+    // Return comprehensive fallback stats for development
+    console.log("🔄 Returning fallback AutoInvest statistics");
     return {
+      // Basic plan information
       hasActivePlan: false,
+      status: undefined,
+      theme: undefined,
+      monthlyAmount: undefined,
+      currency: undefined,
+
+      // Financial metrics
       totalDeposited: 0,
       totalInvested: 0,
       totalReturns: 0,
+      currentPortfolioValue: 0,
+
+      // Performance metrics
       monthsActive: 0,
       averageMonthlyReturn: 0,
       projectedAnnualReturn: 0,
+      returnOnInvestment: 0,
+      annualizedReturn: 0,
+
+      // Efficiency metrics
+      depositEfficiency: 0,
+      cashUtilization: 0,
+
+      // Future projections
+      projectedValueIn1Year: 0,
+
+      // Schedule information
+      nextDepositDate: undefined,
+      daysUntilNextDeposit: undefined,
+      lastDepositDate: undefined,
+
+      // Additional metadata
+      planCreatedDate: undefined,
+      totalTransactions: 0,
+      investmentCount: 0,
     };
   }
 }

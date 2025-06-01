@@ -447,7 +447,7 @@ const ManageAutoInvest: React.FC = () => {
           </Text>
           <TouchableOpacity
             onPress={confirmCancel}
-            className="bg-red-600 rounded-lg p-4 w-full items-center mb-3"
+            className="bg-black rounded-lg p-4 w-full items-center mb-3"
             activeOpacity={0.8}
           >
             <Text className="text-white font-semibold">Cancel Plan</Text>
