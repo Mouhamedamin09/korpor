@@ -1,6 +1,6 @@
 // @main/services/Verification.ts
 import API_URL from "../../../shared/constants/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authStore } from "@auth/services/authStore";
 
 export interface VerificationResult {
   qualified: boolean;
@@ -29,7 +29,7 @@ const getAuthToken = async (): Promise<string | null> => {
   try {
     // Use the same pattern as AutoInvest service
     const token =
-      (await AsyncStorage.getItem("accessToken")) || "mock-token-user-1";
+      (await authStore.getState().accessToken) || "mock-token-user-1";
     console.log(
       "Verification service using token:",
       token ? `${token.substring(0, 20)}...` : "none"

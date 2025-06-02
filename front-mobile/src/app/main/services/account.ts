@@ -1,5 +1,5 @@
 // services/account.ts
-import { useAuthStore } from "@auth/services/authStore";
+import { authStore } from "@auth/services/authStore";
 import API_URL from "../../../shared/constants/api";
 
 export interface VerificationProgress {
@@ -28,10 +28,10 @@ export interface AccountData {
 /** Real API call to GET /api/user/profile */
 export const fetchAccountData = async (): Promise<AccountData> => {
   try {
-    // Get the JWT token from AsyncStorage
-    const token = useAuthStore.getState().accessToken;
+    // Get the JWT token from SecureStore
+    const token = authStore.getState().accessToken;
     console.log(
-      "Token from AsyncStorage:",
+      "Token from SecureStore:",
       token ? "Token exists" : "No token found"
     );
 
@@ -52,7 +52,7 @@ export const fetchAccountData = async (): Promise<AccountData> => {
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid
-        await AsyncStorage.removeItem("accessToken");
+        await authStore.getState().clearTokens();
         throw new Error("Session expired. Please login again.");
       }
       throw new Error(`Server error: ${response.status}`);

@@ -148,7 +148,7 @@ The frontend now supports two payment methods integrated with the backend:
 ### API Integration
 
 **Base URL**: Uses existing `API_URL` configuration
-**Authentication**: JWT tokens from AsyncStorage
+**Authentication**: JWT tokens from SecureStore
 **Error Handling**: Comprehensive try-catch with user-friendly messages
 
 ```typescript
@@ -385,7 +385,7 @@ npx expo start
 **"Payment method not appearing"**
 
 - Check backend connection
-- Verify JWT token in AsyncStorage
+- Verify JWT token in SecureStore
 - Check getSavedPaymentMethods() API call
 
 **"Card saving failed"**
@@ -397,7 +397,7 @@ npx expo start
 ### Debug Mode
 
 - Enable console logging for all API calls
-- Check AsyncStorage for authentication tokens
+- Check SecureStore for authentication tokens
 - Verify backend API responses
 
 ---

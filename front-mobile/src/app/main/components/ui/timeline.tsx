@@ -1,12 +1,12 @@
 // components/Timeline.tsx
 import React from "react";
-import { View, Text, Image } from "react-native";
+import { View, Text } from "react-native";
+import Feather from "react-native-vector-icons/Feather";
 
 interface TimelineTexts {
   title: string;
   description: string;
 }
-
 interface TimelineItem {
   time: string;
   texts: {
@@ -15,16 +15,12 @@ interface TimelineItem {
     todo: TimelineTexts;
   };
 }
-
 interface Props {
-  /** 1‑based index of the current (active) step */
+  /** 1-based index of the current active step */
   currentStep: number;
 }
 
-/**
- * All copy lives here so wording can evolve without touching the component code.
- * Each step defines its own copy for the 3 possible states.
- */
+/* ───────── copy for each step ───────── */
 const steps: TimelineItem[] = [
   {
     time: "Apr 24",
@@ -56,7 +52,7 @@ const steps: TimelineItem[] = [
       active: {
         title: "Preparing ownership documents",
         description:
-          "We’re issuing your Property Share Certificates – this usually takes up to 2 weeks.",
+          "We’re issuing your Property Share Certificates – this usually takes up to 2 weeks.",
       },
       done: {
         title: "Ownership documents distributed",
@@ -71,7 +67,7 @@ const steps: TimelineItem[] = [
       todo: {
         title: "Rental income upcoming",
         description:
-          "Projected first rental payment date: 1 Jun 2025 (subject to change).",
+          "Projected first rental payment date: 1 Jun 2025 (subject to change).",
       },
       active: {
         title: "First rental payment processing",
@@ -87,17 +83,14 @@ const steps: TimelineItem[] = [
   },
 ];
 
-const Tick = require("@assets/tick-white.png");
-const Clock = require("@assets/clock-white.png");
-const Pending = require("@assets/pending-white.png");
-
-const GREEN = "#2b7fff";
+/* ───────── colours ───────── */
+const BRAND_GREEN = "#10B981";
 const GREY = "#d1d5db";
 
 const Timeline: React.FC<Props> = ({ currentStep }) => (
   <View className="py-4">
     {steps.map((step, idx) => {
-      /* ───────────── determine status (1‑based) ───────────── */
+      /* determine status */
       const stepIndex = idx + 1;
       const status: "done" | "active" | "todo" =
         stepIndex < currentStep
@@ -106,18 +99,18 @@ const Timeline: React.FC<Props> = ({ currentStep }) => (
           ? "active"
           : "todo";
 
-      /* ───────────── visual assets per status ───────────── */
-      const icon =
-        status === "done" ? Tick : status === "active" ? Clock : Pending;
-      const circleBg = status === "todo" ? GREY : GREEN;
-      const iconTint = status === "todo" ? "#374151" /* gray‑700 */ : "white";
-
-      /* ───────────── vertical line ───────────── */
-      const isLast = idx === steps.length - 1;
-      const lineColor = status === "done" ? GREEN : GREY;
+      /* visuals */
+      const circleBg = status === "todo" ? GREY : BRAND_GREEN;
+      const iconColor = status === "todo" ? "#374151" : "white";
+      const lineColor = status === "done" ? BRAND_GREEN : GREY;
       const lineStyle = status === "done" ? "solid" : "dashed";
+      const isLast = idx === steps.length - 1;
 
-      /* ───────────── dynamic copy ───────────── */
+      /* icon name */
+      const iconName =
+        status === "done" ? "check" : status === "active" ? "clock" : "loader";
+
+      /* copy */
       const { title, description } = step.texts[status];
 
       return (
@@ -140,17 +133,13 @@ const Timeline: React.FC<Props> = ({ currentStep }) => (
               className="w-6 h-6 rounded-full items-center justify-center"
               style={{ backgroundColor: circleBg }}
             >
-              <Image
-                source={icon}
-                className="w-3.5 h-3.5"
-                style={{ tintColor: iconTint }}
-              />
+              <Feather name={iconName as any} size={14} color={iconColor} />
             </View>
           </View>
 
           {/* copy */}
           <View className="flex-1 pl-4">
-            <Text className="text-lg font-medium text-text">{title}</Text>
+            <Text className="text-lg font-medium text-gray-900">{title}</Text>
             <Text className="text-sm text-gray-600 mt-1">{description}</Text>
             <Text className="text-xs text-gray-400 mt-1">{step.time}</Text>
           </View>

@@ -1,16 +1,8 @@
 // screens/BuildingInfo.tsx
-import { View, Text, Image, Linking } from "react-native";
-import {
-  GrayContainer,
-  Button,
-  Document,
-  BorderContainer,
-} from "@main/components/ui/index";
-
-const Calendar = require("@assets/calendar1.png");
-const Marker = require("@assets/marker.png");
-const DevIcon = require("@assets/developer.png");
-const DocsIcon = require("@assets/document.png");
+import React from "react";
+import { View, Text, Linking, Pressable } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import Feather from "react-native-vector-icons/Feather";
 
 type File = { text: string; url: string };
 
@@ -20,7 +12,7 @@ export default function BuildingInfo({
   developerName,
   developerSite,
   address,
-  locationQuery, // or "lat,lng"
+  locationQuery,
 }: {
   documents: File[];
   propertyAge: string;
@@ -37,68 +29,100 @@ export default function BuildingInfo({
     );
   const openDeveloper = () => Linking.openURL(developerSite);
 
+  /* ───── data rows ───── */
+  const infoRows = [
+    { icon: "calendar", label: "Property Age", value: propertyAge },
+    { icon: "user", label: "Developer", value: developerName },
+    { icon: "map-pin", label: "Address", value: address },
+  ];
+
   return (
-    <View>
-      <Text className="text-2xl font-medium text-text mb-4">
+    <LinearGradient
+      colors={["#008F6B", "#00B37D"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ borderRadius: 20, padding: 20 }}
+    >
+      {/* overlay stripes */}
+      <View
+        style={{
+          position: "absolute",
+          left: -60,
+          top: -25,
+          width: 260,
+          height: 110,
+          backgroundColor: "rgba(255,255,255,0.06)",
+          transform: [{ rotate: "-20deg" }],
+        }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          right: -80,
+          bottom: -25,
+          width: 260,
+          height: 110,
+          backgroundColor: "rgba(255,255,255,0.04)",
+          transform: [{ rotate: "-20deg" }],
+        }}
+      />
+
+      {/* header */}
+      <Text className="text-white text-xl font-semibold mb-4">
         Building Info & Developer
       </Text>
 
-      <GrayContainer>
-        {/* ─ Property age ─ */}
-        <Row icon={Calendar} label="Property Age:" value={propertyAge} />
-
-        {/* ─ Developer ─ */}
-        <Row icon={DevIcon} label="Developer:" value={developerName} />
-
-        {/* ─ Address ─ */}
-        <Row icon={Marker} label="Address:" value={address} />
-
-        {/* ─ Documents ─ */}
-        <View>
-          <Header icon={DocsIcon} text="Documents:" />
-          <View className="mr-4 ml-1">
-            {documents.map((d) => (
-              <Document key={d.url} text={d.text} url={d.url} />
-            ))}
+      {/* info rows */}
+      {infoRows.map(({ icon, label, value }) => (
+        <View key={label} className="flex-row justify-between py-1">
+          <View className="flex-row items-center">
+            <Feather name={icon as any} size={16} color="white" />
+            <Text className="text-white ml-2 text-sm opacity-90">{label}</Text>
           </View>
+          <Text className="text-white font-semibold text-sm">{value}</Text>
         </View>
+      ))}
 
-        {/* ─ Action buttons ─ */}
-        <View className="flex-row items-center justify-between mt-4">
-          <Button text="Location" onPress={openMaps} />
-          <Button text="Developer" onPress={openDeveloper} />
-        </View>
-      </GrayContainer>
-    </View>
+      {/* documents */}
+      {documents.length > 0 && (
+        <>
+          <View className="h-px bg-white opacity-30 my-4" />
+          <Text className="text-white font-semibold mb-2">Documents</Text>
+          {documents.map((d) => (
+            <Pressable
+              key={d.url}
+              onPress={() => Linking.openURL(d.url)}
+              android_ripple={{ color: "rgba(255,255,255,0.2)" }}
+              className="flex-row items-center mb-2"
+            >
+              <Feather name="file-text" size={16} color="#fff" />
+              <Text className="text-white ml-2 text-sm underline">
+                {d.text}
+              </Text>
+            </Pressable>
+          ))}
+        </>
+      )}
+
+      {/* action buttons */}
+      <View className="flex-row mt-4">
+        <ActionBtn label="Location" onPress={openMaps} />
+        <View className="w-4" />
+        <ActionBtn label="Developer" onPress={openDeveloper} />
+      </View>
+    </LinearGradient>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Tiny helpers – keeps the JSX above clean                           */
-/* ------------------------------------------------------------------ */
-function Row({
-  icon,
-  label,
-  value,
-}: {
-  icon: any;
-  label: string;
-  value: string;
-}) {
+/* small outlined button */
+function ActionBtn({ label, onPress }: { label: string; onPress: () => void }) {
   return (
-    <View className="flex-row items-center justify-between">
-      <Header icon={icon} text={label} />
-      <Text className="text-medium font-medium text-text">{value}</Text>
-    </View>
-  );
-}
-
-function Header({ icon, text }: { icon: any; text: string }) {
-  return (
-    <View className="flex-row items-center">
-      <Image source={icon} className="w-4 h-4" />
-      <View className="w-2" />
-      <Text className="text-medium font-medium text-text">{text}</Text>
-    </View>
+    <Pressable
+      onPress={onPress}
+      android_ripple={{ color: "rgba(255,255,255,0.2)" }}
+      className="flex-1 py-2 rounded-xl border border-white items-center"
+    >
+      <Text className="text-white font-semibold text-sm">{label}</Text>
+    </Pressable>
   );
 }

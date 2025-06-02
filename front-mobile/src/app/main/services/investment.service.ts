@@ -1,6 +1,6 @@
 // Investment Service - Integration with Payment System
 import API_URL from "@shared/constants/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authStore } from "@auth/services/authStore";
 import {
   createStripePayment,
   createPaymePayment,
@@ -63,7 +63,7 @@ export interface InvestmentSummary {
 
 // Helper function to get auth headers
 const getAuthHeaders = async () => {
-  const token = await AsyncStorage.getItem("accessToken");
+  const token = await authStore.getState().accessToken;
   return {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",

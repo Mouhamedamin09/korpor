@@ -1,15 +1,9 @@
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { ImageCarousel } from "../ui/index";
 import React from "react";
 import * as Progress from "react-native-progress";
 import { router } from "expo-router";
-
-const Investors = require("@assets/user-salary.png");
-const Status = require("@assets/clipboard-list-check.png");
-const Bed = require("@assets/bed-empty.png");
-const Marker = require("@assets/marker.png");
-const Calendar = require("@assets/calendar1.png");
-const Tags = require("@assets/tags.png");
+import Feather from "react-native-vector-icons/Feather";
 
 export default function PropertyCard({ data }: { data: any }) {
   const {
@@ -27,6 +21,15 @@ export default function PropertyCard({ data }: { data: any }) {
   } = data;
 
   const progressValue = (funding_percentage || 0) / 100;
+  const GREEN = "#34D37D";
+  const InfoRow = ({ icon, label }: { icon: string; label: string }) => (
+    <View className="flex-row items-center">
+      <Feather name={icon} size={18} color="#71717a" />
+      <Text className="text-zinc-500 text-lg"> :</Text>
+      <View className="px-0.5" />
+      <Text className="font-medium text-lg">{label}</Text>
+    </View>
+  );
 
   return (
     <TouchableOpacity
@@ -36,7 +39,7 @@ export default function PropertyCard({ data }: { data: any }) {
           params: { id },
         })
       }
-      className="bg-white rounded-xl border border-zinc-200 w-[94%] self-center mt-5 shadow-md"
+      className="rounded-xl border border-gray-200 bg-white w-[94%] self-center mt-5 shadow-sm"
     >
       <View className="h-4" />
       <ImageCarousel images={images} />
@@ -45,72 +48,25 @@ export default function PropertyCard({ data }: { data: any }) {
         <Text className="text-2xl font-medium">{name}</Text>
 
         <View className="flex-row justify-between pr-6">
-          <View className="flex-1">
-            <View className="flex-1">
-              <View className="flex-row">
-                <Image className="h-5 w-5 self-center" source={Status} />
-                <Text className="text-zinc-500 text-lg"> :</Text>
-                <View className="px-0.5" />
-                <Text className="font-medium text-lg">{status}</Text>
-              </View>
-            </View>
-            <View className="flex-1">
-              <View className="flex-row">
-                <Image className="h-5 w-5 self-center" source={Bed} />
-                <Text className="text-zinc-500 text-lg"> :</Text>
-                <View className="px-0.5" />
-                <Text className="font-medium text-lg">{rooms ?? "—"}</Text>
-              </View>
-            </View>
+          <View className="flex-1 space-y-1">
+            <InfoRow icon="clipboard" label={status} />
+            <InfoRow icon="home" label={rooms ?? "—"} />
           </View>
 
-          <View className="flex-1">
-            <View className="flex-1">
-              <View className="flex-row">
-                <Image className="h-5 w-5 self-center" source={Marker} />
-                <Text className="text-zinc-500 text-lg"> :</Text>
-                <View className="px-0.5" />
-                <Text className="font-medium text-lg">{location}</Text>
-              </View>
-            </View>
-
-            <View className="flex-1">
-              <View className="flex-row">
-                <Image className="h-5 w-5 self-center" source={Investors} />
-                <Text className="text-zinc-500 text-lg"> :</Text>
-                <View className="px-0.5" />
-                {/* backend doesn’t send investor count yet → placeholder */}
-                <Text className="font-medium text-lg">N/A</Text>
-              </View>
-            </View>
+          <View className="flex-1 space-y-1">
+            <InfoRow icon="map-pin" label={location} />
+            <InfoRow icon="users" label="N/A" />
           </View>
 
-          <View className="flex-1">
-            <View className="flex-1">
-              <View className="flex-row">
-                <Image className="h-5 w-5 self-center" source={Calendar} />
-                <Text className="text-zinc-500 text-lg"> :</Text>
-                <View className="px-0.5" />
-                <Text className="font-medium text-lg">{upload_date}</Text>
-              </View>
-            </View>
-
-            <View className="flex-1">
-              <View className="flex-row">
-                <Image className="h-5 w-5 self-center" source={Tags} />
-                <Text className="text-zinc-500 text-lg"> :</Text>
-                <View className="px-0.5" />
-                <Text className="font-medium text-lg">
-                  {total_needed.toLocaleString()} DT
-                </Text>
-              </View>
-            </View>
+          <View className="flex-1 space-y-1">
+            <InfoRow icon="calendar" label={upload_date} />
+            <InfoRow icon="tag" label={`${total_needed.toLocaleString()} DT`} />
           </View>
         </View>
       </View>
 
       <View className="px-4 py-2 mb-2 rounded-lg w-[95%] self-center bg-zinc-100">
-        <View className="pb-2">
+        <View className="pb-2 space-y-1">
           <View className="flex-row justify-between">
             <Text className="text-zinc-500 text-md">yearly ROI:</Text>
             <Text className="font-medium text-md">{annual_return_rate}%</Text>
