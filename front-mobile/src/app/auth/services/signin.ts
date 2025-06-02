@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import API_URL from "../../../shared/constants/api";
 import { authService } from "./authService";
 import axios from "axios";
+import { authStore } from "./authStore";
 
 interface SignInCredentials {
   email: string;
@@ -95,13 +96,22 @@ export const signin = async (
       throw error;
     }
 
-    // Store authentication data using the new AuthService
+    // Store authentication data using the new AuthService (primary method)
     await authService.storeAuthData({
       accessToken: data.accessToken,
       refreshToken: data.refreshToken,
       user: data.user,
       role: data.role,
     });
+
+    // Also store in authStore for compatibility with new backend features
+    try {
+      const store = authStore.getState();
+      await store.setTokens(data.accessToken, data.refreshToken);
+    } catch (storeError) {
+      console.warn("Warning: Could not store tokens in authStore:", storeError);
+      // Continue since authService storage succeeded
+    }
 
     console.log("✅ SIGNIN SERVICE: Authentication data stored successfully");
 

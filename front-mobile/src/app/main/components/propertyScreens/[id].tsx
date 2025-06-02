@@ -1,41 +1,36 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, Image } from "react-native";
+import { View, Text, ScrollView, Image, SafeAreaView } from "react-native";
 import { RouteProp, useRoute } from "@react-navigation/native";
-import * as Progress from "react-native-progress";
-
+import Feather from "react-native-vector-icons/Feather";
 import { Property } from "@shared/types/property";
-import { getPropertyById } from "@main/services/getPropertyById";
+import { getPropertyById } from "@/app/main/services/getPropertyById";
 
-// UI / layout pieces
 import { Header, GrayContainer } from "@main/components/ui/index";
+import { InvestmentCard } from "@main/components/complex/index";
 import {
   Carousel,
-  Calculator,
-  StepperWithButton,
   AboutProperty,
   Leasing,
+  StepperWithButton,
+  Calculator,
   TimelineComp,
   BuildingInfo,
-  PropertyPageSkeleton, // <-- imported skeleton
+  PropertyPageSkeleton,
 } from "@main/components/complex/index";
+import { Card } from "../profileScreens/components/ui";
+import { OutlinedButton } from "@auth/components/ui/index";
 
-// assets
 const Bed = require("@assets/bed.png");
 const Bath = require("@assets/bath.png");
 const Area = require("@assets/land-layers.png");
 const StatusIcon = require("@assets/clip.png");
 const Dot = require("@assets/dot.png");
-const Calendar = require("@assets/calendar1.png");
-const Tags = require("@assets/tags.png");
-const Percent = require("@assets/mortgage.png");
 
-/* ---------- navigation typing ---------- */
 type PropertyPageRouteProp = RouteProp<
   { PropertyPage: { id: string } },
   "PropertyPage"
 >;
 
-/* ---------- component ---------- */
 const PropertyPage = () => {
   const { params } = useRoute<PropertyPageRouteProp>();
   const { id } = params;
@@ -44,7 +39,6 @@ const PropertyPage = () => {
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  /* fetch on mount */
   useEffect(() => {
     (async () => {
       try {
@@ -58,157 +52,91 @@ const PropertyPage = () => {
     })();
   }, [id]);
 
-  if (loading) {
-    return <PropertyPageSkeleton />;
-  }
-
-  if (!property) {
+  if (loading) return <PropertyPageSkeleton />;
+  if (!property)
     return (
       <View className="p-6">
         <Text className="text-red-600 text-lg">Property not found.</Text>
       </View>
     );
-  }
 
-  /* investment bounds */
   const minInvestment = property.min_investment ?? 0;
   const maxInvestment =
     (property.total_needed ?? 0) - (property.current_funded ?? 0);
 
+  const handleCheckout = () => {
+    console.log("Proceed to checkout");
+  };
+
   return (
-    <View className="bg-white flex-1">
+    <SafeAreaView className="flex-1 bg-white">
       <Header />
 
-      <ScrollView className="pb-2">
-        {/* image carousel */}
+      <ScrollView className="pb-32">
         <Carousel
           images={property.images}
           currentIndex={currentIndex}
           onScrollEnd={setCurrentIndex}
         />
-
-        {/* title & quick facts */}
-        <View className="px-4">
-          <Text className="text-4xl font-bold mt-4">
+        <View className="px-4 mt-4">
+          <Text className="text-4xl font-bold">
             {property.name}, {property.location}
           </Text>
-
-          <View className="flex-row items-center">
+          <View className="flex-row items-center mt-2 space-x-2">
             <Image source={Bed} className="h-4 w-4" />
-            <Text className="text-lg font-medium">
-              {" "}
-              {property.rooms ?? "—"}{" "}
-            </Text>
-
+            <Text className="text-lg font-medium">{property.rooms ?? "—"}</Text>
             <Image source={Dot} className="h-6 w-6" />
-
             <Image source={Bath} className="h-4 w-4" />
             <Text className="text-lg font-medium">
-              {" "}
-              {property.bathrooms ?? "—"}{" "}
+              {property.bathrooms ?? "—"}
             </Text>
-
             <Image source={Dot} className="h-6 w-6" />
-
             <Image source={StatusIcon} className="h-4 w-4" />
-            <Text className="text-lg font-medium"> {property.status} </Text>
-
+            <Text className="text-lg font-medium">{property.status}</Text>
             <Image source={Dot} className="h-6 w-6" />
-
             <Image source={Area} className="h-4 w-4" />
             <Text className="text-lg font-medium">
-              {" "}
-              {property.area ?? "—"} m²{" "}
+              {property.area ?? "—"} m²
             </Text>
           </View>
-
-          {/* long description */}
           <AboutProperty description={property.description ?? ""} />
-
-          {/* financial block */}
-          <View className="px-2">
-            <GrayContainer>
-              {[
-                ["funding goal:", property.total_needed],
-                ["funded:", property.current_funded],
-                ["return:", `${property.annual_return_rate}% yearly`],
-                ["minimum investment:", property.min_investment],
-                ["expected ROI:", `${property.expected_roi}%`],
-              ].map(([label, value]) => (
-                <View key={label} className="flex-row justify-between">
-                  <Text className="text-zinc-500 text-md">{label}</Text>
-                  <Text className="font-medium text-md">
-                    {typeof value === "number"
-                      ? value.toLocaleString() +
-                        (label === "return:" ? "" : " DT")
-                      : value}
-                  </Text>
-                </View>
-              ))}
-
-              {/* green highlight */}
-              <View className="bg-green-200 p-2 px-4 rounded-xl mt-2">
-                <View className="mb-2 flex-row justify-between">
-                  <View className="flex-row">
-                    <Image source={Calendar} className="h-4 w-4" />
-                    <Text className="text-zinc-500">: </Text>
-                    <Text className="font-medium">{property.upload_date}</Text>
-                  </View>
-                  <View className="flex-row">
-                    <Image source={Tags} className="h-4 w-4" />
-                    <Text className="text-zinc-500">: </Text>
-                    <Text className="font-medium">
-                      {property.current_value.toLocaleString()} DT
-                    </Text>
-                  </View>
-                  <View className="flex-row">
-                    <Image source={Percent} className="h-4 w-4" />
-                    <Text className="text-zinc-500">: </Text>
-                    <Text className="font-medium">
-                      {property.funding_percentage}%
-                    </Text>
-                  </View>
-                </View>
-                <Progress.Bar
-                  progress={property.funding_percentage / 100}
-                  width={null}
-                  height={4}
-                  color="#42ce8f"
-                  unfilledColor="#d4d4d8"
-                />
-              </View>
-            </GrayContainer>
-
-            {/* interaction widgets */}
-            <StepperWithButton min={minInvestment} max={maxInvestment} />
-            <Calculator />
-            <Leasing
-              status={property.status}
-              type={property.type}
-              fee={0 /* backend doesn’t expose annual_fee yet */}
-            />
-            <TimelineComp step={2} />
-            <BuildingInfo
-              propertyAge={
-                property.construction_year
-                  ? `${
-                      new Date().getFullYear() - property.construction_year
-                    } years`
-                  : "—"
-              }
-              developerName="Korpor Inc."
-              developerSite="https://korpor.com"
-              address={"—"}
-              locationQuery={property.location}
-              documents={[]}
-            />
-
-            {/* bottom padding */}
-            <View className="h-10" />
+          <View className="mt-4">
+            <InvestmentCard property={property} />
           </View>
+          <Text className="text-2xl font-semibold text-primary mt-6">
+            Initial Investment
+          </Text>
+          <Calculator min={minInvestment} max={maxInvestment} />
+          <Card extraStyle="mt-4">
+            <Leasing status={property.status} type={property.type} fee={0} />
+            <TimelineComp currentStep={2} />
+          </Card>
+          <BuildingInfo
+            propertyAge={
+              property.construction_year
+                ? `${
+                    new Date().getFullYear() - property.construction_year
+                  } years`
+                : "—"
+            }
+            developerName="Korpor Inc."
+            developerSite="https://korpor.com"
+            address="—"
+            locationQuery={property.location}
+            documents={[]}
+          />
+          <View className="h-10" />
         </View>
       </ScrollView>
-    </View>
+
+      <View className="absolute bottom-4 left-4 right-4">
+        <OutlinedButton
+          title="Checkout"
+          onPress={handleCheckout}
+          width="full"
+        />
+      </View>
+    </SafeAreaView>
   );
 };
 

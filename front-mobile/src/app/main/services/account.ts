@@ -1,5 +1,6 @@
 // services/account.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authStore } from "@auth/services/authStore";
 import API_URL from "../../../shared/constants/api";
 import { apiService } from "../../services/apiService";
 import { authService } from "../../auth/services/authService";
@@ -38,6 +39,7 @@ export const fetchAccountData = async (): Promise<AccountData> => {
   try {
     console.log("[Account] Fetching profile data...");
 
+    // Use your robust apiService implementation as primary method
     const data = await apiService.get<AccountData>("/api/user/profile");
 
     console.log("[Account] ✅ Profile data received");
@@ -58,9 +60,67 @@ export const fetchAccountData = async (): Promise<AccountData> => {
     return data;
   } catch (error) {
     console.error("[Account] ❌ Error fetching profile:", error);
-    throw new Error(
-      error instanceof Error ? error.message : "Failed to fetch account data"
-    );
+
+    // Fallback to direct API call if apiService fails
+    try {
+      console.log("[Account] Trying fallback API call...");
+
+      // Get the JWT token from authStore as fallback
+      const token = authStore.getState().accessToken;
+      console.log(
+        "Token from authStore:",
+        token ? "Token exists" : "No token found"
+      );
+
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      console.log("Fetching profile from:", `${API_URL}/api/user/profile`);
+      const response = await fetch(`${API_URL}/api/user/profile`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("Profile response status:", response.status);
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token expired or invalid
+          await authStore.getState().clearTokens();
+          throw new Error("Session expired. Please login again.");
+        }
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Profile data received:", data);
+
+      // Add verification progress if not provided by the API
+      if (!data.verificationProgress) {
+        data.verificationProgress = {
+          completed: data.isVerified ? 4 : 2,
+          total: 4,
+        };
+      }
+
+      // Ensure approvalStatus is set
+      if (!data.approvalStatus) {
+        data.approvalStatus = "pending";
+      }
+
+      return data;
+    } catch (fallbackError) {
+      console.error(
+        "[Account] ❌ Fallback API call also failed:",
+        fallbackError
+      );
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to fetch account data"
+      );
+    }
   }
 };
 

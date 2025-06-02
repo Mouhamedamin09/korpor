@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
+import * as SecureStore from "expo-secure-store";
 // @ts-ignore
 import Feather from "react-native-vector-icons/Feather";
 import SetupCard from "../compoenets/ui/SetupCard";
@@ -24,7 +24,7 @@ import {
 } from "../../../services/autoInvest";
 import { fetchWalletBalance, WalletBalance } from "../../../services/wallet";
 import { fetchAccountData, AccountData } from "../../../services/account";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authStore } from "@auth/services/authStore";
 
 const { width } = Dimensions.get("window");
 
@@ -334,8 +334,8 @@ const AutoInvestScreen: React.FC = () => {
       setLoading(true);
 
       // Debug: Check authentication status
-      const token = useAuthStore.getState().accessToken;
-      const userData = await AsyncStorage.getItem("userData");
+      const token = authStore.getState().accessToken;
+      const userData = await SecureStore.getItemAsync("userData");
       console.log("🔍 AutoInvest Screen - Auth Debug:");
       console.log("- Token exists:", !!token);
       console.log(

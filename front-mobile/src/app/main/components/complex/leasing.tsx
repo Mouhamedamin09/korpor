@@ -1,56 +1,50 @@
+import React from "react";
 import { View, Text, Image, Pressable } from "react-native";
-import { BorderContainer, TimeLine } from "@main/components/ui/index";
-const Rent = require("@assets/rent.png");
-const Status = require("@assets/clipboard-black.png");
-const Tags = require("@assets/tags-black.png");
+import Feather from "react-native-vector-icons/Feather";
+
 type LeasingProps = {
   type: string;
   status: string;
   fee: number;
 };
+
 export default function Leasing({ type, status, fee }: LeasingProps) {
+  // ───────── detail rows (icon + text) ─────────
+  const infoRows = [
+    { icon: "clipboard", text: `Property status: ${status}` },
+    { icon: "tag", text: `Yearly rental fee: ${fee.toLocaleString()} TND` },
+    { icon: "calendar", text: "First payment expected on June 1, 2025" },
+  ];
+
   return (
     <View>
-      <Text className="text-2xl font-medium mb-2">Leasing Strategy:</Text>
-      <View className="mx-2">
-        <View className="flex-row items-center">
-          <Image source={Rent} className="w-4 h-4" />
-          <View className="w-2" />
-          <Text className="text-lg font-medium">{type}</Text>
+      {/* ───── header ───── */}
+      <View className="flex-row items-center mb-4">
+        <View className="w-16 h-16 rounded-2xl bg-green-100 items-center justify-center mr-4">
+          <Feather name={"key"} size={30} color="#000" />
         </View>
-        <Text className="text-sm text-gray-600">
-          This property's leasing strategy is to generate consistent monthly
-          income through annual contracts with long term tenants.
-        </Text>
-        <Pressable
-          onPress={() => {
-            console.log("pressable pressed");
-          }}
-        >
-          <Text className="text-sm text-gray-600 underline mb-2">
-            A manager will be assigned for this property.
+
+        <View className="flex-1">
+          <Text className="font-semibold text-lg text-gray-900">
+            Leasing Strategy: {type}
           </Text>
-        </Pressable>
-        <View className="flex-row items-center">
-          <Image source={Status} className="w-4 h-4" />
-          <View className="w-2" />
-          <Text className="text-lg font-medium">Property status: </Text>
-          <Text className="text-lg font-medium text-[#1b9c7c]">{status}</Text>
-        </View>
-        <Text className="text-sm text-gray-600 mb-2">
-          This property is rented and will soon start paying rent.
-        </Text>
-        <View className="flex-row items-center">
-          <Image source={Tags} className="w-4 h-4" />
-          <View className="w-2" />
-          <Text className="text-lg font-medium">Yearly rental fee: </Text>
-          <Text className="text-lg font-medium text-[#1b9c7c]">{fee} TND</Text>
-        </View>
-        <View className="flex-row items-center mb-4">
-          <Text className="text-sm text-gray-600">First payment on: </Text>
-          <Text className="text-text text-sm underline">June 1, 2025</Text>
+          <Text className="text-sm text-gray-600">
+            This property aims to generate consistent monthly income through
+            long-term tenant contracts.
+          </Text>
         </View>
       </View>
+
+      {/* ───── details ───── */}
+      {infoRows.map(({ icon, text }) => (
+        <View key={text} className="flex-row items-center mb-3">
+          <Feather name={icon as any} size={20} color="#10B981" />
+          <Text className="ml-3 text-base text-gray-900">{text}</Text>
+        </View>
+      ))}
+
+      {/* ───── divider ───── */}
+      <View className="h-px bg-gray-200 mb-4" />
     </View>
   );
 }

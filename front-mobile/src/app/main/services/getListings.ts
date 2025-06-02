@@ -1,5 +1,3 @@
-import axios from "axios";
-import API_URL from "@shared/constants/api";
 import { Property } from "@shared/types/property";
 import {
   calculateFundingPercentage,
@@ -7,47 +5,86 @@ import {
 } from "./propertyUtils";
 
 export const getAllProperties = async (): Promise<Property[]> => {
-  try {
-    const res = await axios.get(`${API_URL}/api/projects`, {
-      headers: { "Content-Type": "application/json" },
-    });
+  const mockData: Property[] = [
+    {
+      id: "1",
+      name: "Palm Gardens",
+      location: "Tunis",
+      status: "active",
+      category: categorizeProperty("active", 55),
+      upload_date: "2024-12-10",
+      annual_return_rate: 7.2,
+      expected_roi: 7.2,
+      total_needed: 100000,
+      current_funded: 55000,
+      funding_percentage: 55,
+      min_investment: 1000,
+      type: "apartment",
+      rooms: 3,
+      bathrooms: 2,
+      area: 120,
+      construction_year: 2022,
+      description: "A modern apartment complex near the coast.",
+      current_value: 100000,
+      images: [
+        "https://www.decorilla.com/online-decorating/wp-content/uploads/2020/08/Modern-Apartment-Decor-.jpg",
+        "https://www.decorilla.com/online-decorating/wp-content/uploads/2020/08/Modern-Apartment-Decor-.jpg",
+        "https://www.decorilla.com/online-decorating/wp-content/uploads/2020/08/Modern-Apartment-Decor-.jpg",
+      ],
+    },
+    {
+      id: "2",
+      name: "Urban Heights",
+      location: "Sousse",
+      status: "funded",
+      category: categorizeProperty("funded", 100),
+      upload_date: "2024-11-05",
+      annual_return_rate: 6.5,
+      expected_roi: 6.5,
+      total_needed: 200000,
+      current_funded: 200000,
+      funding_percentage: 100,
+      min_investment: 500,
+      type: "villa",
+      rooms: 4,
+      bathrooms: 3,
+      area: 250,
+      construction_year: 2020,
+      description: "Luxury villas with city skyline view.",
+      current_value: 200000,
+      images: [
+        "https://www.decorilla.com/online-decorating/wp-content/uploads/2020/08/Modern-Apartment-Decor-.jpg",
+        "https://www.decorilla.com/online-decorating/wp-content/uploads/2020/08/Modern-Apartment-Decor-.jpg",
+        "https://www.decorilla.com/online-decorating/wp-content/uploads/2020/08/Modern-Apartment-Decor-.jpg",
+      ],
+    },
+    {
+      id: "3",
+      name: "Green Oasis",
+      location: "Nabeul",
+      status: "active",
+      category: categorizeProperty("active", 20),
+      upload_date: "2024-10-20",
+      annual_return_rate: 8.0,
+      expected_roi: 8.0,
+      total_needed: 150000,
+      current_funded: 30000,
+      funding_percentage: 20,
+      min_investment: 750,
+      type: "land",
+      rooms: null,
+      bathrooms: null,
+      area: 500,
+      construction_year: null,
+      description: "Green development land in a growing eco-zone.",
+      current_value: 150000,
+      images: [
+        "https://www.decorilla.com/online-decorating/wp-content/uploads/2020/08/Modern-Apartment-Decor-.jpg",
+        "https://www.decorilla.com/online-decorating/wp-content/uploads/2020/08/Modern-Apartment-Decor-.jpg",
+        "https://www.decorilla.com/online-decorating/wp-content/uploads/2020/08/Modern-Apartment-Decor-.jpg",
+      ],
+    },
+  ];
 
-    return res.data.map((p: any): Property => {
-      const goal = Number(p.goal_amount);
-      const current = Number(p.current_amount);
-      const percent = calculateFundingPercentage(goal, current);
-
-      return {
-        /* ────────────── basics ────────────── */
-        id: p.id.toString(),
-        name: p.name,
-        location: p.location ?? "Unknown",
-        status: p.status,
-        category: categorizeProperty(p.status, percent),
-        upload_date: p.created_at.split("T")[0],
-
-        /* ────────────── money ────────────── */
-        annual_return_rate: Number(p.expected_roi),
-        expected_roi: Number(p.expected_roi),
-        total_needed: goal,
-        current_funded: current,
-        funding_percentage: percent,
-        min_investment: Number(p.minimum_investment),
-
-        /* ────────────── specs ────────────── */
-        type: p.property_type ?? "unknown",
-        rooms: p.bedrooms ?? null,
-        bathrooms: p.bathrooms ?? null,
-        area: p.property_size ? Number(p.property_size) : null,
-        construction_year: p.construction_year ?? null,
-        description: p.description ?? "",
-
-        /* misc */
-        current_value: goal,
-        images: p.image_url ? [p.image_url] : [],
-      };
-    });
-  } catch (error: any) {
-    throw error.response?.data || { message: "Failed to fetch project list" };
-  }
+  return mockData;
 };

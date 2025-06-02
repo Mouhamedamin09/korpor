@@ -1,4 +1,4 @@
-import { useAuthStore } from "@auth/services/authStore";
+import { authStore } from "@auth/services/authStore";
 import API_URL from "../../../shared/constants/api";
 
 export interface WalletBalance {
@@ -61,7 +61,7 @@ export interface AddRewardsRequest {
 }
 
 const getAuthHeaders = async () => {
-  const token = useAuthStore.getState().accessToken;
+  const token = authStore.getState().accessToken;
   if (!token) {
     throw new Error("No authentication token found");
   }
@@ -152,7 +152,7 @@ export const fetchWalletBalance = async (): Promise<WalletBalance> => {
     console.log("Wallet response status:", response.status);
     if (!response.ok) {
       if (response.status === 401) {
-        await AsyncStorage.removeItem("accessToken");
+        await authStore.getState().clearTokens();
         throw new Error("Session expired. Please login again.");
       }
       throw new Error(`Server error: ${response.status}`);
@@ -205,7 +205,7 @@ export const fetchTransactionHistory = async (
     console.log("Transactions response status:", response.status);
     if (!response.ok) {
       if (response.status === 401) {
-        await AsyncStorage.removeItem("accessToken");
+        await authStore.getState().clearTokens();
         throw new Error("Session expired. Please login again.");
       }
       throw new Error(`Server error: ${response.status}`);
@@ -248,7 +248,7 @@ export const depositFunds = async (
     console.log("Deposit response status:", response.status);
     if (!response.ok) {
       if (response.status === 401) {
-        await AsyncStorage.removeItem("accessToken");
+        await authStore.getState().clearTokens();
         throw new Error("Session expired. Please login again.");
       }
 
@@ -287,7 +287,7 @@ export const withdrawFunds = async (
     console.log("Withdrawal response status:", response.status);
     if (!response.ok) {
       if (response.status === 401) {
-        await AsyncStorage.removeItem("accessToken");
+        await authStore.getState().clearTokens();
         throw new Error("Session expired. Please login again.");
       }
 
@@ -360,7 +360,7 @@ export const addRewards = async (
     console.log("Add rewards response status:", response.status);
     if (!response.ok) {
       if (response.status === 401) {
-        await AsyncStorage.removeItem("accessToken");
+        await authStore.getState().clearTokens();
         throw new Error("Session expired. Please login again.");
       }
 

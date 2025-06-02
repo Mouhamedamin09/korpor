@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authStore } from "@auth/services/authStore";
 import API_URL from "../../../shared/constants/api";
 
 export interface AutoInvestPlan {
@@ -83,8 +83,7 @@ export interface UpdateAutoInvestRequest {
 
 // Helper function to get authentication headers
 const getAuthHeaders = async () => {
-  const token =
-    (await AsyncStorage.getItem("accessToken")) || "mock-token-user-6";
+  const token = (await authStore.getState().accessToken) || "mock-token-user-6";
   return {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",

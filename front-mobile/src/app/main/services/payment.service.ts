@@ -1,6 +1,6 @@
 // Payment Service - Integration with Backend Payment System
 import API_URL from "@shared/constants/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authStore } from "@auth/services/authStore";
 
 // Payment Method Types
 export type PaymentMethod = "stripe" | "payme";
@@ -271,7 +271,7 @@ const getAuthHeaders = async (): Promise<Record<string, string>> => {
   try {
     // Try to get user ID from profile first (since profile call is working)
     try {
-      const token = await AsyncStorage.getItem("accessToken");
+      const token = await authStore.getState().accessToken;
       if (token) {
         const profileResponse = await fetch(`${API_URL}/api/user/profile`, {
           method: "GET",

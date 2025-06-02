@@ -10,7 +10,7 @@ interface AuthState {
   clearTokens: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const authStore = create<AuthState>((set) => ({
   accessToken: null,
   refreshToken: null,
 
