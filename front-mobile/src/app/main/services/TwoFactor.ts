@@ -1,7 +1,7 @@
 // @main/services/TwoFactor.ts
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import API_URL from '../../../shared/constants/api';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import API_URL from "../../../shared/constants/api";
 
 export interface AuthSetupResponse {
   secret: string; // Base32 TOTP secret
@@ -13,48 +13,47 @@ export interface AuthSetupResponse {
 export interface TwoFactorStatus {
   enabled: boolean;
   setupAt?: string;
-  backupCodesRemaining: number;
 }
 
 // Get authentication token
 const getAuthToken = async (): Promise<string | null> => {
   try {
-    return await AsyncStorage.getItem('accessToken');
+    return await AsyncStorage.getItem("accessToken");
   } catch (error) {
-    console.error('Error getting auth token:', error);
+    console.error("Error getting auth token:", error);
     return null;
   }
 };
 
 /**
- * Fetches a new TOTP secret + QR URL from the backend.
+ * Get the 2FA setup data (secret, QR code, etc.)
  */
 export async function fetchAuthSetup(): Promise<AuthSetupResponse> {
   try {
     const token = await getAuthToken();
     if (!token) {
-      throw new Error('No authentication token found');
+      throw new Error("No authentication token found");
     }
 
-    console.log('🔄 Fetching 2FA setup from backend...');
-    
+    console.log("🔄 Fetching 2FA setup...");
+
     const response = await fetch(`${API_URL}/api/2fa/setup`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
     });
 
-    console.log('📦 2FA setup response status:', response.status);
+    console.log("📦 2FA setup response status:", response.status);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to setup 2FA');
+      throw new Error(errorData.message || "Failed to setup 2FA");
     }
 
     const data = await response.json();
-    console.log('✅ 2FA setup data received');
+    console.log("✅ 2FA setup data received");
 
     return {
       secret: data.data.secret,
@@ -63,7 +62,7 @@ export async function fetchAuthSetup(): Promise<AuthSetupResponse> {
       manualEntryKey: data.data.manualEntryKey,
     };
   } catch (error) {
-    console.error('❌ Error fetching 2FA setup:', error);
+    console.error("❌ Error fetching 2FA setup:", error);
     throw error;
   }
 }
@@ -78,41 +77,34 @@ export async function verifyAuthCode(
   try {
     const token = await getAuthToken();
     if (!token) {
-      throw new Error('No authentication token found');
+      throw new Error("No authentication token found");
     }
 
-    console.log('🔄 Verifying 2FA code...');
+    console.log("🔄 Verifying 2FA code...");
 
     const response = await fetch(`${API_URL}/api/2fa/verify`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         token: code,
       }),
     });
 
-    console.log('📦 2FA verify response status:', response.status);
+    console.log("📦 2FA verify response status:", response.status);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('❌ 2FA verification failed:', errorData.message);
+      console.error("❌ 2FA verification failed:", errorData.message);
       return false;
     }
 
-    const data = await response.json();
-    console.log('✅ 2FA enabled successfully');
-    
-    // Store backup codes if provided
-    if (data.data && data.data.backupCodes) {
-      await AsyncStorage.setItem('2fa_backup_codes', JSON.stringify(data.data.backupCodes));
-    }
-
+    console.log("✅ 2FA enabled successfully");
     return true;
   } catch (error) {
-    console.error('❌ Error verifying 2FA code:', error);
+    console.error("❌ Error verifying 2FA code:", error);
     return false;
   }
 }
@@ -124,34 +116,33 @@ export async function get2FAStatus(): Promise<TwoFactorStatus> {
   try {
     const token = await getAuthToken();
     if (!token) {
-      throw new Error('No authentication token found');
+      throw new Error("No authentication token found");
     }
 
-    console.log('🔄 Fetching 2FA status...');
+    console.log("🔄 Fetching 2FA status...");
 
     const response = await fetch(`${API_URL}/api/2fa/status`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to get 2FA status');
+      throw new Error(errorData.message || "Failed to get 2FA status");
     }
 
     const data = await response.json();
-    console.log('✅ 2FA status received:', data.data);
+    console.log("✅ 2FA status received:", data.data);
 
     return {
       enabled: data.data.enabled,
       setupAt: data.data.setupAt,
-      backupCodesRemaining: data.data.backupCodesRemaining,
     };
   } catch (error) {
-    console.error('❌ Error getting 2FA status:', error);
+    console.error("❌ Error getting 2FA status:", error);
     throw error;
   }
 }
@@ -159,20 +150,23 @@ export async function get2FAStatus(): Promise<TwoFactorStatus> {
 /**
  * Disable 2FA for the current user
  */
-export async function disable2FA(password: string, token?: string): Promise<boolean> {
+export async function disable2FA(
+  password: string,
+  token?: string
+): Promise<boolean> {
   try {
     const authToken = await getAuthToken();
     if (!authToken) {
-      throw new Error('No authentication token found');
+      throw new Error("No authentication token found");
     }
 
-    console.log('🔄 Disabling 2FA...');
+    console.log("🔄 Disabling 2FA...");
 
     const response = await fetch(`${API_URL}/api/2fa/disable`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         password,
@@ -182,58 +176,13 @@ export async function disable2FA(password: string, token?: string): Promise<bool
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to disable 2FA');
+      throw new Error(errorData.message || "Failed to disable 2FA");
     }
 
-    console.log('✅ 2FA disabled successfully');
-    
-    // Remove stored backup codes
-    await AsyncStorage.removeItem('2fa_backup_codes');
-
+    console.log("✅ 2FA disabled successfully");
     return true;
   } catch (error) {
-    console.error('❌ Error disabling 2FA:', error);
-    throw error;
-  }
-}
-
-/**
- * Regenerate backup codes
- */
-export async function regenerateBackupCodes(password: string): Promise<string[]> {
-  try {
-    const token = await getAuthToken();
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
-    console.log('🔄 Regenerating backup codes...');
-
-    const response = await fetch(`${API_URL}/api/2fa/regenerate-backup-codes`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        password,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to regenerate backup codes');
-    }
-
-    const data = await response.json();
-    console.log('✅ Backup codes regenerated');
-
-    // Store new backup codes
-    await AsyncStorage.setItem('2fa_backup_codes', JSON.stringify(data.data.backupCodes));
-
-    return data.data.backupCodes;
-  } catch (error) {
-    console.error('❌ Error regenerating backup codes:', error);
+    console.error("❌ Error disabling 2FA:", error);
     throw error;
   }
 }

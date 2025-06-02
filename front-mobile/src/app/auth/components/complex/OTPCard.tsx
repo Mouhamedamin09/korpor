@@ -33,9 +33,11 @@ export default function OTPCard({ email, userId }: OTPCardProps) {
       console.log("Email verification successful");
 
       // If successful, route to phone verification screen
-      router.push({
+      router.replace({
         pathname: "/auth/screens/Signup/verifyPhone",
-        params: { userId },
+        params: {
+          userId: userId,
+        },
       });
     } catch (error: any) {
       console.error("Email verification error:", error);

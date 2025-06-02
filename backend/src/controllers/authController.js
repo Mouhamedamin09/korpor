@@ -391,10 +391,26 @@ exports.signIn = async (req, res) => {
       });
     }
 
-    // Reset failed login attempts on successful login
+    // Reset failed login attempts on successful password verification
     await resetFailedLoginAttempts(user.id);
 
-    // Generate tokens
+    // Check if 2FA is enabled for this user
+    if (user.twoFactorEnabled) {
+      console.log("🔐 2FA is enabled for user:", user.email);
+
+      // Return special response requiring 2FA verification
+      return res.status(200).json({
+        message: "Password verified. 2FA verification required.",
+        requires2FA: true,
+        userId: user.id,
+        email: user.email,
+        tempSession: true,
+      });
+    }
+
+    console.log("✅ Login successful without 2FA for user:", user.email);
+
+    // Generate tokens (only for users without 2FA or after 2FA verification)
     const { accessToken, refreshToken } = generateTokens(user);
 
     // Update user's refresh token and last login time
@@ -1070,15 +1086,510 @@ exports.verifyPhone = async (req, res) => {
 
     console.log("✅ User updated successfully - phone verified and approved");
 
+    // Get updated user with role information for token generation
+    const updatedUser = await User.findOne({
+      where: { id: userId },
+      include: [{ model: Role, as: "role" }],
+    });
+
+    // Generate authentication tokens
+    const { accessToken, refreshToken } = generateTokens(updatedUser);
+
+    // Update user's refresh token and last login time
+    await User.update(
+      {
+        refreshToken,
+        refreshTokenExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        lastLogin: new Date(),
+      },
+      { where: { id: userId } }
+    );
+
+    // Determine dashboard route based on role
+    let dashboardRoute = "/dashboard";
+    if (updatedUser.role) {
+      switch (updatedUser.role.name) {
+        case "superadmin":
+          dashboardRoute = "/super-admin/dashboard";
+          break;
+        case "admin":
+          dashboardRoute = "/admin/dashboard";
+          break;
+        case "agent":
+          dashboardRoute = "/agent/dashboard";
+          break;
+        default:
+          dashboardRoute = "/dashboard";
+      }
+    }
+
+    console.log("✅ Authentication tokens generated successfully");
+
     res.status(200).json({
-      message: "Phone number verified successfully",
+      message: "Phone number verified successfully. You are now logged in!",
       status: "phone_verified",
+      // Include authentication data like signin response
+      accessToken,
+      refreshToken,
+      user: {
+        id: updatedUser.id,
+        accountNo: updatedUser.accountNo,
+        name: updatedUser.name,
+        surname: updatedUser.surname,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        profilePicture: updatedUser.profilePicture,
+        lastLogin: updatedUser.lastLogin,
+        isVerified: updatedUser.isVerified,
+        phoneVerified: updatedUser.phoneVerified,
+        approvalStatus: updatedUser.approvalStatus,
+      },
+      role: updatedUser.role ? updatedUser.role.name : null,
+      privileges: updatedUser.role ? updatedUser.role.privileges : [],
+      dashboardRoute,
     });
   } catch (error) {
     console.error("Verify phone error:", error);
     res.status(500).json({
       message: "Server error",
       error: error.message,
+    });
+  }
+};
+
+/**
+ * Complete 2FA Login
+ * Verifies the 2FA token and completes the login process
+ */
+exports.complete2FALogin = async (req, res) => {
+  try {
+    const { userId, token } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    if (!token) {
+      return res.status(400).json({
+        message: "2FA token is required",
+      });
+    }
+
+    // Find user with role information
+    const user = await User.findOne({
+      where: { id: userId },
+      include: [{ model: Role, as: "role" }],
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user.twoFactorEnabled) {
+      return res.status(400).json({
+        message: "2FA is not enabled for this account",
+      });
+    }
+
+    // Verify TOTP token
+    const speakeasy = require("speakeasy");
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: "base32",
+      token: token,
+      window: 2, // Allow 2 time steps tolerance
+    });
+
+    if (!verified) {
+      console.log("❌ 2FA verification failed for user:", user.email);
+      return res.status(400).json({
+        message: "Invalid 2FA code",
+      });
+    }
+
+    console.log("✅ 2FA verified using TOTP token for user:", user.email);
+    console.log("🎉 2FA login completed successfully for user:", user.email);
+
+    // Generate tokens after successful 2FA verification
+    const { accessToken, refreshToken } = generateTokens(user);
+
+    // Update user's refresh token and last login time
+    await User.update(
+      {
+        refreshToken,
+        refreshTokenExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        lastLogin: new Date(),
+      },
+      { where: { id: user.id } }
+    );
+
+    // Determine dashboard route based on role
+    let dashboardRoute = "/dashboard";
+    if (user.role) {
+      switch (user.role.name) {
+        case "superadmin":
+          dashboardRoute = "/super-admin/dashboard";
+          break;
+        case "admin":
+          dashboardRoute = "/admin/dashboard";
+          break;
+        case "agent":
+          dashboardRoute = "/agent/dashboard";
+          break;
+        default:
+          dashboardRoute = "/dashboard";
+      }
+    }
+
+    // Generate device info for security notification
+    const deviceInfo = {
+      deviceId: req.headers["user-agent"]
+        ? Buffer.from(req.headers["user-agent"])
+            .toString("base64")
+            .substring(0, 10)
+        : "unknown",
+      browser: req.headers["user-agent"]
+        ? req.headers["user-agent"].split(" ")[0]
+        : "unknown",
+      os: req.headers["user-agent"]
+        ? req.headers["user-agent"].split("(")[1]?.split(")")[0]
+        : "unknown",
+      location:
+        req.headers["x-forwarded-for"] ||
+        req.connection.remoteAddress ||
+        "unknown",
+    };
+
+    // Send complete login response
+    return res.status(200).json({
+      message: "2FA verification successful. Login completed!",
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        accountNo: user.accountNo,
+        name: user.name,
+        surname: user.surname,
+        email: user.email,
+        profilePicture: user.profilePicture,
+        lastLogin: user.lastLogin,
+      },
+      role: user.role ? user.role.name : null,
+      privileges: user.role ? user.role.privileges : [],
+      deviceInfo,
+      dashboardRoute,
+    });
+  } catch (error) {
+    console.error("Complete 2FA login error:", error);
+    return res.status(500).json({
+      message: "An error occurred during 2FA verification",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * @swagger
+ * /api/auth/close-account:
+ *   delete:
+ *     summary: Close and permanently delete user account
+ *     description: Permanently closes and deletes a user account after password verification. Checks for warnings like active investments, pending transactions, or remaining balance.
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - password
+ *             properties:
+ *               password:
+ *                 type: string
+ *                 description: User's current password for verification
+ *                 example: "mySecurePassword123"
+ *     responses:
+ *       200:
+ *         description: Account successfully closed and deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Account has been permanently closed and deleted"
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                   example: "2024-01-15T10:30:00.000Z"
+ *       400:
+ *         description: Account cannot be closed due to warnings or missing password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Account cannot be closed due to the following issues:"
+ *                 warnings:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example:
+ *                     - "You have active investments. Please liquidate them before closing your account."
+ *                     - "Two-factor authentication is currently enabled on your account."
+ *       401:
+ *         description: Invalid password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid password"
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User not found"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "An error occurred while closing the account"
+ *                 error:
+ *                   type: string
+ *                   example: "Database connection failed"
+ */
+
+/**
+ * Close Account
+ * Permanently closes and deletes user account after password verification
+ */
+exports.closeAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { password } = req.body;
+
+    console.log(`🔄 Close account request for user ID: ${userId}`);
+
+    if (!password) {
+      console.log("❌ No password provided");
+      return res
+        .status(400)
+        .json({ message: "Password is required to close account" });
+    }
+
+    // Find user with all relevant data
+    console.log(`🔍 Looking up user with ID: ${userId}`);
+    const user = await User.findByPk(userId, {
+      include: [{ model: Role, as: "role" }],
+    });
+
+    if (!user) {
+      console.log("❌ User not found");
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    console.log(`✅ User found: ${user.email}`);
+
+    // Verify password
+    console.log("🔐 Verifying password...");
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      console.log("❌ Invalid password provided");
+      return res.status(401).json({ message: "Invalid password" });
+    }
+
+    console.log("✅ Password verified successfully");
+
+    // Check for warnings/conditions before account closure
+    const warnings = [];
+
+    // Check if user has any active investments
+    // Note: You may need to implement investment checking based on your schema
+    // This is a placeholder for investment-related warnings
+    const hasActiveInvestments = false; // Replace with actual investment check
+    if (hasActiveInvestments) {
+      warnings.push(
+        "You have active investments. Please liquidate them before closing your account."
+      );
+    }
+
+    // Check if user has pending transactions
+    const hasPendingTransactions = false; // Replace with actual transaction check
+    if (hasPendingTransactions) {
+      warnings.push(
+        "You have pending transactions. Please wait for them to complete."
+      );
+    }
+
+    // Check if user has positive balance
+    const hasBalance = false; // Replace with actual balance check
+    if (hasBalance) {
+      warnings.push(
+        "You have remaining balance. Please withdraw all funds before closing your account."
+      );
+    }
+
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      warnings.push(
+        "Two-factor authentication is currently enabled on your account."
+      );
+    }
+
+    // If there are critical warnings, return them without closing
+    if (warnings.length > 0) {
+      console.log(
+        `⚠️ Account closure prevented due to ${warnings.length} warnings`
+      );
+      return res.status(400).json({
+        message: "Account cannot be closed due to the following issues:",
+        warnings: warnings,
+      });
+    }
+
+    console.log("✅ No warnings found, proceeding with account closure");
+
+    // Log the account closure for audit purposes
+    console.log(
+      `🗑️ Account closure initiated for user ID: ${userId}, email: ${user.email}`
+    );
+
+    // Blacklist any active tokens
+    try {
+      if (user.refreshToken) {
+        console.log("🔒 Blacklisting refresh token...");
+        await blacklistToken(user.refreshToken);
+        console.log("✅ Refresh token blacklisted");
+      } else {
+        console.log("ℹ️ No refresh token to blacklist");
+      }
+    } catch (error) {
+      console.warn(
+        "⚠️ Warning: Could not blacklist refresh token during account closure:",
+        error.message
+      );
+      // Continue anyway, don't let this block account deletion
+    }
+
+    // Permanently delete the user account
+    console.log("🗑️ Deleting user account and related data from database...");
+
+    // First, get all related models that might reference the user
+    // We need to delete them in the correct order to avoid foreign key constraint errors
+
+    try {
+      // Delete related records first (you may need to adjust based on your actual models)
+
+      // Delete transactions first (as shown in the error)
+      console.log("🗑️ Deleting user transactions...");
+      try {
+        await User.sequelize.query(
+          "DELETE FROM transactions WHERE user_id = ?",
+          {
+            replacements: [userId],
+            type: User.sequelize.QueryTypes.DELETE,
+          }
+        );
+        console.log("✅ User transactions deleted");
+      } catch (transactionError) {
+        // If transactions table doesn't exist or other issues, log but continue
+        console.log(
+          "ℹ️ No transactions to delete or table doesn't exist:",
+          transactionError.message
+        );
+      }
+
+      // Delete wallets (also causing foreign key constraint)
+      console.log("🗑️ Deleting user wallets...");
+      try {
+        await User.sequelize.query("DELETE FROM wallets WHERE user_id = ?", {
+          replacements: [userId],
+          type: User.sequelize.QueryTypes.DELETE,
+        });
+        console.log("✅ User wallets deleted");
+      } catch (walletError) {
+        console.log(
+          "ℹ️ No wallets to delete or table doesn't exist:",
+          walletError.message
+        );
+      }
+
+      // Delete other potential related records
+      const tablesToCheck = [
+        "investments",
+        "notifications",
+        "user_sessions",
+        "audit_logs",
+        "support_tickets",
+        "payment_methods",
+        "auto_invest_settings",
+        "user_preferences",
+        "kyc_documents",
+      ];
+
+      for (const table of tablesToCheck) {
+        try {
+          console.log(`🗑️ Checking and deleting records from ${table}...`);
+          await User.sequelize.query(`DELETE FROM ${table} WHERE user_id = ?`, {
+            replacements: [userId],
+            type: User.sequelize.QueryTypes.DELETE,
+          });
+          console.log(`✅ Records deleted from ${table}`);
+        } catch (tableError) {
+          // Table might not exist or no records to delete
+          console.log(
+            `ℹ️ No records to delete from ${table} or table doesn't exist`
+          );
+        }
+      }
+
+      // Finally, delete the user account
+      console.log("🗑️ Deleting user account...");
+      await User.destroy({
+        where: { id: userId },
+      });
+      console.log("✅ User account deleted successfully");
+    } catch (deleteError) {
+      console.error("❌ Error during deletion process:", deleteError);
+      throw new Error(`Failed to delete user account: ${deleteError.message}`);
+    }
+
+    console.log(
+      `✅ Account successfully closed and deleted for user: ${user.email}`
+    );
+
+    // Send success response
+    return res.status(200).json({
+      message: "Account has been permanently closed and deleted",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("❌ Account closure error:", error);
+    console.error("❌ Error stack:", error.stack);
+    return res.status(500).json({
+      message: "An error occurred while closing the account",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };

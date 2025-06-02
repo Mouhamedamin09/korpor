@@ -526,6 +526,59 @@ router.post("/sign-in", handleFailedLogin, authController.signIn);
 
 /**
  * @swagger
+ * /api/auth/complete-2fa-login:
+ *   post:
+ *     summary: Complete Two-Factor Authentication Login
+ *     description: Complete the login process by verifying the 2FA token after successful password authentication.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *                 description: User ID from the initial sign-in response
+ *                 example: 12345
+ *               token:
+ *                 type: string
+ *                 pattern: '^[0-9]{6}$'
+ *                 description: 6-digit TOTP code from authenticator app
+ *                 example: "123456"
+ *               backupCode:
+ *                 type: string
+ *                 description: Backup recovery code (alternative to token)
+ *                 example: "ABC123-DEF456"
+ *     responses:
+ *       200:
+ *         description: 2FA verification successful, login completed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       400:
+ *         description: Invalid request or verification failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Invalid 2FA code or backup code
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.post("/complete-2fa-login", authController.complete2FALogin);
+
+/**
+ * @swagger
  * /api/auth/refresh-token:
  *   post:
  *     summary: Refresh access token
@@ -992,6 +1045,9 @@ router.post(
  *                   type: string
  */
 router.post("/clerk-auth", authController.handleClerkAuth);
+
+// Close account
+router.delete("/close-account", authenticate, authController.closeAccount);
 
 // Add the following route before the module.exports line
 // Development-only route to reset rate limits

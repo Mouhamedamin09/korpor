@@ -28,8 +28,7 @@ export default function SignupSuccess() {
       <View className="flex-1" />
       <SolidButton
         title="Login"
-        onPress={() => router.push("auth/screens/Login")}
-        width="35"
+        onPress={() => router.replace("/auth/screens/Login")}
       />
       <View className="mt-5" />
     </View>

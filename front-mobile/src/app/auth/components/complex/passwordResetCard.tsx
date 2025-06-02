@@ -21,7 +21,7 @@ export default function PasswordResetCard() {
     }
 
     console.log("Password updated:", password);
-    router.push("auth/screens/Login/forgotPassword/resetDone");
+    router.replace("auth/screens/Login/forgotPassword/resetDone");
   };
 
   return (

@@ -15,7 +15,7 @@ export default function SolidButton({
   return (
     <TouchableOpacity
       className={`w-full h-12 rounded-xl justify-center items-center mb-3 ${
-        disabled ? "bg-[#3f3f46]" : "bg-[#0ea5e9]"
+        disabled ? "bg-gray-300" : "bg-black"
       }`}
       onPress={onPress}
       disabled={disabled}

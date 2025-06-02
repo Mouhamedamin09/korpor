@@ -261,7 +261,7 @@ const InvestmentPaymentContent: React.FC = () => {
             [
               {
                 text: "View Investment",
-                onPress: () => router.push("/main/screens/(tabs)/wallet"),
+                onPress: () => router.replace("/main/screens/(tabs)/wallet"),
               },
             ]
           );
@@ -341,7 +341,7 @@ const InvestmentPaymentContent: React.FC = () => {
           [
             {
               text: "View Investment",
-              onPress: () => router.push("/main/screens/(tabs)/wallet"),
+              onPress: () => router.replace("/main/screens/(tabs)/wallet"),
             },
           ]
         );

@@ -960,7 +960,7 @@ const DepositScreen: React.FC = () => {
                 savedPaymentMethods.find((m) => m.is_default)?.id || ""
               );
               setDepositSuccessSheetVisible(false);
-              router.push("transactions?filter=deposits");
+              router.replace("transactions?filter=deposits");
             }}
             className="bg-black rounded-lg p-4 w-full items-center mb-3"
             activeOpacity={0.8}
@@ -1037,7 +1037,7 @@ const DepositScreen: React.FC = () => {
               setSelectedMethod("");
               setDepositing(false);
               setPaymeSuccessSheetVisible(false);
-              router.push("transactions?filter=deposits");
+              router.replace("transactions?filter=deposits");
             }}
             className="bg-black rounded-lg p-4 w-full items-center mb-3"
             activeOpacity={0.8}

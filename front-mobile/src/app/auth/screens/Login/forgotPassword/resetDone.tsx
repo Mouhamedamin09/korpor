@@ -33,7 +33,7 @@ export default function ResetDone() {
         <View className="w-[90%] mb-[7%]">
           <SolidButton
             title="Log In"
-            onPress={() => router.push("auth/screens/Login")}
+            onPress={() => router.replace("/auth/screens/Login")}
           />
         </View>
       </View>

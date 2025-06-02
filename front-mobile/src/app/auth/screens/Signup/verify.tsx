@@ -24,7 +24,7 @@ export default function VerificationScreen() {
       <View className="flex-1 justify-center items-center">
         <Image
           source={OTP}
-          style={{ width: 90, height: 90, resizeMode: "contain" }}
+          style={{ width: 120, height: 120, resizeMode: "contain" }}
           className="mb-4 mt-[-40%]"
         />
         <OTPCard email={email as string} userId={userId as string} />

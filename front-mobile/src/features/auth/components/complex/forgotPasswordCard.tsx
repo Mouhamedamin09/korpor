@@ -17,7 +17,7 @@ export default function ForgotPasswordCard() {
 
     // Proceed
     console.log("Reset link sent to:", email);
-    router.push("auth/screens/Login/forgotPassword/OTPReset");
+    router.replace("auth/screens/Login/forgotPassword/OTPReset");
   };
 
   return (

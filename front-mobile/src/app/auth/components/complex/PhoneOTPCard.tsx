@@ -2,6 +2,7 @@ import { View, Text } from "react-native";
 import { SolidButton, OTPInput, PressableText } from "../ui";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import API_URL from "@shared/constants/api";
 
@@ -64,10 +65,23 @@ export default function PhoneOTPCard({ userId }: PhoneOTPCardProps) {
         verificationCode: code,
       });
 
-      console.log("Phone verified successfully:", response.data.message);
+      console.log("Phone verified successfully:", response.data);
 
-      // Navigate to success screen or login
-      router.replace("/auth/screens/Signup/success");
+      // Store authentication tokens and user data locally
+      if (response.data.accessToken && response.data.refreshToken) {
+        await AsyncStorage.setItem("accessToken", response.data.accessToken);
+        await AsyncStorage.setItem("refreshToken", response.data.refreshToken);
+        await AsyncStorage.setItem(
+          "userData",
+          JSON.stringify(response.data.user)
+        );
+        await AsyncStorage.setItem("userRole", response.data.role || "user");
+
+        console.log("✅ Authentication tokens stored successfully");
+      }
+
+      // Navigate to onboarding instead of success screen
+      router.replace("/auth/screens/onboarding/onboarding");
     } catch (error: any) {
       console.error("Phone verification failed:", error);
       setErrorMessage(

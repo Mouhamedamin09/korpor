@@ -11,7 +11,7 @@ import {
   PressableText,
   OutlinedButtonSm,
 } from "../ui/index";
-import { signin } from "@auth/services/signin";
+import { signin, TwoFactorRequiredError } from "@auth/services/signin";
 
 export default function LoginCard(): JSX.Element {
   const [email, setEmail] = useState<string>("");
@@ -20,6 +20,9 @@ export default function LoginCard(): JSX.Element {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleSignin = async (): Promise<void> => {
+    console.log(
+      "🎯 APP LOGINCARD: Starting signin in the CORRECT LoginCard file"
+    );
     setErrorMessage("");
     setIsLoading(true);
 
@@ -49,7 +52,72 @@ export default function LoginCard(): JSX.Element {
         },
       ]);
     } catch (error: any) {
+      console.log("🔍 APP LOGINCARD: Caught error in LoginCard");
       console.error("Sign-in error:", error);
+      console.log("Error details:", {
+        message: error.message,
+        name: error.name,
+        requires2FA: error.requires2FA,
+        userId: error.userId,
+        email: error.email,
+        constructor: error.constructor?.name,
+        typeof: typeof error,
+        isInstance: error instanceof Error,
+        isTwoFactorError: error instanceof TwoFactorRequiredError,
+      });
+
+      // Handle 2FA required error - multiple checks for compatibility
+      if (
+        error instanceof TwoFactorRequiredError ||
+        error?.requires2FA ||
+        error?.name === "TwoFactorRequiredError" ||
+        error?.message?.includes("2FA verification required") ||
+        (error?.userId &&
+          error?.email &&
+          error?.message?.includes("Password verified"))
+      ) {
+        console.log(
+          "🔐 APP LOGINCARD: 2FA detected, redirecting to 2FA verification"
+        );
+        console.log("2FA Error details:", {
+          name: error.name,
+          requires2FA: error.requires2FA,
+          userId: error.userId,
+          email: error.email,
+        });
+
+        // Clear loading state before navigation
+        setIsLoading(false);
+
+        // Navigate to 2FA verification screen with user info
+        try {
+          console.log("🔄 APP LOGINCARD: Attempting navigation to 2FA screen");
+
+          const navigationParams = {
+            userId: error.userId?.toString() || "",
+            email: error.email || "",
+          };
+
+          console.log("Navigation params:", navigationParams);
+
+          router.replace({
+            pathname: "/auth/screens/Login/TwoFactorLogin",
+            params: navigationParams,
+          });
+
+          console.log("✅ APP LOGINCARD: Navigation to 2FA screen initiated");
+          return;
+        } catch (navError) {
+          console.error("❌ APP LOGINCARD: Navigation error:", navError);
+          setErrorMessage(
+            "Unable to navigate to 2FA screen. Please try again."
+          );
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      console.log("⚠️ APP LOGINCARD: 2FA not detected, showing error message");
       setErrorMessage(error.message || "Unable to sign in. Please try again.");
     } finally {
       setIsLoading(false);
@@ -99,7 +167,6 @@ export default function LoginCard(): JSX.Element {
       <OutlinedButtonSm
         title={isLoading ? "Signing in..." : "Log in"}
         onPress={handleSignin}
-        disabled={isLoading}
       />
 
       {/* Loading spinner */}
@@ -118,12 +185,14 @@ export default function LoginCard(): JSX.Element {
 
       {/* Options */}
       <View className="flex-row items-center pt-1 justify-between mx-1">
-        <RememberMeCheckbox disabled={isLoading} />
+        <RememberMeCheckbox />
         <PressableText
           text="Forgot password?"
           onPress={() => {
             if (!isLoading) {
-              router.push("auth/screens/Login/forgotPassword/forgotPassword");
+              router.replace(
+                "auth/screens/Login/forgotPassword/forgotPassword"
+              );
             }
           }}
         />
@@ -138,7 +207,7 @@ export default function LoginCard(): JSX.Element {
           text="Sign up"
           onPress={() => {
             if (!isLoading) {
-              router.push("auth/screens/Signup/signup");
+              router.replace("auth/screens/Signup/signup");
             }
           }}
         />

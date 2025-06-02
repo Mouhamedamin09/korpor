@@ -34,7 +34,7 @@ export default function PasswordInput({
   return (
     <View className="w-full relative mb-3">
       <TextInput
-        className="border border-[#3f3f46] rounded-xl px-4 h-12 text-base text-[#fafafa] w-full py-3 bg-[#09090b] mb-3"
+        className="border border-[#3f3f46] rounded-xl px-4 h-12 text-base text-black w-full py-3 bg-gray-100 mb-3"
         placeholder={placeholder}
         placeholderTextColor="#A0A0A0"
         secureTextEntry={!isPasswordVisible}
@@ -45,7 +45,7 @@ export default function PasswordInput({
       {/* Eye Icon Button */}
       <TouchableOpacity
         onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-        className="absolute right-1 transform -translate-y-1 flex items-center justify-center h-12 w-10"
+        className="absolute right-1 transform -translate-y-2 flex items-center justify-center h-12 w-10"
       >
         <Image
           source={isPasswordVisible ? blueEye : grayEye}

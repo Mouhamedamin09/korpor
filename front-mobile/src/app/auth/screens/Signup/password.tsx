@@ -1,17 +1,43 @@
-import { View, Text, Image, TouchableOpacity } from "react-native";
+// ─────────────────────────────────────────────────────────────────────────────
+// /auth/screens/Signup/PasswordSignupInput.tsx
+// Uses the new PasswordCard. Hides the big lock icon while the keyboard is up.
+// ─────────────────────────────────────────────────────────────────────────────
+import React, { useEffect, useState } from "react";
+import { View, Image, TouchableOpacity, Keyboard } from "react-native";
 import { PasswordCard } from "@auth/components/complex";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect } from "react";
 
 const BackButton = require("@assets/back.png");
 const Lock = require("@assets/lock.png");
 
 export default function PasswordSignupInput() {
   const router = useRouter();
-  // These are the params passed from the first step (SignupCard)
-  const { name, surname, email, phone, birthdate } = useLocalSearchParams();
 
-  // Log received parameters for debugging
+  /* params passed from the first signup step */
+  const { name, surname, email, phone, birthdate } = useLocalSearchParams<{
+    name?: string;
+    surname?: string;
+    email?: string;
+    phone?: string;
+    birthdate?: string;
+  }>();
+
+  /* hide the top-level lock icon while keyboard is visible */
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", () =>
+      setIsKeyboardVisible(true)
+    );
+    const hide = Keyboard.addListener("keyboardDidHide", () =>
+      setIsKeyboardVisible(false)
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  /* debug log — remove if no longer needed */
   useEffect(() => {
     console.log("Password screen received params:", {
       name,
@@ -19,30 +45,26 @@ export default function PasswordSignupInput() {
       email,
       phone,
       birthdate,
-      name_type: typeof name,
-      surname_type: typeof surname,
-      email_type: typeof email,
-      phone_type: typeof phone,
-      birthdate_type: typeof birthdate,
     });
   }, [name, surname, email, phone, birthdate]);
 
   return (
     <View className="flex-1 bg-gray-50">
-      {/* Back Button */}
-      <TouchableOpacity
-        onPress={() => {
-          router.back();
-        }}
-        className="mt-2"
-      >
+      {/* ─── Back button ────────────────────────────────────── */}
+      <TouchableOpacity onPress={() => router.back()} className="mt-2">
         <Image source={BackButton} className="h-12 w-12" />
       </TouchableOpacity>
 
-      <View className="flex-1 justify-center items-center">
-        <Image source={Lock} className="w-20 h-20 mb-10 mt-[-40%]" />
+      {/* ─── Main content ──────────────────────────────────── */}
+      <View className="flex-1 items-center justify-center">
+        {!isKeyboardVisible && (
+          <Image
+            source={Lock}
+            className="w-40 h-40 mb-10 mt-[-40%]"
+            resizeMode="contain"
+          />
+        )}
 
-        {/* PasswordCard now needs to know the user's name/surname/email/phone/birthdate */}
         <PasswordCard
           name={name as string}
           surname={surname as string}

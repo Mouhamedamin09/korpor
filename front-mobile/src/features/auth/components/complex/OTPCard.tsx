@@ -64,7 +64,7 @@ export default function OTPCard({ email }: OTPCardProps) {
           onPress={() => {
             // Optionally call an endpoint to resend the code
             console.log("Resend Code pressed");
-            router.push("auth/screens/Signup/signupDone.tsx");
+            router.replace("/auth/screens/Signup/signupDone");
           }}
         />
       </View>

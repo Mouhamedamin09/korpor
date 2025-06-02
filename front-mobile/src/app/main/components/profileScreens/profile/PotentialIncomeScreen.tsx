@@ -38,8 +38,8 @@ const GREEN = "#34D37D";
 const LIGHT_GREEN = "rgba(52,211,125,0.2)";
 const yearOptions = [1, 5, 10, 15] as const;
 
-const CHART_HEIGHT = 300;      // ⬅️ fixed chart drawing area
-const CARD_HEIGHT  = 340;      // ⬅️ total fixed card height (chart + labels)
+const CHART_HEIGHT = 300; // ⬅️ fixed chart drawing area
+const CARD_HEIGHT = 340; // ⬅️ total fixed card height (chart + labels)
 
 function fmt(val: number, currency: string = "") {
   const prefix = currency ? `${currency} ` : "";
@@ -92,7 +92,10 @@ export default function PotentialIncomeScreen() {
       setCurrency(currencyData);
       setUserInvestmentData(investmentData);
 
-      setDeposit(investmentData.monthlyContribution || initialDeposit);
+      // Use the passed deposit amount if available, otherwise use backend data
+      if (!params.deposit) {
+        setDeposit(investmentData.monthlyContribution || initialDeposit);
+      }
       setYieldPct(investmentData.averageYield || 6);
     } catch (error) {
       console.error("Error loading initial data:", error);
@@ -125,13 +128,9 @@ export default function PotentialIncomeScreen() {
   /*                     RENDERING                      */
   /* -------------------------------------------------- */
 
-
-
   if (!userInvestmentData || !projection) {
     return (
-      <View className="flex-1 bg-gray-50 justify-center items-center">
-        
-      </View>
+      <View className="flex-1 bg-gray-50 justify-center items-center"></View>
     );
   }
 
@@ -152,7 +151,9 @@ export default function PotentialIncomeScreen() {
   }));
 
   const ticks = yearOptions.filter((t) => t <= years);
-  const maxY = currentProjection ? currentProjection.totalValue * 1.2 : 1_000_000;
+  const maxY = currentProjection
+    ? currentProjection.totalValue * 1.2
+    : 1_000_000;
   const currencySymbol = currency === "EUR" ? "€" : "TND";
 
   return (
@@ -188,6 +189,12 @@ export default function PotentialIncomeScreen() {
         <Card extraStyle="mb-6">
           <Text className="text-sm text-gray-600 mb-2 text-center">
             Monthly deposit
+            {params.deposit && (
+              <Text className="text-green-600 text-xs font-medium">
+                {" "}
+                (from your selection)
+              </Text>
+            )}
           </Text>
           <View className="flex-row items-center justify-center border border-gray-300 rounded-xl py-2">
             <TouchableOpacity
@@ -238,7 +245,7 @@ export default function PotentialIncomeScreen() {
         {/* Chart */}
         <Card extraStyle="mb-6">
           <View
-            style={{ height: CARD_HEIGHT }}                    
+            style={{ height: CARD_HEIGHT }}
             className="items-center justify-center"
           >
             {calculating ? (

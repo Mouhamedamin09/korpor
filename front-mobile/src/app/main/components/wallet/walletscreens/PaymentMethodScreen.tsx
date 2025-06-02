@@ -645,13 +645,6 @@ const PaymentMethodContent: React.FC = () => {
                                   method.card.exp_year
                                 )}
                               </Text>
-                              {method.is_default && (
-                                <View className="ml-2 px-2 py-1 bg-green-100 rounded">
-                                  <Text className="text-xs text-green-600 font-medium">
-                                    Default
-                                  </Text>
-                                </View>
-                              )}
                             </View>
                             <Text className="text-sm text-gray-600">
                               Credit/Debit Card

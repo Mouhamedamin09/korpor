@@ -3,18 +3,59 @@ import "../../global.css";
 import OutlinedButton from "@auth/components/ui/outlinedButton";
 import SolidButtonLg from "@auth/components/ui/solidButtonLg";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { authService } from "./auth/services/authService";
 const logo = require("@assets/logo-black.png");
 const Slogan = require("@assets/korporBlack.png");
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
 
 export default function App() {
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [fontsLoaded] = useFonts({
     Poppins: require("@assets/fonts/poppins/Poppins-SemiBold.ttf"),
   });
-  if (!fontsLoaded) {
-    return null;
+
+  // Check if user is already authenticated using AuthService
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      try {
+        console.log("🔍 App: Checking authentication status...");
+
+        const isAuthenticated = await authService.isAuthenticated();
+
+        if (isAuthenticated) {
+          console.log("✅ App: User is authenticated, redirecting to main app");
+          router.replace("main/screens/(tabs)/properties");
+          return;
+        }
+
+        console.log("❌ App: User not authenticated, showing landing page");
+      } catch (error) {
+        console.error("❌ App: Error checking authentication:", error);
+        // On error, show landing page
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuthentication();
+  }, []);
+
+  if (!fontsLoaded || isCheckingAuth) {
+    return (
+      <View className="flex-1 bg-background justify-center items-center">
+        <StatusBar style="dark" translucent backgroundColor="transparent" />
+        <Image
+          style={{ resizeMode: "contain" }}
+          source={logo}
+          className="w-36 h-36 self-center"
+        />
+        <Text className="text-lg text-gray-500 mt-4">Loading...</Text>
+      </View>
+    );
   }
+
   return (
     <View className="flex-1 bg-background justify-between items-center">
       <StatusBar style="dark" translucent backgroundColor="transparent" />
@@ -34,7 +75,7 @@ export default function App() {
         <SolidButtonLg
           title="main app(temp)"
           onPress={() => {
-            router.push("main/screens/(tabs)/properties");
+            router.replace("main/screens/(tabs)/properties");
           }}
         />
         <SolidButtonLg

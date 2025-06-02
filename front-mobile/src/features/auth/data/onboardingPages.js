@@ -1,8 +1,8 @@
 export default [
   {
-    title: "Welcome to Korpor!",
+    title: "Welcome to Korpor! 🎉",
     description:
-      "Effortless investments, AI insights, and rewards—all in one app.",
+      "Congratulations! Your account is now ready. Discover smart real estate investments with AI-powered insights and transparent opportunities.",
     buttonText: "Next",
     secondaryButtonText: "Skip",
     image: require("@assets/building.png"),
@@ -10,7 +10,7 @@ export default [
   {
     title: "Smart Investing Made Simple",
     description:
-      "Discover top opportunities with AI-powered recommendations and transparent insights.",
+      "Explore premium real estate opportunities with detailed analytics, risk assessments, and projected returns - all powered by intelligent algorithms.",
     buttonText: "Next",
     secondaryButtonText: "Skip",
     image: require("@assets/rafiki.png"),
@@ -18,16 +18,17 @@ export default [
   {
     title: "Track & Grow Your Portfolio",
     description:
-      "Monitor your investments in real time and earn rewards for every step forward.",
+      "Monitor your investments in real-time with comprehensive dashboards, performance metrics, and personalized recommendations to maximize your returns.",
     buttonText: "Next",
     secondaryButtonText: "Skip",
     image: require("@assets/cuate.png"),
   },
   {
-    title: "Let’s Get Started!",
-    description: "Sign up now to unlock a smarter way to invest.",
-    buttonText: "Sign Up",
-    secondaryButtonText: "Sign In",
+    title: "Ready to Start Investing?",
+    description:
+      "Everything is set up! Browse our curated selection of real estate opportunities and start building your investment portfolio today.",
+    buttonText: "Explore Properties",
+    secondaryButtonText: "View Portfolio",
     image: require("@assets/himm.png"),
   },
 ];

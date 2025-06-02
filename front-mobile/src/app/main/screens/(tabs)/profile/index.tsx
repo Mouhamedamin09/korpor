@@ -8,13 +8,18 @@ import {
   Image,
   RefreshControl,
   Linking,
+  Alert,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { useRouter } from "expo-router";
+import { AccountData, fetchAccountData } from "@main/services/account";
+import { logout } from "@auth/services/logout";
 
 import TopBar from "@main/components/profileScreens/components/ui/TopBar";
-import { fetchAccountData, AccountData } from "@main/services/api";
-import { fetchDetailedVerificationStatus, BackendVerificationStatus } from "@main/services/Verification";
+import {
+  fetchDetailedVerificationStatus,
+  BackendVerificationStatus,
+} from "@main/services/Verification";
 import { getInitials } from "@main/components/profileScreens/components/ui/string";
 
 type VerificationProgress = {
@@ -44,98 +49,95 @@ export default function ProfileScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [account, setAccount] = useState<ExtendedAccountData | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [accountData, verificationStatus] = await Promise.all([
-          fetchAccountData(),
-          fetchDetailedVerificationStatus()
-        ]);
+  const fetchData = async () => {
+    setIsRefreshing(true);
+    try {
+      const [accountData, verificationStatus] = await Promise.all([
+        fetchAccountData(),
+        fetchDetailedVerificationStatus(),
+      ]);
 
-        // Calculate real verification progress
-        let completed = 2; // Steps 1-2 are always complete (account + employment)
-        if (verificationStatus?.identityStatus === 'approved') completed++;
-        if (verificationStatus?.addressStatus === 'approved') completed++;
+      // Calculate real verification progress
+      let completed = 2; // Steps 1-2 are always complete (account + employment)
+      if (verificationStatus?.identityStatus === "approved") completed++;
+      if (verificationStatus?.addressStatus === "approved") completed++;
 
-        const extendedAccountData: ExtendedAccountData = {
-          ...accountData,
-          verificationProgress: {
-            completed,
-            total: 4
-          }
-        };
+      const extendedAccountData: ExtendedAccountData = {
+        ...accountData,
+        verificationProgress: {
+          completed,
+          total: 4,
+        },
+      };
 
-        setAccount(extendedAccountData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        // Fallback to account data only with default verification
-        try {
-          const accountData = await fetchAccountData();
-          const extendedAccountData: ExtendedAccountData = {
-            ...accountData,
-            verificationProgress: {
-              completed: 2, // Default to 2/4 for new users
-              total: 4
-            }
-          };
-          setAccount(extendedAccountData);
-        } catch (fallbackError) {
-          console.error('Fallback fetch also failed:', fallbackError);
-        }
+      setAccount(extendedAccountData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      // Check if it's an authentication error
+      if (error instanceof Error && error.message.includes("Session expired")) {
+        Alert.alert(
+          "Session Expired",
+          "Your session has expired. Please log in again.",
+          [
+            {
+              text: "OK",
+              onPress: () => router.replace("/auth/screens/Login"),
+            },
+          ]
+        );
+        return;
       }
-    };
 
+      // For other errors, show a generic message but don't redirect
+      Alert.alert("Error", "Failed to load data. Please try again.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
   const initials = account ? getInitials(account.name) : "MK";
 
   const onRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      const [accountData, verificationStatus] = await Promise.all([
-        fetchAccountData(),
-        fetchDetailedVerificationStatus()
-      ]);
-
-      // Calculate real verification progress
-      let completed = 2; // Steps 1-2 are always complete (account + employment)
-      if (verificationStatus?.identityStatus === 'approved') completed++;
-      if (verificationStatus?.addressStatus === 'approved') completed++;
-
-      const extendedAccountData: ExtendedAccountData = {
-        ...accountData,
-        verificationProgress: {
-          completed,
-          total: 4
-        }
-      };
-
-      setAccount(extendedAccountData);
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-      // Fallback to account data only
-      try {
-        const accountData = await fetchAccountData();
-        const extendedAccountData: ExtendedAccountData = {
-          ...accountData,
-          verificationProgress: {
-            completed: 2, // Default to 2/4 for new users
-            total: 4
-          }
-        };
-        setAccount(extendedAccountData);
-      } catch (fallbackError) {
-        console.error('Fallback refresh also failed:', fallbackError);
-      }
-    } finally {
-      setIsRefreshing(false);
-    }
+    await fetchData();
   };
 
   // Safely read progress
   const completed = account?.verificationProgress?.completed ?? 2;
   const total = account?.verificationProgress?.total ?? 4;
+
+  const handleLogout = async () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setIsRefreshing(true);
+            await logout();
+            console.log("✅ Logout successful");
+            // Navigate to the landing page
+            router.replace("/");
+          } catch (error: any) {
+            console.error("❌ Logout error:", error);
+            Alert.alert(
+              "Logout Error",
+              error.message || "An error occurred while logging out."
+            );
+          } finally {
+            setIsRefreshing(false);
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <View className="flex-1 bg-white">
@@ -231,11 +233,11 @@ export default function ProfileScreen() {
           {[
             {
               label: "How do I make money on Korpor?",
-              route: "/main/components/profileScreens/profile/LearnHelp",
+              route: "/main/components/profileScreens/profile/GetHelpScreen",
             },
             {
               label: "When will I receive my documents?",
-              route: "/main/components/profileScreens/profile/LearnHelp",
+              route: "/main/components/profileScreens/profile/GetHelpScreen",
             },
           ].map(({ label, route }, idx) => (
             <TouchableOpacity
@@ -362,7 +364,7 @@ export default function ProfileScreen() {
 
         {/* Logout */}
         <TouchableOpacity
-          onPress={() => console.log("Logout clicked")}
+          onPress={handleLogout}
           activeOpacity={0.6}
           className="mb-6 rounded-lg bg-black py-3"
         >

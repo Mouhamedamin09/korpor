@@ -601,7 +601,7 @@ const WithdrawScreen: React.FC = () => {
 
           {/* ── View History Link ────────────────────────────── */}
           <TouchableOpacity
-            onPress={() => router.push("transactions?filter=withdrawals")}
+            onPress={() => router.replace("transactions?filter=withdrawals")}
             className="mt-6 mb-8 flex-row items-center justify-center"
           >
             <Feather name="clock" size={16} color="#374151" />
@@ -921,7 +921,7 @@ const WithdrawScreen: React.FC = () => {
               setAmount("");
               setSelectedMethod("");
               setPaymeSuccessSheetVisible(false);
-              router.push("transactions?filter=withdrawals");
+              router.replace("transactions?filter=withdrawals");
             }}
             className="bg-black rounded-lg p-4 w-full items-center mb-3"
             activeOpacity={0.8}
@@ -981,7 +981,7 @@ const WithdrawScreen: React.FC = () => {
                 savedPaymentMethods.find((m) => m.is_default)?.id || ""
               );
               setWithdrawSuccessSheetVisible(false);
-              router.push("transactions?filter=withdrawals");
+              router.replace("transactions?filter=withdrawals");
             }}
             className="bg-black rounded-lg p-4 w-full items-center mb-3"
             activeOpacity={0.8}

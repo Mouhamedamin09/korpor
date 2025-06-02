@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   RefreshControl,
+  Alert,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { router } from "expo-router";
@@ -21,18 +22,21 @@ import {
 
 import {
   fetchAccountData,
+  closeAccount,
+  CloseAccountResponse,
+  AccountData,
+} from "@main/services/account";
+import {
   updateAccountField,
-  requestAccountClosure,
   requestFieldChange,
   verifyFieldChange,
-} from "@main/services/api";
+} from "@main/services/fieldChange";
 import {
   fetchInvestmentLimitData,
   InvestmentLimitData,
 } from "@main/services/InvestmentLimit";
 import { getInitials } from "@main/components/profileScreens/components/ui/string";
 import { requestPhoneChange, verifyPhone } from "@main/services/phone";
-import { AccountData } from "@main/services/account";
 
 const emailValid = (s: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim().toLowerCase());
@@ -56,6 +60,11 @@ export default function AccountScreen() {
   const [isSwitchSheetVisible, setSwitchSheetVisible] = useState(false);
   const [isCloseModalVisible, setCloseModalVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+
+  // close account state
+  const [closePassword, setClosePassword] = useState("");
+  const [closeError, setCloseError] = useState("");
+  const [closeWarnings, setCloseWarnings] = useState<string[]>([]);
 
   // update-flow state
   const [updateType, setUpdateType] = useState<"email" | "phone" | null>(null);
@@ -154,40 +163,106 @@ export default function AccountScreen() {
   };
 
   const confirmCloseAccount = async () => {
-    if (!account) return;
+    if (!account || !closePassword.trim()) {
+      setCloseError("Password is required to close account");
+      return;
+    }
+
     setIsClosing(true);
+    setCloseError("");
+    setCloseWarnings([]);
+
     try {
-      await requestAccountClosure(account.email);
-      console.log("Account closed ✅");
+      console.log("🔄 Attempting to close account...");
+      const result = await closeAccount(closePassword.trim());
+
+      if (result.success) {
+        console.log("✅ Account closed successfully");
+        Alert.alert(
+          "Account Closed",
+          "Your account has been permanently closed and deleted. You will be redirected to the login screen where you can create a new account if desired.",
+          [
+            {
+              text: "Continue",
+              onPress: () => {
+                setCloseModalVisible(false);
+                router.replace("/auth/screens/Login");
+              },
+            },
+          ]
+        );
+      } else {
+        // Handle warnings
+        if (result.warnings && result.warnings.length > 0) {
+          setCloseWarnings(result.warnings);
+          setCloseError(result.message);
+        } else {
+          setCloseError(result.message);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error closing account:", error);
+
+      // More specific error handling
+      let errorMessage = "Failed to close account";
+
+      if (error instanceof Error) {
+        if (error.message.includes("Invalid password")) {
+          errorMessage =
+            "The password you entered is incorrect. Please try again.";
+        } else if (error.message.includes("Network request failed")) {
+          errorMessage =
+            "Network error. Please check your connection and try again.";
+        } else if (error.message.includes("No authentication token")) {
+          errorMessage = "Session expired. Please log in again.";
+          // Redirect to login after a delay
+          setTimeout(() => {
+            router.replace("/auth/screens/Login");
+          }, 2000);
+        } else if (error.message.includes("Server error")) {
+          errorMessage =
+            "Server error. Please try again later or contact support.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      setCloseError(errorMessage);
     } finally {
       setIsClosing(false);
-      setCloseModalVisible(false);
     }
+  };
+
+  const handleCloseAccountPress = () => {
+    setCloseModalVisible(true);
+    setClosePassword("");
+    setCloseError("");
+    setCloseWarnings([]);
   };
 
   const handlePhoneUpdate = async () => {
     if (!account) return;
-    
+
     try {
-      console.log('📱 Starting phone update for user:', account.id);
-      console.log('📱 Current phone:', account.phone);
-      console.log('📱 New phone:', newPhone);
-      
+      console.log("📱 Starting phone update for user:", account.id);
+      console.log("📱 Current phone:", account.phone);
+      console.log("📱 New phone:", newPhone);
+
       setError("");
       setIsVerifying(true);
       const result = await requestPhoneChange(account.id, newPhone);
-      
-      console.log('📱 Phone change request completed');
+
+      console.log("📱 Phone change request completed");
       setShowPhoneModal(false);
       setShowVerificationModal(true);
-      
+
       if (result.code) {
-        console.log('📱 Setting verification code from response:', result.code);
+        console.log("📱 Setting verification code from response:", result.code);
         setVerificationCode(result.code);
       }
     } catch (err) {
-      console.error('❌ Phone update error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error("❌ Phone update error:", err);
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsVerifying(false);
     }
@@ -195,24 +270,24 @@ export default function AccountScreen() {
 
   const handleVerifyCode = async () => {
     if (!account) return;
-    
+
     try {
-      console.log('🔐 Starting phone verification');
-      console.log('🔐 User ID:', account.id);
-      console.log('🔐 Verification code:', verificationCode);
-      
+      console.log("🔐 Starting phone verification");
+      console.log("🔐 User ID:", account.id);
+      console.log("🔐 Verification code:", verificationCode);
+
       setError("");
       setIsVerifying(true);
       const result = await verifyPhone(account.id, verificationCode);
-      
-      console.log('✅ Phone verification successful:', result);
+
+      console.log("✅ Phone verification successful:", result);
       setShowVerificationModal(false);
       // Refresh account data to show new phone
       await onRefresh();
-      console.log('✅ Account data refreshed with new phone');
+      console.log("✅ Account data refreshed with new phone");
     } catch (err) {
-      console.error('❌ Phone verification error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error("❌ Phone verification error:", err);
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsVerifying(false);
     }
@@ -300,11 +375,16 @@ export default function AccountScreen() {
           </View>
 
           <TouchableOpacity
-            onPress={() => setCloseModalVisible(true)}
-            className="flex-row items-center justify-center rounded-xl border border-border bg-surface p-4 shadow-sm mb-4"
+            onPress={handleCloseAccountPress}
+            className="flex-row items-center justify-center rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm mb-4"
           >
-            <Feather name="trash-2" size={20} color="#000" className="mr-4" />
-            <Text className="text-base font-medium text-surfaceText">
+            <Feather
+              name="trash-2"
+              size={20}
+              color="#ef4444"
+              className="mr-4"
+            />
+            <Text className="text-base font-medium text-red-600">
               Close Account
             </Text>
           </TouchableOpacity>
@@ -450,46 +530,87 @@ export default function AccountScreen() {
       </BottomSheet>
 
       {/* Confirm Close Account */}
-      <Modal
-        transparent
-        animationType="fade"
+      <BottomSheet
         visible={isCloseModalVisible}
-        onRequestClose={() => setCloseModalVisible(false)}
+        onClose={() => setCloseModalVisible(false)}
       >
-        <View className="flex-1 bg-black/50 items-center justify-center px-6">
-          <View className="w-full rounded-lg bg-surface p-6">
-            <Text className="text-lg font-semibold text-surfaceText mb-4">
-              Close Account
-            </Text>
-            <Text className="text-sm text-text mb-6">
-              Do you really want to close your account?
-            </Text>
-            <View className="flex-row justify-end">
-              <TouchableOpacity
-                onPress={() => setCloseModalVisible(false)}
-                className="h-10 px-4 mr-3 items-center justify-center rounded-md border border-border bg-surface"
-              >
-                <Text className="text-base font-medium text-surfaceText">
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                disabled={isClosing}
-                onPress={confirmCloseAccount}
-                className="h-10 px-4 items-center justify-center rounded-md bg-black"
-              >
-                {isClosing ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text className="text-base font-medium text-destructiveText">
-                    Accept
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-4">
+            <Feather name="trash-2" size={28} color="#ef4444" />
           </View>
+          <Text className="text-xl font-semibold text-gray-900 mb-4">
+            Close Account
+          </Text>
+          <Text className="text-sm text-gray-600 text-center mb-6">
+            This action cannot be undone. Your account and all associated data
+            will be permanently deleted.
+          </Text>
+
+          {/* Warnings if any */}
+          {closeWarnings.length > 0 && (
+            <View className="w-full bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+              <Text className="text-orange-800 font-semibold mb-2">
+                ⚠️ Please note:
+              </Text>
+              {closeWarnings.map((warning, index) => (
+                <Text key={index} className="text-orange-700 text-sm mb-1">
+                  • {warning}
+                </Text>
+              ))}
+            </View>
+          )}
+
+          {/* Password Input */}
+          <View className="w-full mb-4">
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Enter your password to confirm
+            </Text>
+            <TextInput
+              value={closePassword}
+              onChangeText={(text) => {
+                setClosePassword(text);
+                setCloseError("");
+              }}
+              placeholder="Password"
+              secureTextEntry
+              className="border border-gray-300 rounded-lg p-3 w-full"
+            />
+          </View>
+
+          {/* Error Message */}
+          {closeError ? (
+            <Text className="text-red-500 text-sm mb-4 text-center">
+              {closeError}
+            </Text>
+          ) : null}
+
+          {/* Action Buttons */}
+          <TouchableOpacity
+            onPress={confirmCloseAccount}
+            disabled={isClosing || !closePassword.trim()}
+            className={`rounded-lg p-4 w-full items-center mb-3 ${
+              isClosing || !closePassword.trim() ? "bg-gray-300" : "bg-red-600"
+            }`}
+            activeOpacity={0.8}
+          >
+            {isClosing ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="text-white font-semibold">
+                Close Account Permanently
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setCloseModalVisible(false)}
+            className="p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-gray-600">Cancel</Text>
+          </TouchableOpacity>
         </View>
-      </Modal>
+      </BottomSheet>
 
       {/* Phone Update Modal */}
       <BottomSheet
@@ -503,7 +624,7 @@ export default function AccountScreen() {
           <Text className="text-sm text-gray-600 mb-4">
             Please enter the verification code sent to your old phone number.
           </Text>
-          
+
           <TextInput
             value={verificationCode}
             onChangeText={setVerificationCode}
@@ -540,7 +661,7 @@ export default function AccountScreen() {
           <Text className="text-lg font-semibold text-gray-900 mb-4">
             Update Phone Number
           </Text>
-          
+
           <TextInput
             value={newPhone}
             onChangeText={setNewPhone}

@@ -47,14 +47,9 @@ export default function SignupCard() {
     }
 
     try {
-      router.push({
-        pathname: "/auth/screens/Signup/password",
-        params: {
-          name,
-          surname,
-          email,
-          birthdate: selectedDate,
-        },
+      router.replace({
+        pathname: "/auth/screens/Signup/verify",
+        params: { email },
       });
     } catch (error) {
       setErrorMessage("Something went wrong. Please try again.");

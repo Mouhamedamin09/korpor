@@ -17,7 +17,7 @@ export default function OTPResetCard() {
     }
 
     console.log("OTP Verified:", code);
-    router.push("auth/screens/Login/forgotPassword/resetPassword");
+    router.replace("auth/screens/Login/forgotPassword/resetPassword");
   };
 
   return (

@@ -121,7 +121,7 @@ const AmountSetupSelect: React.FC<Props> = ({ amount, setAmount }) => {
 
           <Text className="text-sm text-gray-500">
             {currency !== "USD"
-              ? `~${symbol} ${approxValue}`
+              ? `~$ ${approxValue}`
               : `${symbol} ${amount.toLocaleString()}`}
           </Text>
         </View>
