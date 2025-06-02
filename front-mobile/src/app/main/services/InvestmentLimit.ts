@@ -1,8 +1,8 @@
 // @main/services/InvestmentLimit.ts
 
-import { useAuthStore } from "@auth/services/authStore";
+import { authStore } from "@auth/services/authStore";
 import API_URL from "../../../shared/constants/api";
-
+import * as SecureStore from "expo-secure-store";
 export interface InvestmentLimitData {
   /** Amount already invested this year (TND) */
   investedThisYear: number;
@@ -16,8 +16,8 @@ export interface InvestmentLimitData {
 
 export async function fetchInvestmentLimitData(): Promise<InvestmentLimitData> {
   try {
-    // Get the JWT token from AsyncStorage
-    const token = useAuthStore.getState().accessToken;
+    // Get the JWT token from SecureStore
+    const token = authStore.getState().accessToken;
     if (!token) {
       throw new Error("No authentication token found");
     }
@@ -33,7 +33,7 @@ export async function fetchInvestmentLimitData(): Promise<InvestmentLimitData> {
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid
-        await AsyncStorage.removeItem("accessToken");
+        await authStore.getState().clearTokens();
         throw new Error("Session expired. Please login again.");
       }
       throw new Error(`Server error: ${response.status}`);

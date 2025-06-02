@@ -1,6 +1,6 @@
 // @main/services/Preferences.ts
 
-import { useAuthStore } from "@auth/services/authStore";
+import { authStore } from "@auth/services/authStore";
 import API_URL from "../../../shared/constants/api";
 
 export type Market = "Tunisia" | "France";
@@ -14,8 +14,8 @@ export interface UserPreferences {
 // Get authentication token
 const getAuthToken = async (): Promise<string | null> => {
   try {
-    // Try to get real token from AsyncStorage first
-    const token = useAuthStore.getState().accessToken;
+    // Try to get real token from SecureStore first
+    const token = authStore.getState().accessToken;
     if (token) {
       return token;
     }
@@ -58,7 +58,7 @@ export async function getUserPreferences(): Promise<UserPreferences> {
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid
-        await AsyncStorage.removeItem("accessToken");
+        await authStore.getState().clearTokens();
         throw new Error("Session expired. Please login again.");
       }
       throw new Error(`Server error: ${response.status}`);
@@ -111,7 +111,7 @@ export async function setUserPreference(
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid
-        await AsyncStorage.removeItem("accessToken");
+        await authStore.getState().clearTokens();
         throw new Error("Session expired. Please login again.");
       }
       throw new Error(`Server error: ${response.status}`);
@@ -157,7 +157,7 @@ export async function setUserRegion(region: Market): Promise<UserPreferences> {
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid
-        await AsyncStorage.removeItem("accessToken");
+        await authStore.getState().clearTokens();
         throw new Error("Session expired. Please login again.");
       }
       throw new Error(`Server error: ${response.status}`);

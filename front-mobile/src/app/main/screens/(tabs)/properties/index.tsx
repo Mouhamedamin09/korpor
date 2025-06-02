@@ -71,16 +71,17 @@ export default function MainApp() {
   );
 
   return (
-    <View className="bg-primary-foreground flex-1">
+    <View className="bg-white flex-1">
       <TopMenu
         translateY={translateY}
         selectedCategory={selectedCategory}
         onChangeCategory={setSelectedCategory}
       />
+      <View className="my-6" />
 
       {loading ? (
         <Animated.ScrollView
-          contentContainerStyle={{ paddingTop: 80, paddingBottom: 40 }}
+          contentContainerStyle={{ paddingTop: 120, paddingBottom: 40 }}
           scrollEventThrottle={16}
           onScroll={handleScroll}
         >

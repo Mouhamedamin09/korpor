@@ -15,6 +15,7 @@ import NotificationSkeleton from "./notificationSkeleton";
 import PropertyPageSkeleton from "./propertyPageSkeleton";
 import CartHeader from "./cartHeader";
 import CartItem from "./cartItem";
+import InvestmentCard from "./investmentCard";
 export {
   TopMenu,
   PropertyCard,
@@ -33,4 +34,5 @@ export {
   PropertyPageSkeleton,
   CartHeader,
   CartItem,
+  InvestmentCard,
 };

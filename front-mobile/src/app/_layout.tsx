@@ -6,15 +6,15 @@ import { STRIPE_CONFIG } from "@main/components/wallet/config/stripe";
 // Import global CSS for NativeWind
 import "../../global.css";
 
-import { useAuthStore } from "./auth/services/authStore";
+import { authStore } from "./auth/services/authStore";
 import { useEffect, useState } from "react";
 import { isJwtTokenValid } from "@/shared/utils/token";
 import { handleBiometricAuth } from "@/shared/utils/biometricAuth";
 import { View, ActivityIndicator } from "react-native";
 
 export default function RootLayout() {
-  const loadTokens = useAuthStore((state) => state.loadTokens);
-  const accessToken = useAuthStore((state) => state.accessToken);
+  const loadTokens = authStore((state) => state.loadTokens);
+  const accessToken = authStore((state) => state.accessToken);
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {

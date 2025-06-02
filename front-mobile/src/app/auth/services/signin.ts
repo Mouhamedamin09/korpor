@@ -1,6 +1,6 @@
 import API_URL from "@/shared/constants/api";
 import axios from "axios";
-import { useAuthStore } from "./authStore";
+import { authStore } from "./authStore";
 
 interface SignInCredentials {
   email: string;
@@ -21,7 +21,7 @@ export const signin = async (credentials: SignInCredentials) => {
     const { accessToken, refreshToken, user } = response.data;
 
     // Save to store (and SecureStore under the hood)
-    const store = useAuthStore.getState();
+    const store = authStore.getState();
     await store.setTokens(accessToken, refreshToken);
 
     return response.data;

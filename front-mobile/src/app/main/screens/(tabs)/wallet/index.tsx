@@ -175,7 +175,7 @@ const WalletScreen: React.FC = () => {
                 {
                   icon: "arrow-up-right",
                   label: "Withdraw",
-                  route: "/main/components/wallet/walletscreens/WithdrawScreen",
+                  route: "main/components/wallet/walletscreens/WithdrawScreen",
                 },
                 {
                   icon: "credit-card",
