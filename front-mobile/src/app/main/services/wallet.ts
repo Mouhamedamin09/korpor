@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuthStore } from "@auth/services/authStore";
 import API_URL from "../../../shared/constants/api";
 
 export interface WalletBalance {
@@ -61,7 +61,7 @@ export interface AddRewardsRequest {
 }
 
 const getAuthHeaders = async () => {
-  const token = await AsyncStorage.getItem("accessToken");
+  const token = useAuthStore.getState().accessToken;
   if (!token) {
     throw new Error("No authentication token found");
   }

@@ -35,7 +35,7 @@ export async function fetchAuthSetup(): Promise<AuthSetupResponse> {
       throw new Error("No authentication token found");
     }
 
-    console.log("🔄 Fetching 2FA setup...");
+    console.log("🔄 Fetching 2FA setup from backend...");
 
     const response = await fetch(`${API_URL}/api/2fa/setup`, {
       method: "POST",
@@ -101,7 +101,17 @@ export async function verifyAuthCode(
       return false;
     }
 
+    const data = await response.json();
     console.log("✅ 2FA enabled successfully");
+
+    // Store backup codes if provided
+    if (data.data && data.data.backupCodes) {
+      await AsyncStorage.setItem(
+        "2fa_backup_codes",
+        JSON.stringify(data.data.backupCodes)
+      );
+    }
+
     return true;
   } catch (error) {
     console.error("❌ Error verifying 2FA code:", error);
@@ -184,5 +194,66 @@ export async function disable2FA(
   } catch (error) {
     console.error("❌ Error disabling 2FA:", error);
     throw error;
+  }
+}
+
+/**
+ * Regenerate backup codes for 2FA
+ */
+export async function regenerateBackupCodes(
+  password: string
+): Promise<string[]> {
+  try {
+    const authToken = await getAuthToken();
+    if (!authToken) {
+      throw new Error("No authentication token found");
+    }
+
+    console.log("🔄 Regenerating backup codes...");
+
+    const response = await fetch(`${API_URL}/api/2fa/regenerate-backup-codes`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        password,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || "Failed to regenerate backup codes");
+    }
+
+    const data = await response.json();
+    console.log("✅ Backup codes regenerated successfully");
+
+    // Store new backup codes
+    if (data.data && data.data.backupCodes) {
+      await AsyncStorage.setItem(
+        "2fa_backup_codes",
+        JSON.stringify(data.data.backupCodes)
+      );
+    }
+
+    return data.data.backupCodes || [];
+  } catch (error) {
+    console.error("❌ Error regenerating backup codes:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get stored backup codes
+ */
+export async function getBackupCodes(): Promise<string[]> {
+  try {
+    const codes = await AsyncStorage.getItem("2fa_backup_codes");
+    return codes ? JSON.parse(codes) : [];
+  } catch (error) {
+    console.error("❌ Error getting backup codes:", error);
+    return [];
   }
 }

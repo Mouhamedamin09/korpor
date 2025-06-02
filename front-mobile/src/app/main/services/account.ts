@@ -24,6 +24,7 @@ export interface AccountData {
     completed: number;
     total: number;
   };
+  approvalStatus: "pending" | "approved" | "rejected";
 }
 
 export interface CloseAccountResponse {
@@ -47,6 +48,11 @@ export const fetchAccountData = async (): Promise<AccountData> => {
         completed: data.isVerified ? 4 : 2,
         total: 4,
       };
+    }
+
+    // Ensure approvalStatus is set
+    if (!data.approvalStatus) {
+      data.approvalStatus = "pending";
     }
 
     return data;
@@ -200,6 +206,8 @@ export async function closeAccount(
     };
   } catch (error) {
     console.error("❌ Error closing account:", error);
-    throw error;
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to close account"
+    );
   }
 }

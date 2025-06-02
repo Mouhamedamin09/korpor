@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import API_URL from "../../../shared/constants/api";
 import { authService } from "./authService";
+import axios from "axios";
 
 interface SignInCredentials {
   email: string;
@@ -62,30 +63,18 @@ export const signin = async (
     console.log("Attempting to sign in with:", { email: credentials.email });
     console.log("API URL:", `${API_URL}/api/auth/sign-in`);
 
-    const response = await fetch(`${API_URL}/api/auth/sign-in`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(credentials),
-    });
-
-    const data = await response.json();
-    console.log("Sign in response:", { status: response.status, data });
-
-    if (!response.ok) {
-      // Handle specific error cases
-      if (response.status === 401) {
-        throw new Error("Invalid email or password");
-      } else if (response.status === 403) {
-        throw new Error(
-          data.message || "Account not verified or pending approval"
-        );
-      } else if (response.status === 423) {
-        throw new Error("Account temporarily locked. Please try again later.");
+    // Use axios for the request with better error handling
+    const response = await axios.post(
+      `${API_URL}/api/auth/sign-in`,
+      credentials,
+      {
+        headers: { "Content-Type": "application/json" },
+        timeout: 10000,
       }
-      throw new Error(data.message || "Sign in failed");
-    }
+    );
+
+    const data = response.data;
+    console.log("Sign in response:", { status: response.status, data });
 
     // Check if 2FA is required
     if (data.requires2FA) {
@@ -142,11 +131,32 @@ export const signin = async (
       throw error;
     }
 
-    if (error.message === "Network request failed") {
-      console.log("🌐 SIGNIN SERVICE: Network error detected");
-      throw new Error(
-        "Unable to connect to the server. Please check your internet connection."
-      );
+    // Handle axios errors
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const message = error.response.data?.message || error.message;
+
+        if (status === 401) {
+          throw new Error("Invalid email or password");
+        } else if (status === 403) {
+          throw new Error(
+            message || "Account not verified or pending approval"
+          );
+        } else if (status === 423) {
+          throw new Error(
+            "Account temporarily locked. Please try again later."
+          );
+        }
+        throw new Error(message || "Sign in failed");
+      } else if (error.request) {
+        // Network error
+        console.log("🌐 SIGNIN SERVICE: Network error detected");
+        throw new Error(
+          "Unable to connect to the server. Please check your internet connection."
+        );
+      }
     }
 
     console.log("⚠️ SIGNIN SERVICE: Throwing generic error");

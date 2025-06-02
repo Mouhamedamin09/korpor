@@ -1,7 +1,7 @@
 // @main/services/InvestmentLimit.ts
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import API_URL from '../../../shared/constants/api';
+import { useAuthStore } from "@auth/services/authStore";
+import API_URL from "../../../shared/constants/api";
 
 export interface InvestmentLimitData {
   /** Amount already invested this year (TND) */
@@ -17,24 +17,24 @@ export interface InvestmentLimitData {
 export async function fetchInvestmentLimitData(): Promise<InvestmentLimitData> {
   try {
     // Get the JWT token from AsyncStorage
-    const token = await AsyncStorage.getItem('accessToken');
+    const token = useAuthStore.getState().accessToken;
     if (!token) {
-      throw new Error('No authentication token found');
+      throw new Error("No authentication token found");
     }
 
     const response = await fetch(`${API_URL}/api/investments/limits`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     });
 
     if (!response.ok) {
       if (response.status === 401) {
         // Token expired or invalid
-        await AsyncStorage.removeItem('accessToken');
-        throw new Error('Session expired. Please login again.');
+        await AsyncStorage.removeItem("accessToken");
+        throw new Error("Session expired. Please login again.");
       }
       throw new Error(`Server error: ${response.status}`);
     }
@@ -42,7 +42,11 @@ export async function fetchInvestmentLimitData(): Promise<InvestmentLimitData> {
     const data = await response.json();
     return data as InvestmentLimitData;
   } catch (error) {
-    console.error('Error fetching investment limits:', error);
-    throw new Error(error instanceof Error ? error.message : 'Failed to fetch investment limits');
+    console.error("Error fetching investment limits:", error);
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "Failed to fetch investment limits"
+    );
   }
 }
