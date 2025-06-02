@@ -293,6 +293,70 @@ router.post("/verify-email", authController.verifyEmail);
 
 /**
  * @swagger
+ * /api/auth/send-phone-verification:
+ *   post:
+ *     summary: Send phone verification code
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *                 description: User ID to send verification code to
+ *     responses:
+ *       200:
+ *         description: Verification code sent successfully
+ *       400:
+ *         description: Bad request or email not verified
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.post("/send-phone-verification", authController.sendPhoneVerification);
+
+/**
+ * @swagger
+ * /api/auth/verify-phone:
+ *   post:
+ *     summary: Verify phone number with OTP
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - verificationCode
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *                 description: User ID
+ *               verificationCode:
+ *                 type: string
+ *                 description: 6-digit verification code
+ *     responses:
+ *       200:
+ *         description: Phone verified successfully
+ *       400:
+ *         description: Invalid code or email not verified
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.post("/verify-phone", authController.verifyPhone);
+
+/**
+ * @swagger
  * /api/auth/sign-in:
  *   post:
  *     summary: Sign in user
@@ -831,7 +895,7 @@ router.post(
     }
     next();
   },
-  authController.approveUser,
+  authController.approveUser
 );
 
 /**

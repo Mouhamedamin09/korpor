@@ -7,12 +7,17 @@ interface SignupData {
   email: string;
   birthdate: string;
   password: string;
-  // phone: string; // omitted or never used
+  phone?: string; // optional for backward compatibility
 }
 
 export const signupUser = async (data: SignupData) => {
-  // No phone in the payload
-  const response = await axios.post(`${API_URL}/api/auth/sign-up`, data, {
+  // Include default phone if not provided
+  const payload = {
+    ...data,
+    phone: data.phone || "", // Default to empty string if not provided
+  };
+
+  const response = await axios.post(`${API_URL}/api/auth/sign-up`, payload, {
     headers: {
       "Content-Type": "application/json",
     },
@@ -21,7 +26,7 @@ export const signupUser = async (data: SignupData) => {
 };
 
 export const verifySignUp = async (email: string, code: string) => {
-  const response = await axios.post(`${API_URL}/auth/verifysign`, {
+  const response = await axios.post(`${API_URL}/api/auth/verify-email`, {
     email,
     code,
   });

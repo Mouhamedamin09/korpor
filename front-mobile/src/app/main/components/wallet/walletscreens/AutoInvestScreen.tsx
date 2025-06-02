@@ -48,6 +48,274 @@ const BenefitRow = ({
     </View>
   </View>
 );
+
+const StepCard = ({
+  idx,
+  title,
+  subtitle,
+}: {
+  idx: number;
+  title: string;
+  subtitle: string;
+}) => (
+  <Card extraStyle="flex-1 p-5 bg-white rounded-2xl shadow-sm">
+    <View className="w-8 h-8 rounded-full bg-green-100 items-center justify-center mb-4">
+      <Text className="text-green-600 font-semibold">
+        {String(idx).padStart(2, "0")}
+      </Text>
+    </View>
+    <Text className="text-base font-semibold text-gray-900 mb-1">{title}</Text>
+    <Text className="text-sm text-gray-500">{subtitle}</Text>
+  </Card>
+);
+
+// ───────────────────────────────────────── AutoInvest Dashboard ──────
+const AutoInvestDashboard = ({
+  plan,
+  walletData,
+  accountData,
+}: {
+  plan: AutoInvestPlan;
+  walletData: WalletBalance | null;
+  accountData: AccountData | null;
+}) => {
+  const capitalize = (str: string) =>
+    str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
+  const formatNumber = (num: number) =>
+    num != null ? num.toLocaleString("en-US") : "—";
+  const router = useRouter();
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "text-green-600";
+      case "paused":
+        return "text-yellow-600";
+      case "cancelled":
+        return "text-red-600";
+      default:
+        return "text-gray-600";
+    }
+  };
+
+  const getStatusBg = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-50 border-green-200";
+      case "paused":
+        return "bg-yellow-50 border-yellow-200";
+      case "cancelled":
+        return "bg-red-50 border-red-200";
+      default:
+        return "bg-gray-50 border-gray-200";
+    }
+  };
+
+  const nextDepositDate = plan.nextDepositDate
+    ? new Date(plan.nextDepositDate).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "N/A";
+
+  // Check if user has sufficient funds for next deposit
+  const hasSufficientFunds = walletData
+    ? walletData.cashBalance >= plan.monthlyAmount
+    : false;
+  const isAccountVerified = accountData?.isVerified || false;
+
+  return (
+    <View>
+      {/* AutoInvest Plan Card */}
+      <Card extraStyle="p-6 mb-6 shadow-lg">
+        {/* Header */}
+        <View className="flex-row justify-between items-center mb-4">
+          <View>
+            <Text className="text-lg font-bold text-gray-900">
+              AutoInvest Plan
+            </Text>
+            <Text className="text-sm text-gray-500">
+              {capitalize(plan.theme)} Theme
+            </Text>
+          </View>
+          <View
+            className={`px-3 py-1 rounded-full border border-opacity-50 ${getStatusBg(
+              plan.status
+            )}`}
+            accessible
+            accessibilityLabel={`Status: ${plan.status}`}
+          >
+            <Text
+              className={`text-xs font-semibold uppercase ${getStatusColor(
+                plan.status
+              )}`}
+            >
+              {plan.status}
+            </Text>
+          </View>
+        </View>
+
+        {/* Amount */}
+        <View className="mb-6">
+          <Text className="text-2xl font-bold text-gray-900">
+            {plan.currency} {formatNumber(plan.monthlyAmount)}
+          </Text>
+          <Text className="text-sm text-gray-500">Monthly investment</Text>
+        </View>
+
+        {/* Stats Grid */}
+        <View className="flex-row justify-between mb-6 space-x-4">
+          <View className="flex-1 p-4 bg-white rounded-lg shadow-sm">
+            <Text className="text-sm text-gray-500">Total Deposited</Text>
+            <Text className="text-lg font-semibold text-gray-900">
+              {plan.currency} {formatNumber(plan.totalDeposited)}
+            </Text>
+          </View>
+          <View className="flex-1 p-4 bg-white rounded-lg shadow-sm">
+            <Text className="text-sm text-gray-500">Total Invested</Text>
+            <Text className="text-lg font-semibold text-gray-900">
+              {plan.currency} {formatNumber(plan.totalInvested)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Next Deposit */}
+        <View className="mb-6 p-4 bg-gray-100 rounded-lg border border-gray-200 shadow-sm">
+          <View className="flex-row items-center">
+            <Feather name="calendar" size={18} color="#6B7280" />
+            <Text className="text-sm text-gray-500 ml-2">Next Deposit</Text>
+          </View>
+          <Text className="text-base font-semibold text-gray-900 mt-1">
+            {nextDepositDate || "—"}
+          </Text>
+          {!hasSufficientFunds && plan.status === "active" && (
+            <View className="flex-row items-center mt-2">
+              <Feather name="alert-triangle" size={14} color="#F59E0B" />
+              <Text className="text-xs text-yellow-600 ml-1">
+                Insufficient funds
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Action Buttons */}
+        <View className="flex-row space-x-3">
+          <TouchableOpacity
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={
+              plan.status === "active"
+                ? "Pause AutoInvest"
+                : "Resume AutoInvest"
+            }
+            className={`flex-1 py-3 px-4 rounded-lg ${
+              plan.status === "active"
+                ? "bg-yellow-50 border border-yellow-200"
+                : "bg-green-50 border border-green-200"
+            }`}
+            onPress={() =>
+              router.push(
+                "/main/components/wallet/walletscreens/ManageAutoInvest"
+              )
+            }
+          >
+            <Text
+              className={`text-center font-semibold ${
+                plan.status === "active" ? "text-gray-700" : "text-green-700"
+              }`}
+            >
+              {plan.status === "active" ? "Pause" : "Resume"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Manage AutoInvest"
+            className="flex-1 py-3 ml-2 px-4 rounded-lg bg-gray-50 border border-gray-200"
+            onPress={() =>
+              router.push(
+                "/main/components/wallet/walletscreens/ManageAutoInvest"
+              )
+            }
+          >
+            <Text className="text-center font-semibold text-gray-700">
+              Manage
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Card>
+
+      {/* Wallet Overview Card */}
+      {walletData && (
+        <Card extraStyle="p-6 mb-6 shadow-lg">
+          <View className="flex-row items-center mb-4">
+            <View className="w-10 h-10 rounded-full bg-green-100 items-center justify-center mr-3">
+              <Feather name="shopping-cart" size={20} color="#166534" />
+            </View>
+            <Text className="text-lg font-semibold text-gray-900">
+              Wallet Overview
+            </Text>
+          </View>
+
+          <View className="flex-row justify-between items-center mb-4">
+            <View className="flex-1">
+              <Text className="text-sm text-gray-500">Total Balance</Text>
+              <Text className="text-xl font-bold text-gray-900">
+                {walletData.currency} {formatNumber(walletData.totalBalance)}
+              </Text>
+            </View>
+            <View className="flex-1 items-end">
+              <Text className="text-sm text-gray-500">Available Cash</Text>
+              <Text className="text-lg font-semibold text-gray-900">
+                {walletData.currency} {formatNumber(walletData.cashBalance)}
+              </Text>
+            </View>
+          </View>
+
+          {walletData.rewardsBalance > 0 && (
+            <View className="p-3 bg-green-50 rounded-lg">
+              <Text className="text-sm text-green-800">
+                Rewards Balance: {walletData.currency}{" "}
+                {formatNumber(walletData.rewardsBalance)}
+              </Text>
+            </View>
+          )}
+
+          {/* Funding Status */}
+          <View
+            className={`mt-4 p-3 rounded-lg ${
+              hasSufficientFunds
+                ? "bg-green-50 border border-green-200"
+                : "bg-red-50 border border-red-200"
+            }`}
+          >
+            <View className="flex-row items-center">
+              <Feather
+                name={hasSufficientFunds ? "check-circle" : "alert-circle"}
+                size={16}
+                color={hasSufficientFunds ? "#10B981" : "#EF4444"}
+              />
+              <Text
+                className={`ml-2 text-sm font-medium ${
+                  hasSufficientFunds ? "text-green-800" : "text-red-800"
+                }`}
+              >
+                {hasSufficientFunds
+                  ? "Sufficient funds for next investment"
+                  : `Need ${walletData.currency} ${formatNumber(
+                      plan.monthlyAmount - walletData.cashBalance
+                    )} more for next investment`}
+              </Text>
+            </View>
+          </View>
+        </Card>
+      )}
+    </View>
+  );
+};
+
 // ───────────────────────────────────────── component ─────
 const AutoInvestScreen: React.FC = () => {
   const router = useRouter();
@@ -154,13 +422,20 @@ const AutoInvestScreen: React.FC = () => {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingBottom: 32,
-          paddingTop: 16,
-        }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
+        showsVerticalScrollIndicator={false}
       >
-        <SetupCard type="invest" />
+        {/* Show Dashboard if user has plan, otherwise show SetupCard */}
+        {plan ? (
+          <AutoInvestDashboard
+            plan={plan}
+            walletData={walletData}
+            accountData={accountData}
+          />
+        ) : (
+          <SetupCard type="invest" />
+        )}
+
         {/* ░░ benefits ░░ */}
         <Text className="text-lg font-semibold text-gray-900 mb-4">
           Benefits
@@ -190,17 +465,17 @@ const AutoInvestScreen: React.FC = () => {
       >
         <View className="items-center pb-6">
           <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-4">
-            <Feather name="wifi-off" size={28} color="#EF4444" />
+            <Feather name="wifi-off" size={28} color="#000000" />
           </View>
-          <Text className="text-xl font-semibold text-gray-900 mb-4">
+          <Text className="text-xl font-semibold text-black mb-4">
             Connection Error
           </Text>
-          <Text className="text-sm text-gray-600 text-center mb-6">
+          <Text className="text-sm text-black text-center mb-6">
             {errorMessage}
           </Text>
           <TouchableOpacity
             onPress={handleRetry}
-            className="bg-blue-600 rounded-lg p-4 w-full items-center mb-3"
+            className="bg-black rounded-lg p-4 w-full items-center mb-3"
             activeOpacity={0.8}
           >
             <Text className="text-white font-semibold">Retry</Text>
@@ -210,7 +485,7 @@ const AutoInvestScreen: React.FC = () => {
             className="p-4 w-full items-center"
             activeOpacity={0.8}
           >
-            <Text className="text-gray-600">Continue</Text>
+            <Text className="text-black font-semibold">Continue</Text>
           </TouchableOpacity>
         </View>
       </BottomSheet>

@@ -10,11 +10,18 @@ const GREEN = "#10B981";
 
 interface Props {
   totalInvested: number;
+  minimumRequired?: number;
+  type?: "invest" | "reinvest";
 }
 
-const SetupCardLocked: React.FC<Props> = ({ totalInvested }) => {
-  const required = 2000;
+const SetupCardLocked: React.FC<Props> = ({
+  totalInvested,
+  minimumRequired = 2000,
+  type = "reinvest",
+}) => {
+  const required = minimumRequired;
   const progress = Math.min(totalInvested / required, 1);
+  const isReinvest = type === "reinvest";
 
   return (
     <View style={{ width: CARD_W }} className="self-center mb-6">
@@ -63,11 +70,12 @@ const SetupCardLocked: React.FC<Props> = ({ totalInvested }) => {
         />
 
         <Text className="text-white text-lg font-semibold mb-1">
-          AutoReinvest Locked
+          Auto{isReinvest ? "Reinvest" : "Invest"} Locked
         </Text>
 
         <Text className="text-white text-sm text-center opacity-90 mb-5 font-semibold">
-          You need to invest at least 2,000 TND to unlock AutoReinvest
+          You need to invest at least {required.toLocaleString()} TND to unlock
+          Auto{isReinvest ? "Reinvest" : "Invest"}
         </Text>
 
         <View style={{ width: "100%" }} className="mb-1">
@@ -76,7 +84,7 @@ const SetupCardLocked: React.FC<Props> = ({ totalInvested }) => {
               {totalInvested.toLocaleString()} TND invested
             </Text>
             <Text className="text-xs font-medium text-white opacity-90">
-              2,000 TND required
+              {required.toLocaleString()} TND required
             </Text>
           </View>
 

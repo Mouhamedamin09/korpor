@@ -7,6 +7,8 @@ const Verification = require("./Verification");
 const Wallet = require("./Wallet");
 const Transaction = require("./Transaction");
 const AutoInvest = require("./AutoInvest");
+const AutoReinvest = require("./AutoReinvest");
+const RentalPayout = require("./RentalPayout");
 
 // Set up associations
 const setupAssociations = () => {
@@ -92,6 +94,78 @@ const setupAssociations = () => {
   Transaction.belongsTo(AutoInvest, {
     foreignKey: "autoInvestPlanId",
     as: "autoInvestPlan",
+  });
+
+  // User has one AutoReinvest plan
+  User.hasOne(AutoReinvest, {
+    foreignKey: "userId",
+    as: "autoReinvestPlan",
+  });
+
+  // AutoReinvest belongs to User
+  AutoReinvest.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
+  });
+
+  // AutoReinvest has many Transactions (for tracking reinvestments)
+  AutoReinvest.hasMany(Transaction, {
+    foreignKey: "autoReinvestPlanId",
+    as: "reinvestmentTransactions",
+  });
+
+  // Transaction belongs to AutoReinvest (optional, for AutoReinvest-related transactions)
+  Transaction.belongsTo(AutoReinvest, {
+    foreignKey: "autoReinvestPlanId",
+    as: "autoReinvestPlan",
+  });
+
+  // User has many RentalPayouts
+  User.hasMany(RentalPayout, {
+    foreignKey: "userId",
+    as: "rentalPayouts",
+  });
+
+  // RentalPayout belongs to User
+  RentalPayout.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
+  });
+
+  // Project has many RentalPayouts
+  Project.hasMany(RentalPayout, {
+    foreignKey: "projectId",
+    as: "rentalPayouts",
+  });
+
+  // RentalPayout belongs to Project
+  RentalPayout.belongsTo(Project, {
+    foreignKey: "projectId",
+    as: "project",
+  });
+
+  // AutoReinvest has many RentalPayouts
+  AutoReinvest.hasMany(RentalPayout, {
+    foreignKey: "autoReinvestPlanId",
+    as: "rentalPayouts",
+  });
+
+  // RentalPayout belongs to AutoReinvest
+  RentalPayout.belongsTo(AutoReinvest, {
+    foreignKey: "autoReinvestPlanId",
+    as: "autoReinvestPlan",
+  });
+
+  // Transaction has one RentalPayout (for reinvestment transactions)
+  Transaction.hasOne(RentalPayout, {
+    foreignKey: "reinvestTransactionId",
+    as: "rentalPayout",
+  });
+
+  // RentalPayout belongs to Transaction (reinvestment transaction)
+  RentalPayout.belongsTo(Transaction, {
+    foreignKey: "reinvestTransactionId",
+    as: "reinvestTransaction",
   });
 
   // Project belongs to User (creator)

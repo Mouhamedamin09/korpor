@@ -9,15 +9,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  Alert,
   ActivityIndicator,
   Modal,
   TextInput,
+  Image,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { useRouter } from "expo-router";
 import TopBar from "@main/components/profileScreens/components/ui/TopBar";
 import Card from "@main/components/profileScreens/components/ui/card";
+import BottomSheet from "@main/components/profileScreens/components/ui/SheetIndicator";
 import AvailableToWithdraw from "../compoenets/ui/AvailableToWithdraw";
 import AmountInputCard from "../compoenets/ui/AmountInputCard";
 import {
@@ -43,6 +44,14 @@ import {
 } from "@main/services/payment.service";
 
 const MIN_WITHDRAW = 10.0;
+
+// Card brand images
+const cardBrandImages = {
+  visa: require("@assets/visa.png"),
+  mastercard: require("@assets/mastercard.png"),
+  payme: require("@assets/payme.png"),
+  stripe: require("@assets/stripe.png"),
+};
 
 // Helper function to generate a mock wallet address for PayMe integration
 const generateMockWalletAddress = (
@@ -83,6 +92,26 @@ const WithdrawScreen: React.FC = () => {
   });
   const [showBankForm, setShowBankForm] = useState(false);
 
+  // BottomSheet states
+  const [confirmWithdrawSheetVisible, setConfirmWithdrawSheetVisible] =
+    useState(false);
+  const [withdrawErrorSheetVisible, setWithdrawErrorSheetVisible] =
+    useState(false);
+  const [paymeSuccessSheetVisible, setPaymeSuccessSheetVisible] =
+    useState(false);
+  const [paymeErrorSheetVisible, setPaymeErrorSheetVisible] = useState(false);
+  const [withdrawSuccessSheetVisible, setWithdrawSuccessSheetVisible] =
+    useState(false);
+  const [withdrawFailedSheetVisible, setWithdrawFailedSheetVisible] =
+    useState(false);
+  const [bankFormErrorSheetVisible, setBankFormErrorSheetVisible] =
+    useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successData, setSuccessData] = useState<any>(null);
+  const [withdrawData, setWithdrawData] = useState<WithdrawRequest | null>(
+    null
+  );
+
   // Helper functions
   const getPaymentMethodDisplayName = (method: SavedPaymentMethod): string => {
     if (method.type === "stripe" && method.card) {
@@ -96,6 +125,17 @@ const WithdrawScreen: React.FC = () => {
       return `PayMe ${method.payme.phone_number}`;
     }
     return "Payment Method";
+  };
+
+  // Helper function to get card brand image
+  const getCardBrandImage = (method: SavedPaymentMethod) => {
+    if (method.type === "stripe" && method.card) {
+      const brand = method.card.brand.toLowerCase();
+      if (brand === "visa") return cardBrandImages.visa;
+      if (brand === "mastercard") return cardBrandImages.mastercard;
+      return cardBrandImages.stripe;
+    }
+    return cardBrandImages.payme;
   };
 
   const getProcessingTime = (method: SavedPaymentMethod): string => {
@@ -185,7 +225,7 @@ const WithdrawScreen: React.FC = () => {
           throw new Error("Please select a payment method");
         }
 
-        const withdrawData: WithdrawRequest = {
+        const withdrawDataObj: WithdrawRequest = {
           amount: numAmount,
           description: `Withdrawal via ${getPaymentMethodDisplayName(
             selectedMethodData
@@ -193,40 +233,16 @@ const WithdrawScreen: React.FC = () => {
           reference: `WD_${Date.now()}_${selectedMethodData.type.toUpperCase()}`,
         };
 
-        // Show confirmation dialog for other methods
-        Alert.alert(
-          "Confirm Withdrawal",
-          `Withdraw ${getCurrencySymbol(
-            userSettings?.currency || walletData.currency
-          )} ${numAmount.toFixed(
-            2
-          )} from your wallet to ${getPaymentMethodDisplayName(
-            selectedMethodData
-          )}?\n\nProcessing time: ${getProcessingTime(
-            selectedMethodData
-          )}\nFee: ${getCurrencySymbol(
-            userSettings?.currency || walletData.currency
-          )} ${withdrawalFee.toFixed(2)}`,
-          [
-            {
-              text: "Cancel",
-              style: "cancel",
-              onPress: () => setWithdrawing(false),
-            },
-            {
-              text: "Confirm",
-              style: "default",
-              onPress: () => processRegularWithdrawal(withdrawData),
-            },
-          ]
-        );
+        // Show confirmation bottom sheet for other methods
+        setWithdrawData(withdrawDataObj);
+        setConfirmWithdrawSheetVisible(true);
       }
     } catch (err) {
       setWithdrawing(false);
-      Alert.alert(
-        "Error",
+      setErrorMessage(
         err instanceof Error ? err.message : "An unexpected error occurred"
       );
+      setWithdrawErrorSheetVisible(true);
     }
   };
 
@@ -270,91 +286,31 @@ const WithdrawScreen: React.FC = () => {
       const paymeResponse = await createPaymeWithdrawal(paymeRequest);
 
       // Show success message
-      Alert.alert(
-        "Withdrawal Request Submitted",
-        `Your withdrawal request of ${paymeResponse.amount.toFixed(2)} ${
-          paymeResponse.currency
-        } has been submitted successfully.\n\nWithdrawal ID: ${
-          paymeResponse.withdrawal_id
-        }\nProcessing Time: ${
-          paymeResponse.processing_time
-        }\nFees: ${paymeResponse.fees.toFixed(2)} ${
-          paymeResponse.currency
-        }\nNet Amount: ${paymeResponse.net_amount.toFixed(2)} ${
-          paymeResponse.currency
-        }`,
-        [
-          {
-            text: "View Transactions",
-            onPress: () => {
-              setAmount("");
-              setSelectedMethod("");
-              router.push("transactions?filter=withdrawals");
-            },
-          },
-          {
-            text: "OK",
-            style: "default",
-            onPress: () => {
-              setAmount("");
-              setSelectedMethod("");
-              router.back();
-            },
-          },
-        ]
-      );
+      setSuccessData(paymeResponse);
+      setPaymeSuccessSheetVisible(true);
     } catch (error) {
       console.error("PayMe withdrawal error:", error);
       setWithdrawing(false);
-      Alert.alert(
-        "PayMe Error",
+      setErrorMessage(
         error instanceof Error
           ? error.message
           : "Failed to initiate PayMe withdrawal"
       );
+      setPaymeErrorSheetVisible(true);
     }
   };
 
-  const processRegularWithdrawal = async (withdrawData: WithdrawRequest) => {
+  const processRegularWithdrawal = async (withdrawDataObj: WithdrawRequest) => {
     try {
-      await withdrawFunds(withdrawData);
-
-      Alert.alert(
-        "Withdrawal Successful",
-        `Your withdrawal of ${numAmount.toFixed(2)} ${
-          userSettings?.currency || walletData?.currency
-        } has been processed successfully.`,
-        [
-          {
-            text: "View Transactions",
-            onPress: () => {
-              setAmount("");
-              setSelectedMethod(
-                savedPaymentMethods.find((m) => m.is_default)?.id || ""
-              );
-              router.push("transactions?filter=withdrawals");
-            },
-          },
-          {
-            text: "OK",
-            style: "default",
-            onPress: () => {
-              setAmount("");
-              setSelectedMethod(
-                savedPaymentMethods.find((m) => m.is_default)?.id || ""
-              );
-              router.back();
-            },
-          },
-        ]
-      );
+      await withdrawFunds(withdrawDataObj);
+      setWithdrawSuccessSheetVisible(true);
     } catch (withdrawalError) {
-      Alert.alert(
-        "Withdrawal Failed",
+      setErrorMessage(
         withdrawalError instanceof Error
           ? withdrawalError.message
           : "An error occurred during withdrawal"
       );
+      setWithdrawFailedSheetVisible(true);
     } finally {
       setWithdrawing(false);
     }
@@ -424,16 +380,36 @@ const WithdrawScreen: React.FC = () => {
 
           {/* ── Method Selection ──────────────────────────────── */}
           <View className="px-4 mt-4">
-            <Text className="text-lg font-semibold text-gray-900 mb-4">
+            <Text className="text-lg font-semibold text-gray-900 mb-2">
               Withdrawal Method
             </Text>
 
+            {/* Info about withdrawal methods */}
+            <View className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <View className="flex-row items-start">
+                <Feather
+                  name="shield"
+                  size={16}
+                  color="#3B82F6"
+                  style={{ marginTop: 2, marginRight: 8 }}
+                />
+                <Text className="text-sm text-blue-800 flex-1">
+                  For your security, you can only withdraw to payment methods
+                  that you've previously used for deposits.
+                </Text>
+              </View>
+            </View>
+
             {/* Paymee Option */}
-            <Card extraStyle="mb-4 p-4 bg-white rounded-2xl shadow-sm">
+            <Card
+              extraStyle={`mb-4 p-4 rounded-2xl shadow-sm overflow-hidden ${
+                selectedMethod === "payme"
+                  ? "border-2 border-green-500"
+                  : "border border-gray-200"
+              }`}
+            >
               <TouchableOpacity
-                className={`flex-row items-center ${
-                  selectedMethod === "payme" ? "opacity-100" : "opacity-70"
-                }`}
+                className="p-4 bg-white"
                 onPress={() => {
                   setSelectedMethod("payme");
                   if (!bankAccount.account_number) {
@@ -442,36 +418,39 @@ const WithdrawScreen: React.FC = () => {
                 }}
                 disabled={withdrawing}
               >
-                <View className="w-12 h-12 rounded-full bg-green-100 items-center justify-center mr-4">
-                  <Feather name="smartphone" size={24} color="#10B981" />
-                </View>
-                <View className="flex-1">
-                  <View className="flex-row items-center">
-                    <Text className="text-base font-semibold text-gray-900">
-                      PayMe.tn
-                    </Text>
-                    <View className="ml-2 px-2 py-1 bg-orange-100 rounded">
-                      <Text className="text-xs text-orange-600 font-medium">
-                        Bank Transfer
-                      </Text>
-                    </View>
+                <View className="flex-row items-center">
+                  <View className="w-16 h-10 rounded-lg bg-white shadow-sm items-center justify-center mr-4 border border-gray-100">
+                    <Image
+                      source={cardBrandImages.payme}
+                      className="w-10 h-6"
+                      resizeMode="contain"
+                    />
                   </View>
-                  <Text className="text-sm text-gray-600">
-                    Withdraw to bank account via PayMe
-                  </Text>
-                  <Text className="text-xs text-gray-500 mt-1">
-                    Processing: 1-3 minutes • Fee: 1.5% + 0.5 TND
-                  </Text>
-                  {bankAccount.account_number && (
-                    <Text className="text-xs text-green-600 mt-1">
-                      Bank: {bankAccount.bank_name} • Account: •••
-                      {bankAccount.account_number.slice(-4)}
+                  <View className="flex-1">
+                    <View className="flex-row items-center">
+                      <Text className="text-base font-semibold text-gray-900">
+                        PayMe.tn
+                      </Text>
+                      <View className="ml-2 px-2 py-1 bg-orange-100 rounded">
+                        <Text className="text-xs text-orange-600 font-medium">
+                          Bank Transfer
+                        </Text>
+                      </View>
+                    </View>
+                    <Text className="text-sm text-gray-600">
+                      Withdraw to bank account via PayMe
                     </Text>
-                  )}
+                    <Text className="text-xs text-gray-500 mt-1">
+                      Processing: 1-3 minutes • Fee: 1.5% + 0.5 TND
+                    </Text>
+                    {bankAccount.account_number && (
+                      <Text className="text-xs text-green-600 mt-1">
+                        Bank: {bankAccount.bank_name} • Account: •••
+                        {bankAccount.account_number.slice(-4)}
+                      </Text>
+                    )}
+                  </View>
                 </View>
-                {selectedMethod === "payme" && (
-                  <Feather name="check-circle" size={20} color="#10B981" />
-                )}
               </TouchableOpacity>
             </Card>
 
@@ -479,58 +458,62 @@ const WithdrawScreen: React.FC = () => {
             {savedPaymentMethods.map((method) => (
               <Card
                 key={method.id}
-                extraStyle={`mb-3 p-4 border-2 ${
+                extraStyle={`mb-3 rounded-2xl shadow-sm overflow-hidden border ${
                   selectedMethod === method.id
-                    ? "border-green-500 bg-green-50"
-                    : "border-gray-200 bg-white"
-                } rounded-2xl`}
+                    ? "border-green-500 border-2"
+                    : "border-gray-200"
+                }`}
               >
                 <TouchableOpacity
-                  className="flex-row items-center"
+                  className="p-4 bg-white"
                   onPress={() => setSelectedMethod(method.id)}
                   disabled={withdrawing}
                 >
-                  <View className="w-12 h-12 rounded-full bg-gray-100 items-center justify-center mr-4">
-                    <Feather
-                      name={
-                        method.type === "stripe" ? "credit-card" : "smartphone"
-                      }
-                      size={24}
-                      color="#374151"
-                    />
-                  </View>
-                  <View className="flex-1">
-                    {method.type === "stripe" && method.card && (
-                      <>
-                        <View className="flex-row items-center">
-                          <Text className="text-base font-semibold text-gray-900">
-                            {formatCardDisplay(
-                              method.card.brand,
-                              method.card.last4,
-                              method.card.exp_month,
-                              method.card.exp_year
-                            )}
-                          </Text>
-                          {method.is_default && (
-                            <View className="ml-2 px-2 py-1 bg-green-100 rounded">
-                              <Text className="text-xs text-green-600 font-medium">
-                                Default
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                        <Text className="text-sm text-gray-600">
-                          Credit/Debit Card
+                  <View className="flex-row items-center">
+                    <View className="w-16 h-10 rounded-lg bg-white shadow-sm items-center justify-center mr-4 border border-gray-100">
+                      <Image
+                        source={getCardBrandImage(method)}
+                        className="w-10 h-6"
+                        resizeMode="contain"
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <View className="flex-row items-center">
+                        <Text className="text-base font-semibold text-gray-900">
+                          {getPaymentMethodDisplayName(method)}
                         </Text>
-                      </>
-                    )}
+                      </View>
+                      <Text className="text-sm text-gray-600">
+                        {method.type === "stripe"
+                          ? "Credit/Debit Card"
+                          : "PayMe Account"}
+                      </Text>
+                    </View>
                   </View>
-                  {selectedMethod === method.id && (
-                    <Feather name="check-circle" size={20} color="#10B981" />
-                  )}
                 </TouchableOpacity>
               </Card>
             ))}
+
+            {/* Notice about withdrawal methods */}
+            {savedPaymentMethods.length === 0 && (
+              <Card extraStyle="mb-4 p-4 border-2 border-dashed border-gray-300 bg-gray-50 rounded-2xl">
+                <View className="flex-row items-center">
+                  <View className="w-12 h-12 rounded-full bg-gray-200 items-center justify-center mr-4">
+                    <Feather name="info" size={24} color="#6B7280" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-base font-semibold text-gray-700">
+                      No Payment Methods Available
+                    </Text>
+                    <Text className="text-sm text-gray-500">
+                      To withdraw funds, you must first deposit using a payment
+                      method. This ensures withdrawals go back to the same
+                      source for security.
+                    </Text>
+                  </View>
+                </View>
+              </Card>
+            )}
           </View>
 
           {/* ── Processing Time & Fees ────────────────────────── */}
@@ -642,26 +625,26 @@ const WithdrawScreen: React.FC = () => {
               onPress={() => setShowBankForm(false)}
               className="p-2"
             >
-              <Feather name="x" size={24} color="#374151" />
+              <Feather name="x" size={24} color="#000000" />
             </TouchableOpacity>
-            <Text className="text-lg font-semibold text-gray-900">
+            <Text className="text-lg font-semibold text-black">
               Bank Account Details
             </Text>
             <View className="w-8" />
           </View>
 
           <ScrollView className="flex-1 p-4">
-            <Text className="text-sm text-gray-600 mb-6">
+            <Text className="text-sm text-black mb-6">
               Please provide your bank account details for PayMe withdrawal.
             </Text>
 
             <View className="mb-4">
-              <Text className="text-base font-medium text-gray-900 mb-2">
+              <Text className="text-base font-medium text-black mb-2">
                 Account Holder Name
               </Text>
               <View className="border border-gray-300 rounded-lg p-3">
                 <TextInput
-                  className="text-base text-gray-900"
+                  className="text-base text-black"
                   onChangeText={(text: string) =>
                     setBankAccount((prev) => ({
                       ...prev,
@@ -675,12 +658,12 @@ const WithdrawScreen: React.FC = () => {
             </View>
 
             <View className="mb-4">
-              <Text className="text-base font-medium text-gray-900 mb-2">
+              <Text className="text-base font-medium text-black mb-2">
                 Bank Name
               </Text>
               <View className="border border-gray-300 rounded-lg p-3">
                 <TextInput
-                  className="text-base text-gray-900"
+                  className="text-base text-black"
                   onChangeText={(text: string) =>
                     setBankAccount((prev) => ({ ...prev, bank_name: text }))
                   }
@@ -691,12 +674,12 @@ const WithdrawScreen: React.FC = () => {
             </View>
 
             <View className="mb-6">
-              <Text className="text-base font-medium text-gray-900 mb-2">
+              <Text className="text-base font-medium text-black mb-2">
                 Account Number
               </Text>
               <View className="border border-gray-300 rounded-lg p-3">
                 <TextInput
-                  className="text-base text-gray-900"
+                  className="text-base text-black"
                   onChangeText={(text: string) =>
                     setBankAccount((prev) => ({
                       ...prev,
@@ -720,13 +703,10 @@ const WithdrawScreen: React.FC = () => {
                   setShowBankForm(false);
                   setSelectedMethod("payme");
                 } else {
-                  Alert.alert(
-                    "Error",
-                    "Please fill in all bank account details"
-                  );
+                  setBankFormErrorSheetVisible(true);
                 }
               }}
-              className="bg-green-600 rounded-lg py-4 items-center mb-4"
+              className="bg-black rounded-lg py-4 items-center mb-4"
             >
               <Text className="text-white font-semibold text-base">
                 Save Bank Details
@@ -737,11 +717,384 @@ const WithdrawScreen: React.FC = () => {
               onPress={() => setShowBankForm(false)}
               className="py-4 items-center"
             >
-              <Text className="text-gray-600 font-medium">Cancel</Text>
+              <Text className="text-black font-medium">Cancel</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Confirm Withdrawal Bottom Sheet */}
+      <BottomSheet
+        visible={confirmWithdrawSheetVisible}
+        onClose={() => {
+          setConfirmWithdrawSheetVisible(false);
+          setWithdrawing(false);
+        }}
+      >
+        <View className="pb-6">
+          <View className="items-center mb-6">
+            <View className="w-16 h-16 rounded-full bg-blue-100 items-center justify-center mb-4">
+              <Feather name="arrow-up" size={28} color="#000000" />
+            </View>
+            <Text className="text-xl font-semibold text-black mb-2">
+              Confirm Withdrawal
+            </Text>
+            <Text className="text-sm text-gray-600 text-center">
+              Please review your withdrawal details carefully
+            </Text>
+          </View>
+
+          {/* Withdrawal Details Card */}
+          <View className="bg-gray-50 rounded-lg p-4 mb-6">
+            <View className="flex-row justify-between items-center mb-3">
+              <Text className="text-sm text-black font-medium">Amount</Text>
+              <Text className="text-lg font-bold text-black">
+                {getCurrencySymbol(walletData?.currency || "TND")}{" "}
+                {numAmount.toFixed(2)}
+              </Text>
+            </View>
+
+            <View className="flex-row justify-between items-center mb-3">
+              <Text className="text-sm text-black font-medium">
+                Destination
+              </Text>
+              <Text className="text-sm text-black text-right flex-1 ml-4">
+                {savedPaymentMethods.find((m) => m.id === selectedMethod) &&
+                  getPaymentMethodDisplayName(
+                    savedPaymentMethods.find((m) => m.id === selectedMethod)!
+                  )}
+              </Text>
+            </View>
+
+            <View className="flex-row justify-between items-center mb-3">
+              <Text className="text-sm text-black font-medium">
+                Processing Time
+              </Text>
+              <Text className="text-sm text-black">
+                {savedPaymentMethods.find((m) => m.id === selectedMethod) &&
+                  getProcessingTime(
+                    savedPaymentMethods.find((m) => m.id === selectedMethod)!
+                  )}
+              </Text>
+            </View>
+
+            <View className="flex-row justify-between items-center mb-3 pb-3 border-b border-gray-200">
+              <Text className="text-sm text-black font-medium">
+                Processing Fee
+              </Text>
+              <Text className="text-sm text-black">
+                {getCurrencySymbol(walletData?.currency || "TND")}{" "}
+                {withdrawalFee.toFixed(2)}
+              </Text>
+            </View>
+
+            <View className="flex-row justify-between items-center">
+              <Text className="text-base font-semibold text-black">
+                Total Amount
+              </Text>
+              <Text className="text-base font-bold text-black">
+                {getCurrencySymbol(walletData?.currency || "TND")}{" "}
+                {totalWithFee.toFixed(2)}
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => {
+              setConfirmWithdrawSheetVisible(false);
+              if (withdrawData) {
+                processRegularWithdrawal(withdrawData);
+              }
+            }}
+            className="bg-black rounded-lg p-4 w-full items-center mb-3"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">Confirm Withdrawal</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setConfirmWithdrawSheetVisible(false);
+              setWithdrawing(false);
+            }}
+            className="p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-black font-semibold">Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* Withdraw Error Bottom Sheet */}
+      <BottomSheet
+        visible={withdrawErrorSheetVisible}
+        onClose={() => setWithdrawErrorSheetVisible(false)}
+      >
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-4">
+            <Feather name="alert-circle" size={28} color="#000000" />
+          </View>
+          <Text className="text-xl font-semibold text-black mb-2">
+            Withdrawal Failed
+          </Text>
+          <Text className="text-sm text-gray-600 text-center mb-4">
+            We encountered an issue processing your withdrawal
+          </Text>
+          <View className="bg-red-50 rounded-lg p-4 mb-6 w-full">
+            <Text className="text-sm text-black text-center">
+              {errorMessage}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setWithdrawErrorSheetVisible(false)}
+            className="bg-black rounded-lg p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* PayMe Success Bottom Sheet */}
+      <BottomSheet
+        visible={paymeSuccessSheetVisible}
+        onClose={() => setPaymeSuccessSheetVisible(false)}
+      >
+        <View className="pb-6">
+          <View className="items-center mb-6">
+            <Text className="text-xl font-semibold text-black mb-2">
+              Withdrawal Request Submitted
+            </Text>
+            <Text className="text-sm text-gray-600 text-center">
+              Your withdrawal has been successfully initiated
+            </Text>
+          </View>
+
+          {successData && (
+            <View className="bg-green-50 rounded-lg p-4 mb-6">
+              <Text className="text-sm font-medium text-black mb-3">
+                Transaction Details
+              </Text>
+
+              <View className="space-y-2">
+                <View className="flex-row justify-between">
+                  <Text className="text-xs text-black">Withdrawal ID</Text>
+                  <Text className="text-xs font-mono text-black">
+                    {successData.withdrawal_id}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between">
+                  <Text className="text-xs text-black">Amount</Text>
+                  <Text className="text-xs font-semibold text-black">
+                    {successData.amount.toFixed(2)} {successData.currency}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between">
+                  <Text className="text-xs text-black">Processing Time</Text>
+                  <Text className="text-xs text-black">
+                    {successData.processing_time}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between">
+                  <Text className="text-xs text-black">Fees</Text>
+                  <Text className="text-xs text-black">
+                    {successData.fees.toFixed(2)} {successData.currency}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between pt-2 border-t border-green-200">
+                  <Text className="text-sm font-semibold text-black">
+                    Net Amount
+                  </Text>
+                  <Text className="text-sm font-bold text-black">
+                    {successData.net_amount.toFixed(2)} {successData.currency}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          <TouchableOpacity
+            onPress={() => {
+              setAmount("");
+              setSelectedMethod("");
+              setPaymeSuccessSheetVisible(false);
+              router.push("transactions?filter=withdrawals");
+            }}
+            className="bg-black rounded-lg p-4 w-full items-center mb-3"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">View Transactions</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setAmount("");
+              setSelectedMethod("");
+              setPaymeSuccessSheetVisible(false);
+              router.back();
+            }}
+            className="p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-black font-semibold">Done</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* Withdraw Success Bottom Sheet */}
+      <BottomSheet
+        visible={withdrawSuccessSheetVisible}
+        onClose={() => setWithdrawSuccessSheetVisible(false)}
+      >
+        <View className="pb-6">
+          <View className="items-center mb-6">
+            <Text className="text-xl font-semibold text-black mb-2">
+              Withdrawal Successful
+            </Text>
+            <Text className="text-sm text-gray-600 text-center">
+              Your funds have been processed successfully
+            </Text>
+          </View>
+
+          <View className="bg-green-50 rounded-lg p-4 mb-6">
+            <View className="flex-row justify-between items-center">
+              <Text className="text-sm text-black font-medium">
+                Amount Withdrawn
+              </Text>
+              <Text className="text-lg font-bold text-black">
+                {numAmount.toFixed(2)}{" "}
+                {userSettings?.currency || walletData?.currency}
+              </Text>
+            </View>
+            <Text className="text-xs text-gray-600 mt-2 text-center">
+              Funds will appear in your account based on the processing time for
+              your selected payment method
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => {
+              setAmount("");
+              setSelectedMethod(
+                savedPaymentMethods.find((m) => m.is_default)?.id || ""
+              );
+              setWithdrawSuccessSheetVisible(false);
+              router.push("transactions?filter=withdrawals");
+            }}
+            className="bg-black rounded-lg p-4 w-full items-center mb-3"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">View Transactions</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setAmount("");
+              setSelectedMethod(
+                savedPaymentMethods.find((m) => m.is_default)?.id || ""
+              );
+              setWithdrawSuccessSheetVisible(false);
+              router.back();
+            }}
+            className="p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-black font-semibold">Done</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* PayMe Error Bottom Sheet */}
+      <BottomSheet
+        visible={paymeErrorSheetVisible}
+        onClose={() => setPaymeErrorSheetVisible(false)}
+      >
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-4">
+            <Feather name="alert-circle" size={28} color="#000000" />
+          </View>
+          <Text className="text-xl font-semibold text-black mb-2">
+            PayMe Error
+          </Text>
+          <Text className="text-sm text-gray-600 text-center mb-4">
+            There was an issue with your PayMe withdrawal
+          </Text>
+          <View className="bg-red-50 rounded-lg p-4 mb-6 w-full">
+            <Text className="text-sm text-black text-center">
+              {errorMessage}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setPaymeErrorSheetVisible(false)}
+            className="bg-black rounded-lg p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* Withdraw Failed Bottom Sheet */}
+      <BottomSheet
+        visible={withdrawFailedSheetVisible}
+        onClose={() => setWithdrawFailedSheetVisible(false)}
+      >
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-4">
+            <Feather name="x-circle" size={28} color="#000000" />
+          </View>
+          <Text className="text-xl font-semibold text-black mb-2">
+            Withdrawal Failed
+          </Text>
+          <Text className="text-sm text-gray-600 text-center mb-4">
+            Your withdrawal could not be processed at this time
+          </Text>
+          <View className="bg-red-50 rounded-lg p-4 mb-6 w-full">
+            <Text className="text-sm text-black text-center">
+              {errorMessage}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setWithdrawFailedSheetVisible(false)}
+            className="bg-black rounded-lg p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* Bank Form Error Bottom Sheet */}
+      <BottomSheet
+        visible={bankFormErrorSheetVisible}
+        onClose={() => setBankFormErrorSheetVisible(false)}
+      >
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-yellow-100 items-center justify-center mb-4">
+            <Feather name="alert-triangle" size={28} color="#000000" />
+          </View>
+          <Text className="text-xl font-semibold text-black mb-2">
+            Incomplete Information
+          </Text>
+          <Text className="text-sm text-gray-600 text-center mb-4">
+            All bank account details are required to proceed
+          </Text>
+          <View className="bg-yellow-50 rounded-lg p-4 mb-6 w-full">
+            <Text className="text-sm text-black text-center">
+              Please fill in all bank account details to continue with PayMe
+              withdrawal
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setBankFormErrorSheetVisible(false)}
+            className="bg-black rounded-lg p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">Continue</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </View>
   );
 };

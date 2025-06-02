@@ -21,7 +21,6 @@ export default function SignupCard() {
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [email, setEmail] = useState("");
-  // Keep phone in state — do NOT send to the backend
   const [phone, setPhone] = useState("");
 
   // We'll store any error messages here
@@ -31,11 +30,27 @@ export default function SignupCard() {
     setErrorMessage("");
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/; // Basic international phone format
+
+    // Log all form data for debugging
+    console.log("Form data before validation:", {
+      name,
+      surname,
+      email,
+      phone,
+      selectedDate,
+      name_type: typeof name,
+      surname_type: typeof surname,
+      email_type: typeof email,
+      phone_type: typeof phone,
+      selectedDate_type: typeof selectedDate,
+    });
 
     if (
       !name.trim() ||
       !surname.trim() ||
       !email.trim() ||
+      !phone.trim() ||
       !selectedDate.trim()
     ) {
       setErrorMessage("Please fill out all required fields.");
@@ -47,31 +62,45 @@ export default function SignupCard() {
       return;
     }
 
+    if (!phoneRegex.test(phone.replace(/\s/g, ""))) {
+      setErrorMessage("Please enter a valid phone number.");
+      return;
+    }
+
     try {
+      // Prepare navigation params with safe string conversion
+      const navigationParams = {
+        name: String(name).trim(),
+        surname: String(surname).trim(),
+        email: String(email).trim(),
+        phone: String(phone).trim(),
+        birthdate: String(selectedDate).trim(),
+      };
+
+      console.log("Navigation params:", navigationParams);
+
       router.push({
         pathname: "/auth/screens/Signup/password",
-        params: {
-          name,
-          surname,
-          email,
-          birthdate: selectedDate,
-        },
+        params: navigationParams,
       });
     } catch (error) {
+      console.error("Navigation error:", error);
       setErrorMessage("Something went wrong. Please try again.");
     }
   };
 
   return (
     <View>
-      <View className="w-[90%] h-auto bg-background rounded-2xl border border-border p-5 shadow">
-        {/* Name / Surname */}
-        <Text className="text-3xl font-bold text-text mb-1 ml-1">
+      <View className="w-[90%] h-auto bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+        {/* Header */}
+        <Text className="text-3xl font-bold text-gray-900 mb-1">
           Create an account
         </Text>
-        <Text className="ml-1 text-[#a1a1aa] mb-6">
+        <Text className="text-gray-500 mb-6">
           Enter your information below to create your account
         </Text>
+
+        {/* Name / Surname */}
         <View className="flex-row items-center justify-between">
           <View className="flex-1">
             <Input
@@ -93,6 +122,9 @@ export default function SignupCard() {
         {/* Email */}
         <EmailInput placeholder="Email" value={email} onChangeText={setEmail} />
 
+        {/* Phone number */}
+        <PhoneNumberInput value={phone} onChangeText={setPhone} />
+
         {/* Birthdate */}
         <DateInput
           value={selectedDate}
@@ -100,10 +132,7 @@ export default function SignupCard() {
           onPress={() => setIsBirthdayPickerVisible(true)}
         />
 
-        {/* Phone number (stored locally but not sent to API) */}
-        <PhoneNumberInput value={phone} onChangeText={setPhone} />
-
-        <OutlinedButtonSm title="Sign up" onPress={handleSignup} />
+        <OutlinedButtonSm title="Continue" onPress={handleSignup} />
 
         {/* Show error message if any */}
         {errorMessage ? (
@@ -129,8 +158,8 @@ export default function SignupCard() {
           setIsBirthdayPickerVisible={setIsBirthdayPickerVisible}
         />
 
-        <Text className="text-[#a1a1aa] text-small text-center mt-4">
-          By clicking signup, you agree to our{" "}
+        <Text className="text-gray-500 text-sm text-center mt-4">
+          By clicking continue, you agree to our{" "}
         </Text>
         <View className="flex-row align-middle justify-center">
           <PressableText
@@ -139,10 +168,7 @@ export default function SignupCard() {
               console.log("ToS clicked");
             }}
           />
-          <Text className="text-[#a1a1aa] mb-4 text-small text-center">
-            {" "}
-            and{" "}
-          </Text>
+          <Text className="text-gray-500 mb-4 text-sm text-center"> and </Text>
           <PressableText
             text="Privacy Policy"
             onPress={() => {

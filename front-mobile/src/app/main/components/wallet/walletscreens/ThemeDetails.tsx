@@ -92,11 +92,32 @@ const buildGradient = (hex: string): [string, string, string] => [
 
 export default function ThemeDetails() {
   const router = useRouter();
-  const { theme = "diversified", amount } = useLocalSearchParams<{
+  const params = useLocalSearchParams<{
     theme?: ThemeKey;
     amount?: string;
+    percentage?: string;
+    isReinvest?: string;
   }>();
+
+  // Extract and debug all parameters
+  const { theme = "diversified", amount, percentage, isReinvest } = params;
+
   const data = THEMES[theme as ThemeKey];
+
+  // Check if this is for AutoReinvest flow
+  const isAutoReinvest = isReinvest === "true";
+
+  // Debug logging with more detail
+  console.log("ThemeDetails: Raw params object:", params);
+  console.log("ThemeDetails: Extracted values:", {
+    theme,
+    amount,
+    percentage,
+    isReinvest,
+  });
+  console.log("ThemeDetails: isAutoReinvest boolean:", isAutoReinvest);
+  console.log("ThemeDetails: typeof isReinvest:", typeof isReinvest);
+  console.log("ThemeDetails: isReinvest value:", isReinvest);
 
   return (
     <>
@@ -226,21 +247,46 @@ export default function ThemeDetails() {
           <TouchableOpacity
             className="mx-4 mt-6 h-14 rounded-xl bg-[#000] items-center justify-center"
             onPress={() => {
-              // Build URL with theme and optional amount
-              const params = new URLSearchParams({
-                step: "3",
-                theme: theme as string,
+              console.log("Button clicked. isAutoReinvest:", isAutoReinvest);
+              console.log("Parameters:", {
+                theme,
+                amount,
+                percentage,
+                isReinvest,
               });
-              if (amount) {
-                params.append("amount", amount);
-              }
 
-              router.push(
-                `/main/components/wallet/walletscreens/StartAutoInvest?${params.toString()}`
-              );
+              if (isAutoReinvest) {
+                console.log("Navigating to StartAutoReinvest");
+                // Navigate back to StartAutoReinvest with the selected theme
+                const params = new URLSearchParams({
+                  step: "3",
+                  theme: theme as string,
+                });
+                if (percentage) {
+                  params.append("percentage", percentage);
+                }
+                const url = `/main/components/wallet/walletscreens/StartAutoReinvest?${params.toString()}`;
+                console.log("AutoReinvest URL:", url);
+                router.replace(url);
+              } else {
+                console.log("Navigating to StartAutoInvest");
+                // Original AutoInvest flow
+                const params = new URLSearchParams({
+                  step: "3",
+                  theme: theme as string,
+                });
+                if (amount) {
+                  params.append("amount", amount);
+                }
+                const url = `/main/components/wallet/walletscreens/StartAutoInvest?${params.toString()}`;
+                console.log("AutoInvest URL:", url);
+                router.replace(url);
+              }
             }}
           >
-            <Text className="text-white font-bold">Select this theme</Text>
+            <Text className="text-white font-bold">
+              {isAutoReinvest ? "Select for AutoReinvest" : "Select this theme"}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity

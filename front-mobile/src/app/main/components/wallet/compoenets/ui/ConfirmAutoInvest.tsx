@@ -2,40 +2,28 @@
 /* --------------------------------------------------------------------------
    🔹  ConfirmAutoInvest — step-4 review & launch screen
    -------------------------------------------------------------------------- */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Modal,
-  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Feather from "react-native-vector-icons/Feather";
 import { WebView } from "react-native-webview";
 import Card from "@main/components/profileScreens/components/ui/card";
+import BottomSheet from "@main/components/profileScreens/components/ui/SheetIndicator";
 import { ThemeKey } from "./ThemeCard";
-import {
-  fetchAccountData,
-  fetchUserSettings,
-  type UserSettings,
-  type AccountData,
-} from "@main/services/api";
-import {
-  fetchWalletBalance,
-  type WalletBalance,
-  depositFunds,
-  type DepositRequest,
-} from "@main/services/wallet";
+import { fetchAccountData, AccountData } from "@main/services/account";
+import { fetchWalletBalance, WalletBalance } from "@main/services/wallet";
 import {
   createPaymeDeposit,
   type CreatePaymeDepositRequest,
   type PaymeDepositResponse,
 } from "@main/services/payment.service";
-import { useFocusEffect } from "expo-router";
 
 export type DepositData = {
   startDate: string;
@@ -80,7 +68,6 @@ const ConfirmAutoInvest: React.FC<Props> = ({
 }) => {
   const [accountData, setAccountData] = useState<AccountData | null>(null);
   const [walletData, setWalletData] = useState<WalletBalance | null>(null);
-  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   // PayMe WebView states
@@ -88,6 +75,16 @@ const ConfirmAutoInvest: React.FC<Props> = ({
   const [paymeDepositData, setPaymeDepositData] =
     useState<PaymeDepositResponse | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
+
+  // BottomSheet states
+  const [noticeSheetVisible, setNoticeSheetVisible] = useState(false);
+  const [noticeMessage, setNoticeMessage] = useState("");
+  const [autoInvestSuccessSheetVisible, setAutoInvestSuccessSheetVisible] =
+    useState(false);
+  const [autoInvestCancelSheetVisible, setAutoInvestCancelSheetVisible] =
+    useState(false);
+  const [paymeErrorSheetVisible, setPaymeErrorSheetVisible] = useState(false);
+  const [paymeErrorMessage, setPaymeErrorMessage] = useState("");
 
   // Add debugging
   console.log("ConfirmAutoInvest rendered with amount:", amount);
@@ -102,22 +99,17 @@ const ConfirmAutoInvest: React.FC<Props> = ({
     const loadUserData = async () => {
       try {
         setLoading(true);
-        const account = await fetchAccountData();
-        setAccountData(account);
-
-        const [wallet, settings] = await Promise.all([
+        const [account, wallet] = await Promise.all([
+          fetchAccountData(),
           fetchWalletBalance(),
-          fetchUserSettings(account.email),
         ]);
-
+        setAccountData(account);
         setWalletData(wallet);
-        setUserSettings(settings);
       } catch (error) {
-        Alert.alert(
-          "Notice",
-          "Unable to load account details. You can still proceed with creating your AutoInvest plan.",
-          [{ text: "Continue" }]
+        setNoticeMessage(
+          "Unable to load account details. You can still proceed with creating your AutoInvest plan."
         );
+        setNoticeSheetVisible(true);
       } finally {
         setLoading(false);
       }
@@ -125,26 +117,6 @@ const ConfirmAutoInvest: React.FC<Props> = ({
 
     loadUserData();
   }, []);
-
-  // Refresh user settings when screen comes into focus to pick up currency changes
-  useFocusEffect(
-    useCallback(() => {
-      const refreshUserSettings = async () => {
-        if (accountData) {
-          try {
-            const settings = await fetchUserSettings(accountData.email);
-            setUserSettings(settings);
-          } catch (err) {
-            console.error(
-              "❌ ConfirmAutoInvest: Error refreshing user settings:",
-              err
-            );
-          }
-        }
-      };
-      refreshUserSettings();
-    }, [accountData])
-  );
 
   const formatThemeName = (themeKey: ThemeKey): string => {
     switch (themeKey) {
@@ -160,7 +132,7 @@ const ConfirmAutoInvest: React.FC<Props> = ({
   };
 
   // Use user's preferred currency from settings, fallback to wallet currency, then TND
-  const currency = userSettings?.currency || walletData?.currency || "TND";
+  const currency = walletData?.currency || "TND";
   const isAccountVerified = accountData?.isVerified ?? false;
   const actualVerificationStatus = isAccountVerified ? "Verified" : "Pending";
   const availableBalance = walletData?.cashBalance ?? 0;
@@ -236,12 +208,12 @@ const ConfirmAutoInvest: React.FC<Props> = ({
     } catch (error) {
       console.error("PayMe AutoInvest payment error:", error);
       setProcessingPayment(false);
-      Alert.alert(
-        "PayMe Error",
+      setPaymeErrorMessage(
         error instanceof Error
           ? error.message
           : "Failed to initiate PayMe payment for AutoInvest"
       );
+      setPaymeErrorSheetVisible(true);
     }
   };
 
@@ -279,31 +251,12 @@ const ConfirmAutoInvest: React.FC<Props> = ({
       console.log("PayMe AutoInvest payment completed");
       setPaymeWebViewVisible(false);
       setProcessingPayment(false);
-
-      Alert.alert(
-        "AutoInvest Launched! 🎉",
-        `Your AutoInvest plan has been successfully launched with a ${currency} ${amount.toLocaleString()} monthly deposit via PayMe.\n\nYour first investment will be processed shortly!`,
-        [
-          {
-            text: "Continue",
-            style: "default",
-            onPress: () => {
-              // Call the original onLaunch to complete the flow
-              onLaunch();
-            },
-          },
-        ]
-      );
+      setAutoInvestSuccessSheetVisible(true);
     } else if (isPaymentCancelled) {
       console.log("PayMe AutoInvest payment was cancelled");
       setPaymeWebViewVisible(false);
       setProcessingPayment(false);
-
-      Alert.alert(
-        "Payment Cancelled",
-        "Your AutoInvest setup was cancelled. No charges were made.",
-        [{ text: "OK" }]
-      );
+      setAutoInvestCancelSheetVisible(true);
     }
   };
 
@@ -530,9 +483,9 @@ const ConfirmAutoInvest: React.FC<Props> = ({
               }}
               className="p-2"
             >
-              <Feather name="x" size={24} color="#374151" />
+              <Feather name="x" size={24} color="#000000" />
             </TouchableOpacity>
-            <Text className="text-lg font-semibold text-gray-900">
+            <Text className="text-lg font-semibold text-black">
               PayMe AutoInvest
             </Text>
             <View className="w-8" />
@@ -540,20 +493,20 @@ const ConfirmAutoInvest: React.FC<Props> = ({
 
           {paymeDepositData && (
             <View className="p-4 bg-blue-50 border-b border-blue-200">
-              <Text className="text-sm font-semibold text-blue-900 mb-2">
+              <Text className="text-sm font-semibold text-black mb-2">
                 AutoInvest Setup - Test Mode
               </Text>
-              <Text className="text-xs text-blue-700">
+              <Text className="text-xs text-black">
                 Phone: {paymeDepositData.test_credentials.phone}
               </Text>
-              <Text className="text-xs text-blue-700">
+              <Text className="text-xs text-black">
                 Password: {paymeDepositData.test_credentials.password}
               </Text>
-              <Text className="text-xs text-blue-600 mt-2">
+              <Text className="text-xs text-black mt-2">
                 Monthly Amount: {paymeDepositData.amount}{" "}
                 {paymeDepositData.currency}
               </Text>
-              <Text className="text-xs text-blue-600">
+              <Text className="text-xs text-black">
                 Theme: {formatThemeName(theme)}
               </Text>
             </View>
@@ -567,8 +520,8 @@ const ConfirmAutoInvest: React.FC<Props> = ({
               startInLoadingState={true}
               renderLoading={() => (
                 <View className="flex-1 justify-center items-center bg-white">
-                  <ActivityIndicator size="large" color="#10B981" />
-                  <Text className="text-gray-600 mt-4">Loading PayMe...</Text>
+                  <ActivityIndicator size="large" color="#000000" />
+                  <Text className="text-black mt-4">Loading PayMe...</Text>
                 </View>
               )}
               onError={(syntheticEvent) => {
@@ -576,15 +529,116 @@ const ConfirmAutoInvest: React.FC<Props> = ({
                 console.error("PayMe AutoInvest WebView error: ", nativeEvent);
                 setPaymeWebViewVisible(false);
                 setProcessingPayment(false);
-                Alert.alert(
-                  "Error",
+                setPaymeErrorMessage(
                   "Failed to load PayMe payment page. Please try again."
                 );
+                setPaymeErrorSheetVisible(true);
               }}
             />
           )}
         </View>
       </Modal>
+
+      {/* Notice Bottom Sheet */}
+      <BottomSheet
+        visible={noticeSheetVisible}
+        onClose={() => setNoticeSheetVisible(false)}
+      >
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-gray-100 items-center justify-center mb-4">
+            <Feather name="info" size={28} color="#000000" />
+          </View>
+          <Text className="text-xl font-semibold text-black mb-4">Notice</Text>
+          <Text className="text-center text-black mb-6">{noticeMessage}</Text>
+          <TouchableOpacity
+            onPress={() => setNoticeSheetVisible(false)}
+            className="bg-black rounded-lg p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">Continue</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* AutoInvest Success Bottom Sheet */}
+      <BottomSheet
+        visible={autoInvestSuccessSheetVisible}
+        onClose={() => setAutoInvestSuccessSheetVisible(false)}
+      >
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-green-100 items-center justify-center mb-4">
+            <Feather name="check-circle" size={28} color="#000000" />
+          </View>
+          <Text className="text-xl font-semibold text-black mb-4">
+            AutoInvest Launched! 🎉
+          </Text>
+          <Text className="text-center text-black mb-6">
+            Your AutoInvest plan has been successfully launched with a{" "}
+            {currency} {amount.toLocaleString()} monthly deposit via PayMe.
+            {"\n\n"}Your first investment will be processed shortly!
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              setAutoInvestSuccessSheetVisible(false);
+              onLaunch();
+            }}
+            className="bg-black rounded-lg p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">Continue</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* AutoInvest Cancel Bottom Sheet */}
+      <BottomSheet
+        visible={autoInvestCancelSheetVisible}
+        onClose={() => setAutoInvestCancelSheetVisible(false)}
+      >
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-yellow-100 items-center justify-center mb-4">
+            <Feather name="x-circle" size={28} color="#000000" />
+          </View>
+          <Text className="text-xl font-semibold text-black mb-4">
+            Payment Cancelled
+          </Text>
+          <Text className="text-center text-black mb-6">
+            Your AutoInvest setup was cancelled. No charges were made.
+          </Text>
+          <TouchableOpacity
+            onPress={() => setAutoInvestCancelSheetVisible(false)}
+            className="bg-black rounded-lg p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">OK</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+
+      {/* PayMe Error Bottom Sheet */}
+      <BottomSheet
+        visible={paymeErrorSheetVisible}
+        onClose={() => setPaymeErrorSheetVisible(false)}
+      >
+        <View className="items-center pb-6">
+          <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-4">
+            <Feather name="alert-circle" size={28} color="#000000" />
+          </View>
+          <Text className="text-xl font-semibold text-black mb-4">
+            PayMe Error
+          </Text>
+          <Text className="text-center text-black mb-6">
+            {paymeErrorMessage}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setPaymeErrorSheetVisible(false)}
+            className="bg-black rounded-lg p-4 w-full items-center"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-semibold">Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </SafeAreaView>
   );
 };

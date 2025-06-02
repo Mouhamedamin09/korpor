@@ -39,6 +39,7 @@ const preferencesRoutes = require("./routes/preferencesRoutes"); // Import prefe
 const twoFactorRoutes = require("./routes/twoFactorRoutes"); // Import 2FA routes
 const walletRoutes = require("./routes/walletRoutes"); // Import wallet routes
 const backerRoutes = require("./routes/backer.routes"); // Import backer routes
+const portfolioRoutes = require("./routes/portfolioRoutes"); // Import portfolio routes
 
 const app = express();
 
@@ -89,7 +90,7 @@ app.use(cors(corsOptions));
 // Global rate limiter
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === "development" ? 1000 : 100, // Higher limit for development
   message: "Too many requests from this IP, please try again after 15 minutes",
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -116,7 +117,9 @@ app.use("/api/preferences", preferencesRoutes); // Add preferences routes
 app.use("/api/2fa", twoFactorRoutes); // Add 2FA routes
 app.use("/api/wallet", walletRoutes); // Add wallet routes
 app.use("/api/autoinvest", require("./routes/autoInvestRoutes")); // Add AutoInvest routes
+app.use("/api/autoreinvest", require("./routes/autoReinvestRoutes")); // Add AutoReinvest routes
 app.use("/api/backers", backerRoutes); // Add backer routes
+app.use("/api/portfolio", portfolioRoutes); // Add portfolio routes
 
 //blockchain APIs
 app.use("/api/payment", require("./routes/payment.routes"));

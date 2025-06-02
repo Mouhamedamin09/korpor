@@ -10,6 +10,7 @@ interface PortfolioValueCardProps {
   usdValue?: number;
   localCurrencyCode: string;
   localValue?: number;
+  loading?: boolean;
 }
 
 const { width } = Dimensions.get("window");
@@ -18,6 +19,7 @@ const PortfolioValueCard: FC<PortfolioValueCardProps> = ({
   usdValue = 0,
   localCurrencyCode,
   localValue = 0,
+  loading = false,
 }) => {
   const router = useRouter();
   const [investSheetOpen, setInvestSheetOpen] = useState(false);
@@ -54,6 +56,29 @@ const PortfolioValueCard: FC<PortfolioValueCardProps> = ({
         ),
     },
   ];
+
+  if (loading) {
+    return (
+      <Card extraStyle="p-6 bg-white rounded-2xl shadow-md mx-4 my-4">
+        {/* Loading skeleton */}
+        <View className="items-center">
+          <View className="h-6 w-32 bg-gray-200 rounded mb-2" />
+          <View className="h-10 w-48 bg-gray-200 rounded mb-2" />
+          <View className="h-4 w-24 bg-gray-200 rounded" />
+        </View>
+
+        {/* Action buttons skeleton */}
+        <View className="flex-row justify-between mt-6 mb-4">
+          {actions.map((_, index) => (
+            <View key={index} className="flex-1 items-center">
+              <View className="w-14 h-14 rounded-full bg-gray-200 mb-2" />
+              <View className="h-4 w-12 bg-gray-200 rounded" />
+            </View>
+          ))}
+        </View>
+      </Card>
+    );
+  }
 
   return (
     <>

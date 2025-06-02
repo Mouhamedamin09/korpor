@@ -6,7 +6,7 @@ export default function Signup() {
   const router = useRouter();
 
   return (
-    <View className="flex-1 bg-foreground">
+    <View className="flex-1 bg-gray-50">
       <View className="flex-1 justify-center items-center">
         <Image
           source={Logo}

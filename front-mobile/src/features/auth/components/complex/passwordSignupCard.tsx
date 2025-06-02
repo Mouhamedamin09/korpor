@@ -1,5 +1,5 @@
 import { View, Text } from "react-native";
-import { SolidButton, PasswordBarInput } from "../ui";
+import { SolidButton, PasswordInput } from "../ui";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { signupUser } from "@auth/services/signup";
@@ -40,7 +40,7 @@ export default function PasswordCard({
 
     try {
       // We pass everything EXCEPT phone to the backend
-      await signupUser({
+      const response = await signupUser({
         name,
         surname,
         email,
@@ -48,14 +48,34 @@ export default function PasswordCard({
         password,
       });
 
+      console.log("Signup response:", response);
+
+      // Check if response has user data
+      if (!response || !response.user || !response.user.id) {
+        throw new Error("Invalid response from server. Please try again.");
+      }
+
       // If success, navigate to verification screen
       router.push({
         pathname: "/auth/screens/Signup/verify",
-        params: { email },
+        params: {
+          email,
+          userId: response.user.id.toString(),
+        },
       });
     } catch (error: any) {
-      // Show any error returned from API or a generic one
-      setErrorMessage(error?.message || "Sign up failed. Please try again.");
+      console.error("Signup error:", error);
+
+      // Handle different types of errors
+      let errorMessage = "Sign up failed. Please try again.";
+
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      setErrorMessage(errorMessage);
     }
   };
 
@@ -68,12 +88,12 @@ export default function PasswordCard({
         Use at least 8 characters, including one uppercase letter, one lowercase
         letter, one number, and one special character.
       </Text>
-      <PasswordBarInput
+      <PasswordInput
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
       />
-      <PasswordBarInput
+      <PasswordInput
         placeholder="Confirm Password"
         value={confirmPassword}
         onChangeText={setConfirmPassword}

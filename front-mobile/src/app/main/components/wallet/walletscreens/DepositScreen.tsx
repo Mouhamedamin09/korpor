@@ -604,9 +604,25 @@ const DepositScreen: React.FC = () => {
 
           {/* ── Payment Method Selection ──────────────────────────────── */}
           <View className="px-4 mt-4">
-            <Text className="text-lg font-semibold text-gray-900 mb-4">
+            <Text className="text-lg font-semibold text-gray-900 mb-2">
               Payment Method
             </Text>
+
+            {/* Info about payment methods */}
+            <View className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+              <View className="flex-row items-start">
+                <Feather
+                  name="shield"
+                  size={16}
+                  color="#10B981"
+                  style={{ marginTop: 2, marginRight: 8 }}
+                />
+                <Text className="text-sm text-green-800 flex-1">
+                  Payment methods you add here will be saved securely and can be
+                  used for future deposits and withdrawals.
+                </Text>
+              </View>
+            </View>
 
             {/* Paymee Option */}
             <Card
@@ -617,7 +633,7 @@ const DepositScreen: React.FC = () => {
               }`}
             >
               <TouchableOpacity
-                className=" bg-white"
+                className="p-4 bg-white"
                 onPress={() => setSelectedMethod("payme")}
                 disabled={depositing}
               >
@@ -642,6 +658,9 @@ const DepositScreen: React.FC = () => {
                       Processing: 1-3 minutes • Fee: 1.5% + 0.5 TND
                     </Text>
                   </View>
+                  {selectedMethod === "payme" && (
+                    <Feather name="check-circle" size={20} color="#10B981" />
+                  )}
                 </View>
               </TouchableOpacity>
             </Card>
@@ -657,7 +676,7 @@ const DepositScreen: React.FC = () => {
                 }`}
               >
                 <TouchableOpacity
-                  className=" bg-white"
+                  className="p-4 bg-white"
                   onPress={() => setSelectedMethod(method.id)}
                   disabled={depositing}
                 >

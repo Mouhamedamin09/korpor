@@ -26,25 +26,25 @@ const User = sequelize.define(
       allowNull: true,
     },
     phoneVerificationCode: {
-        type: DataTypes.STRING(6),
-        allowNull: true,
-        field: "phone_verification_code",
-      },
-      verificationCodeExpires: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        field: "verification_code_expires",
-      },
-      pendingPhone: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        field: "pending_phone",
-      },
-      lastPhoneChange: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        field: "last_phone_change",
-      },
+      type: DataTypes.STRING(6),
+      allowNull: true,
+      field: "phone_verification_code",
+    },
+    verificationCodeExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: "verification_code_expires",
+    },
+    pendingPhone: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "pending_phone",
+    },
+    lastPhoneChange: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: "last_phone_change",
+    },
     accountType: {
       type: DataTypes.STRING(50),
       defaultValue: "Individual Account",
@@ -81,22 +81,22 @@ const User = sequelize.define(
     },
     // Currency preference
     currency: {
-      type: DataTypes.ENUM('TND', 'EUR'),
-      defaultValue: 'TND',
+      type: DataTypes.ENUM("TND", "EUR"),
+      defaultValue: "TND",
       allowNull: false,
     },
     // Investment preferences
     investmentPreference: {
-      type: DataTypes.ENUM('all', 'local'),
-      defaultValue: 'all',
+      type: DataTypes.ENUM("all", "local"),
+      defaultValue: "all",
       allowNull: false,
-      field: 'investment_preference',
+      field: "investment_preference",
     },
     investmentRegion: {
-      type: DataTypes.ENUM('Tunisia', 'France'),
-      defaultValue: 'Tunisia',
+      type: DataTypes.ENUM("Tunisia", "France"),
+      defaultValue: "Tunisia",
       allowNull: false,
-      field: 'investment_region',
+      field: "investment_region",
     },
     // Referral system
     referralCode: {
@@ -110,16 +110,16 @@ const User = sequelize.define(
       allowNull: true,
       field: "referred_by",
       references: {
-        model: 'users',
-        key: 'id'
-      }
+        model: "users",
+        key: "id",
+      },
     },
     referralStats: {
       type: DataTypes.JSON,
       defaultValue: {
         totalReferred: 0,
         totalInvested: 0,
-        totalEarned: 0
+        totalEarned: 0,
       },
       field: "referral_stats",
     },
@@ -194,31 +194,42 @@ const User = sequelize.define(
       allowNull: true,
       field: "last_email_change",
     },
+    // Signup verification fields (separate from email change verification)
+    signupVerificationCode: {
+      type: DataTypes.STRING(6),
+      allowNull: true,
+      field: "signup_verification_code",
+    },
+    signupVerificationExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: "signup_verification_expires",
+    },
     // Two-Factor Authentication fields
     twoFactorSecret: {
       type: DataTypes.STRING(128),
       allowNull: true,
       field: "twoFactorSecret",
-      comment: 'Base32 encoded TOTP secret for 2FA'
+      comment: "Base32 encoded TOTP secret for 2FA",
     },
     twoFactorEnabled: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
       field: "twoFactorEnabled",
-      comment: 'Whether 2FA is enabled for this user'
+      comment: "Whether 2FA is enabled for this user",
     },
     backupCodes: {
       type: DataTypes.JSON,
       allowNull: true,
       field: "backupCodes",
-      comment: 'JSON array of backup codes for 2FA recovery'
+      comment: "JSON array of backup codes for 2FA recovery",
     },
     twoFactorSetupAt: {
       type: DataTypes.DATE,
       allowNull: true,
       field: "twoFactorSetupAt",
-      comment: 'Timestamp when 2FA was first set up'
+      comment: "Timestamp when 2FA was first set up",
     },
   },
   {

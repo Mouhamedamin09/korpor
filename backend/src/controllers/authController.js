@@ -1,7 +1,6 @@
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
 const moment = require("moment");
 const User = require("../models/User");
 const Role = require("../models/Role");
@@ -12,122 +11,7 @@ const {
   resetFailedLoginAttempts,
 } = require("../middleware/loginLimiter");
 const { Buffer } = require("buffer");
-
-// Helper: Create and return a nodemailer transporter
-const createTransporter = () =>
-  nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
-// Helper: Send verification email with a rich HTML template
-const sendVerificationEmail = async (
-  email,
-  verificationCode,
-  userName,
-  userLocation,
-  userIp,
-  date,
-  time
-) => {
-  try {
-    const transporter = createTransporter();
-
-    const locationIcon =
-      "https://cdn-icons-png.flaticon.com/512/684/684908.png";
-    const ipIcon = "https://cdn-icons-png.flaticon.com/512/841/841364.png";
-    const calendarIcon =
-      "https://cdn-icons-png.flaticon.com/512/747/747310.png";
-    const timeIcon = "https://cdn-icons-png.flaticon.com/512/2911/2911643.png";
-
-    const emailTemplate = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mail Verification - Korpor</title>
-  <style>
-    body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4; }
-    .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); }
-    .header { background-color: #663399; color: white; padding: 20px; text-align: center; }
-    .content { padding: 30px; }
-    .verification-code { font-size: 32px; font-weight: bold; letter-spacing: 5px; text-align: center; margin: 30px 0; color: #663399; }
-    .meta-row { display: flex; align-items: center; margin-bottom: 12px; }
-    .meta-icon { width: 20px; height: 20px; margin-right: 10px; }
-    .meta-text { font-size: 14px; color: #555; }
-    .divider { height: 1px; background-color: #eee; margin: 20px 0; }
-    .footer { text-align: center; padding: 20px; color: #777; font-size: 12px; }
-    .cta-button { display: inline-block; background-color: #663399; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; margin-top: 20px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h2>Email Verification</h2>
-    </div>
-    <div class="content">
-      <p>Hello ${userName},</p>
-      <p>Thank you for signing up! Please use the verification code below to complete your registration:</p>
-      
-      <div class="verification-code">${verificationCode}</div>
-      
-      <p>This code will expire in 10 minutes for security reasons.</p>
-      
-      <div class="divider"></div>
-      
-      <p>Request details:</p>
-      
-      <div class="meta-row">
-        <img src="${locationIcon}" alt="Location" class="meta-icon" />
-        <div class="meta-text">Location: ${userLocation || "Unknown"}</div>
-      </div>
-      
-      <div class="meta-row">
-        <img src="${ipIcon}" alt="IP Address" class="meta-icon" />
-        <div class="meta-text">IP Address: ${userIp || "Unknown"}</div>
-      </div>
-      
-      <div class="meta-row">
-        <img src="${calendarIcon}" alt="Date" class="meta-icon" />
-        <div class="meta-text">Date: ${date || "Unknown"}</div>
-      </div>
-      
-      <div class="meta-row">
-        <img src="${timeIcon}" alt="Time" class="meta-icon" />
-        <div class="meta-text">Time: ${time || "Unknown"}</div>
-      </div>
-      
-      <div class="divider"></div>
-      
-      <p>If you did not request this verification code, please ignore this email.</p>
-    </div>
-    <div class="footer">
-      &copy; ${new Date().getFullYear()} Korpor. All rights reserved.
-    </div>
-  </div>
-</body>
-</html>
-`;
-
-    await transporter.sendMail({
-      from: `"Korpor Authentication" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Verify Your Email Address",
-      html: emailTemplate,
-    });
-
-    console.log(`Verification email sent to ${email}`);
-    return true;
-  } catch (error) {
-    console.error("Email sending error:", error);
-    return false;
-  }
-};
+const { sendVerificationEmail } = require("../config/email.config");
 
 // Helper: Generate tokens (access and refresh)
 const generateTokens = (user) => {
@@ -170,12 +54,14 @@ const generateTokens = (user) => {
  */
 exports.signUp = async (req, res) => {
   try {
-    const { name, surname, email, password, birthdate, requestedRole } =
+    const { name, surname, email, password, birthdate, phone, requestedRole } =
       req.body;
 
     // Validate inputs
     if (!name || !surname || !email || !password || !birthdate) {
-      return res.status(400).json({ message: "All fields are required" });
+      return res.status(400).json({
+        message: "Name, surname, email, password, and birthdate are required",
+      });
     }
 
     // Check if user already exists
@@ -188,8 +74,8 @@ exports.signUp = async (req, res) => {
       if (!existingUser.isVerified) {
         // Check if verification code is expired
         const isExpired =
-          !existingUser.resetCodeExpires ||
-          new Date() > new Date(existingUser.resetCodeExpires);
+          !existingUser.signupVerificationExpires ||
+          new Date() > new Date(existingUser.signupVerificationExpires);
 
         if (isExpired) {
           // Generate new verification code for the existing user
@@ -206,8 +92,9 @@ exports.signUp = async (req, res) => {
               surname,
               password: hashedPassword,
               birthdate,
-              resetCode: verificationCode,
-              resetCodeExpires: expiryTime,
+              phone: phone || existingUser.phone,
+              signupVerificationCode: verificationCode,
+              signupVerificationExpires: expiryTime,
             },
             { where: { email } }
           );
@@ -217,8 +104,7 @@ exports.signUp = async (req, res) => {
             email,
             verificationCode,
             `${name} ${surname}`,
-            req.ip,
-            req.headers["user-agent"]
+            "email"
           ).catch((error) =>
             console.error("Failed to send verification email:", error)
           );
@@ -227,6 +113,12 @@ exports.signUp = async (req, res) => {
             message:
               "A new verification code has been sent to your email address",
             status: "pending_verification",
+            user: {
+              id: existingUser.id,
+              email: existingUser.email,
+              phone: existingUser.phone,
+              approval_status: existingUser.approvalStatus,
+            },
           });
         }
 
@@ -257,7 +149,7 @@ exports.signUp = async (req, res) => {
       expiryMinutes: 10,
     });
 
-    // Find requested role ID or default to the agent role
+    // Find requested role ID or default to the user role
     let roleId = null;
     if (requestedRole) {
       const role = await Role.findOne({
@@ -268,13 +160,13 @@ exports.signUp = async (req, res) => {
       }
     }
 
-    // If no role specified or not found, default to agent role
+    // If no role specified or not found, default to user role
     if (!roleId) {
-      const agentRole = await Role.findOne({
-        where: { name: Role.ROLES.AGENT },
+      const userRole = await Role.findOne({
+        where: { name: "user" },
       });
-      if (agentRole) {
-        roleId = agentRole.id;
+      if (userRole) {
+        roleId = userRole.id;
       }
     }
 
@@ -286,11 +178,13 @@ exports.signUp = async (req, res) => {
       email,
       password: hashedPassword,
       birthdate,
-      resetCode: verificationCode,
-      resetCodeExpires: expiryTime,
+      phone: phone || null,
+      signupVerificationCode: verificationCode,
+      signupVerificationExpires: expiryTime,
       roleId,
-      approvalStatus:
-        requestedRole === Role.ROLES.AGENT ? "pending" : "unverified",
+      approvalStatus: "unverified",
+      isVerified: false,
+      phoneVerified: false,
     });
 
     // Try to send verification email, but don't block the response
@@ -298,19 +192,20 @@ exports.signUp = async (req, res) => {
       email,
       verificationCode,
       `${name} ${surname}`,
-      req.headers["x-forwarded-for"] || req.ip,
-      req.headers["user-agent"]
+      "email"
     ).catch((error) =>
       console.error("Failed to send verification email:", error)
     );
 
     // Respond with success
     return res.status(201).json({
-      message: "Registration successful. Please verify your email address.",
-      status: "pending_verification",
+      message:
+        "Registration successful. Please verify your email address to continue.",
+      status: "pending_email_verification",
       user: {
         id: newUser.id,
         email: newUser.email,
+        phone: newUser.phone,
         approval_status: newUser.approvalStatus,
       },
     });
@@ -331,7 +226,10 @@ exports.verifyEmail = async (req, res) => {
   try {
     const { email, code } = req.body;
 
+    console.log("📧 Email verification attempt:", { email, code });
+
     if (!email || !code) {
+      console.log("❌ Missing email or code");
       return res
         .status(400)
         .json({ message: "Email and verification code are required" });
@@ -342,33 +240,59 @@ exports.verifyEmail = async (req, res) => {
     });
 
     if (!user) {
+      console.log("❌ User not found for email:", email);
       return res.status(400).json({ message: "User not found" });
     }
 
+    console.log("✅ User found:", {
+      id: user.id,
+      email: user.email,
+      isVerified: user.isVerified,
+      verificationCode: user.signupVerificationCode,
+      verificationCodeExpires: user.signupVerificationExpires,
+    });
+
     if (user.isVerified) {
+      console.log("❌ Email already verified");
       return res.status(400).json({ message: "Email already verified" });
     }
 
-    if (user.resetCode !== code) {
+    if (user.signupVerificationCode !== code) {
+      console.log(
+        "❌ Invalid verification code. Expected:",
+        user.signupVerificationCode,
+        "Got:",
+        code
+      );
       return res.status(400).json({ message: "Invalid verification code" });
     }
 
-    if (new Date() > new Date(user.resetCodeExpires)) {
+    if (new Date() > new Date(user.signupVerificationExpires)) {
+      console.log(
+        "❌ Verification code expired. Expires:",
+        user.signupVerificationExpires,
+        "Current:",
+        new Date()
+      );
       return res.status(400).json({ message: "Verification code has expired" });
     }
+
+    console.log("✅ Verification successful, updating user...");
 
     // Update user to verified status but still pending approval
     await User.update(
       {
         isVerified: true,
-        resetCode: null,
-        resetCodeExpires: null,
+        signupVerificationCode: null,
+        signupVerificationExpires: null,
         approvalStatus: "pending", // Set to pending to require admin approval after email verification
       },
       {
         where: { id: user.id },
       }
     );
+
+    console.log("✅ User updated successfully");
 
     res.json({
       message:
@@ -686,8 +610,8 @@ exports.forgotPassword = async (req, res) => {
     // Update user with reset code
     await User.update(
       {
-        resetCode: resetCode,
-        resetCodeExpires: expiry,
+        emailVerificationCode: resetCode,
+        verificationCodeExpires: expiry,
       },
       {
         where: { id: user.id },
@@ -701,15 +625,7 @@ exports.forgotPassword = async (req, res) => {
     const userLocation = "Location data unavailable";
 
     // Send password reset email
-    await sendVerificationEmail(
-      email,
-      resetCode,
-      user.name,
-      userLocation,
-      userIp,
-      date,
-      time
-    );
+    await sendVerificationEmail(email, resetCode, user.name, "email");
 
     res.json({
       message:
@@ -737,23 +653,23 @@ exports.resetPassword = async (req, res) => {
       where: { email },
     });
 
-    if (!user || user.resetCode !== code) {
+    if (!user || user.emailVerificationCode !== code) {
       return res
         .status(400)
         .json({ message: "Invalid or expired verification code" });
     }
 
-    if (new Date() > new Date(user.resetCodeExpires)) {
+    if (new Date() > new Date(user.verificationCodeExpires)) {
       return res.status(400).json({ message: "Verification code has expired" });
     }
 
-    // Update password and clear reset code
+    // Update password and clear verification code
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await User.update(
       {
         password: hashedPassword,
-        resetCode: null,
-        resetCodeExpires: null,
+        emailVerificationCode: null,
+        verificationCodeExpires: null,
       },
       {
         where: { id: user.id },
@@ -808,8 +724,8 @@ exports.resendVerificationCode = async (req, res) => {
     // Update the user with new verification code
     await User.update(
       {
-        resetCode: verificationCode,
-        resetCodeExpires: expiryTime,
+        emailVerificationCode: verificationCode,
+        verificationCodeExpires: expiryTime,
       },
       {
         where: { id: user.id },
@@ -817,20 +733,7 @@ exports.resendVerificationCode = async (req, res) => {
     );
 
     // Send verification email
-    const date = moment().format("MMMM Do, YYYY");
-    const time = moment().format("h:mm A");
-    const userIp = req.ip || req.connection.remoteAddress;
-    const userLocation = "Location data unavailable";
-
-    await sendVerificationEmail(
-      email,
-      verificationCode,
-      user.name,
-      userLocation,
-      userIp,
-      date,
-      time
-    );
+    await sendVerificationEmail(email, verificationCode, user.name, "email");
 
     // Return success message (don't confirm if email exists)
     res.status(200).json({
@@ -891,25 +794,13 @@ exports.approveUser = async (req, res) => {
 
     // If approved, send approval email
     if (approvalStatus === "approved") {
-      // Implementation would depend on your email sending function
-      // For example:
       try {
-        const transporter = createTransporter();
-        await transporter.sendMail({
-          from: `"Korpor Admin" <${process.env.EMAIL_USER}>`,
-          to: user.email,
-          subject: "Your Account Has Been Approved",
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #663399;">Account Approved</h2>
-              <p>Hello ${user.name},</p>
-              <p>We're pleased to inform you that your account has been approved. You can now log in to your dashboard.</p>
-              <a href="${process.env.FRONTEND_URL}/sign-in" style="display: inline-block; background-color: #663399; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-top: 20px;">Sign In</a>
-              <p style="margin-top: 30px;">Thank you for joining us!</p>
-              <p>The Korpor Team</p>
-            </div>
-          `,
-        });
+        const { sendEmail } = require("../config/email.config");
+        await sendEmail(
+          user.email,
+          "Your Account Has Been Approved",
+          `Hello ${user.name},\n\nWe're pleased to inform you that your account has been approved. You can now log in to your dashboard.\n\nThank you for joining us!\nThe Korpor Team`
+        );
       } catch (error) {
         console.error("Failed to send approval email:", error);
         // Continue anyway, we don't want to fail the API call just because of email failure
@@ -919,22 +810,12 @@ exports.approveUser = async (req, res) => {
     // If rejected, send rejection email
     if (approvalStatus === "rejected") {
       try {
-        const transporter = createTransporter();
-        await transporter.sendMail({
-          from: `"Korpor Admin" <${process.env.EMAIL_USER}>`,
-          to: user.email,
-          subject: "Your Account Application Status",
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #dc3545;">Account Not Approved</h2>
-              <p>Hello ${user.name},</p>
-              <p>We regret to inform you that your account application has not been approved at this time.</p>
-              <p>If you believe this is an error or would like more information, please contact our support team.</p>
-              <p style="margin-top: 30px;">Thank you for your interest in our platform.</p>
-              <p>The Korpor Team</p>
-            </div>
-          `,
-        });
+        const { sendEmail } = require("../config/email.config");
+        await sendEmail(
+          user.email,
+          "Your Account Application Status",
+          `Hello ${user.name},\n\nWe regret to inform you that your account application has not been approved at this time.\n\nIf you believe this is an error or would like more information, please contact our support team.\n\nThank you for your interest in our platform.\nThe Korpor Team`
+        );
       } catch (error) {
         console.error("Failed to send rejection email:", error);
       }
@@ -1003,6 +884,200 @@ exports.handleClerkAuth = async (req, res) => {
     console.error("Clerk Auth Error:", error);
     return res.status(500).json({
       message: "Authentication failed",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Send Phone Verification
+ * Sends OTP to user's phone number after email verification
+ */
+exports.sendPhoneVerification = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    // Find the user
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if email is verified first
+    if (!user.isVerified) {
+      return res.status(400).json({
+        message: "Please verify your email address first",
+        status: "email_not_verified",
+      });
+    }
+
+    // Check if phone is already verified
+    if (user.phoneVerified) {
+      return res.status(400).json({
+        message: "Phone number is already verified",
+        status: "phone_already_verified",
+      });
+    }
+
+    // Generate phone verification code
+    const { otp: phoneVerificationCode, expiry: expiryTime } = generateOTP({
+      digits: 6,
+      expiryMinutes: 10,
+    });
+
+    // Update user with phone verification code
+    await User.update(
+      {
+        phoneVerificationCode,
+        verificationCodeExpires: new Date(expiryTime),
+      },
+      { where: { id: userId } }
+    );
+
+    // Send SMS
+    try {
+      const { sendSMS } = require("../config/twilio.config");
+      const message = `Your Korpor verification code is: ${phoneVerificationCode}. This code will expire in 10 minutes.`;
+      await sendSMS(user.phone, message);
+
+      console.log(`Phone verification SMS sent to ${user.phone}`);
+    } catch (smsError) {
+      console.error("Failed to send SMS:", smsError);
+      return res.status(500).json({
+        message: "Failed to send verification SMS. Please try again.",
+        error: "sms_send_failed",
+      });
+    }
+
+    res.status(200).json({
+      message: "Verification code sent to your phone",
+      status: "phone_verification_sent",
+    });
+  } catch (error) {
+    console.error("Send phone verification error:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Verify Phone Number
+ * Verifies the phone OTP code
+ */
+exports.verifyPhone = async (req, res) => {
+  try {
+    const { userId, verificationCode } = req.body;
+
+    console.log("📱 Phone verification attempt:", { userId, verificationCode });
+
+    if (!userId || !verificationCode) {
+      console.log("❌ Missing userId or verificationCode");
+      return res.status(400).json({
+        message: "User ID and verification code are required",
+      });
+    }
+
+    // Find the user
+    const user = await User.findByPk(userId);
+    if (!user) {
+      console.log("❌ User not found for ID:", userId);
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    console.log("✅ User found:", {
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+      isVerified: user.isVerified,
+      phoneVerified: user.phoneVerified,
+      phoneVerificationCode: user.phoneVerificationCode,
+      verificationCodeExpires: user.verificationCodeExpires,
+    });
+
+    // Check if email is verified first
+    if (!user.isVerified) {
+      console.log("❌ Email not verified");
+      return res.status(400).json({
+        message: "Please verify your email address first",
+        status: "email_not_verified",
+      });
+    }
+
+    // Check if phone is already verified
+    if (user.phoneVerified) {
+      console.log("❌ Phone already verified");
+      return res.status(400).json({
+        message: "Phone number is already verified",
+        status: "phone_already_verified",
+      });
+    }
+
+    // Check if verification code exists and is not expired
+    if (!user.phoneVerificationCode || !user.verificationCodeExpires) {
+      console.log("❌ No verification code or expiry found");
+      return res.status(400).json({
+        message: "No verification code found. Please request a new one.",
+        status: "no_verification_code",
+      });
+    }
+
+    // Check if code is expired
+    if (new Date() > new Date(user.verificationCodeExpires)) {
+      console.log(
+        "❌ Verification code expired. Expires:",
+        user.verificationCodeExpires,
+        "Current:",
+        new Date()
+      );
+      return res.status(400).json({
+        message: "Verification code has expired. Please request a new one.",
+        status: "code_expired",
+      });
+    }
+
+    // Verify the code
+    if (user.phoneVerificationCode !== verificationCode) {
+      console.log(
+        "❌ Invalid verification code. Expected:",
+        user.phoneVerificationCode,
+        "Got:",
+        verificationCode
+      );
+      return res.status(400).json({
+        message: "Invalid verification code",
+        status: "invalid_code",
+      });
+    }
+
+    console.log("✅ Phone verification successful, updating user...");
+
+    // Mark phone as verified and clear verification data
+    await User.update(
+      {
+        phoneVerified: true,
+        phoneVerificationCode: null,
+        verificationCodeExpires: null,
+        approvalStatus: "approved", // Auto-approve user after phone verification
+      },
+      { where: { id: userId } }
+    );
+
+    console.log("✅ User updated successfully - phone verified and approved");
+
+    res.status(200).json({
+      message: "Phone number verified successfully",
+      status: "phone_verified",
+    });
+  } catch (error) {
+    console.error("Verify phone error:", error);
+    res.status(500).json({
+      message: "Server error",
       error: error.message,
     });
   }

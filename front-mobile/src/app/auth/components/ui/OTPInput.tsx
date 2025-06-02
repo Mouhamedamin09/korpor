@@ -12,7 +12,7 @@ interface OTPInputProps {
 }
 
 export default function OTPInput({ otp, setOtp }: OTPInputProps): JSX.Element {
-  const numInputs = 4;
+  const numInputs = otp.length; // Dynamic length based on otp array
   const inputs = useRef<(TextInput | null)[]>([]);
 
   const handleChange = (text: string, index: number) => {
@@ -43,16 +43,19 @@ export default function OTPInput({ otp, setOtp }: OTPInputProps): JSX.Element {
   return (
     /**
      * Container:
-     * - fixed width & height so it looks like a single rectangle
+     * - dynamic width based on number of inputs
      * - border & rounded corners
      * - background color
      * We use overflow-hidden to ensure the inner borders line up nicely.
      */
-    <View className="flex-row w-[80%] h-14 py-3 rounded-lg border border-border overflow-hidden bg-background shadow">
+    <View
+      className="flex-row h-14 py-3 rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm"
+      style={{ width: numInputs * 50 + 20 }}
+    >
       {otp.map((digit, index) => (
         /**
          * Each column:
-         * - Takes up equal space (flex-1)
+         * - Fixed width for consistent spacing
          * - Text centered
          * - For every column except the last, we apply a right border
          */
@@ -63,9 +66,10 @@ export default function OTPInput({ otp, setOtp }: OTPInputProps): JSX.Element {
           onKeyPress={(e) => handleKeyPress(e, index)}
           keyboardType="numeric"
           maxLength={1}
-          className={`flex-1 text-center text-primary text-xl ${
-            index < numInputs - 1 ? "border-r border-border" : ""
+          className={`text-center text-gray-900 text-xl ${
+            index < numInputs - 1 ? "border-r border-gray-200" : ""
           }`}
+          style={{ width: 50 }}
           ref={(ref) => (inputs.current[index] = ref)}
         />
       ))}

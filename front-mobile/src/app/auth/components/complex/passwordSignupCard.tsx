@@ -8,6 +8,7 @@ interface PasswordCardProps {
   name: string;
   surname: string;
   email: string;
+  phone: string;
   birthdate: string;
 }
 
@@ -15,6 +16,7 @@ export default function PasswordCard({
   name,
   surname,
   email,
+  phone,
   birthdate,
 }: PasswordCardProps) {
   const router = useRouter();
@@ -22,49 +24,104 @@ export default function PasswordCard({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async () => {
     // Reset error on each attempt
     setErrorMessage("");
-
-    // Validate fields
-    if (!password.trim() || !confirmPassword.trim()) {
-      setErrorMessage("Please fill out all required fields.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setErrorMessage("Passwords do not match.");
-      return;
-    }
+    setIsLoading(true);
 
     try {
-      // We pass everything EXCEPT phone to the backend
-      await signupUser({
-        name,
-        surname,
-        email,
-        birthdate,
-        password,
-      });
+      // Validate all required fields and ensure they're properly defined
+      if (
+        !name?.trim() ||
+        !surname?.trim() ||
+        !email?.trim() ||
+        !phone?.trim() ||
+        !birthdate?.trim()
+      ) {
+        setErrorMessage("Please fill out all required fields.");
+        setIsLoading(false);
+        return;
+      }
 
-      // If success, navigate to verification screen
+      if (!password.trim() || !confirmPassword.trim()) {
+        setErrorMessage("Please enter and confirm your password.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setErrorMessage("Passwords do not match.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Password strength validation - Updated regex for stronger requirements
+      const passwordRegex = /^.{6,}$/;
+
+      if (!passwordRegex.test(password)) {
+        setErrorMessage(
+          "Password must be at least 8 characters with uppercase, lowercase, number, and special character."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      // Prepare signup data with safe string conversion
+      const signupData = {
+        name: String(name).trim(),
+        surname: String(surname).trim(),
+        email: String(email).trim(),
+        phone: String(phone).trim(),
+        birthdate: String(birthdate).trim(),
+        password: password.trim(),
+      };
+
+      console.log("Signup data:", signupData);
+
+      // Call the signup API
+      const response = await signupUser(signupData);
+
+      console.log("Signup response:", response);
+
+      // Check if response has user data
+      if (!response || !response.user || !response.user.id) {
+        throw new Error("Invalid response from server. Please try again.");
+      }
+
+      // If success, navigate to email verification screen
       router.push({
         pathname: "/auth/screens/Signup/verify",
-        params: { email },
+        params: {
+          email: signupData.email,
+          userId: response.user.id.toString(),
+        },
       });
     } catch (error: any) {
-      // Show any error returned from API or a generic one
-      setErrorMessage(error?.message || "Sign up failed. Please try again.");
+      console.error("Signup error:", error);
+
+      // Handle different types of errors
+      let errorMessage = "Sign up failed. Please try again.";
+
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      setErrorMessage(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <View className="w-[90%] h-auto bg-[#09090b] rounded-2xl border border-[#3f3f46] p-5">
-      <Text className="text-4xl ml-1 font-bold text-[#F0F4FA] w-[80%]">
+    <View className="w-[90%] h-auto bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+      <Text className="text-3xl font-bold text-gray-900 mb-1">
         Create a strong Password
       </Text>
-      <Text className="text-[#F0F4FA] mb-6 ml-1 text-small w-[80%]">
+      <Text className="text-gray-500 mb-6">
         Use at least 8 characters, including one uppercase letter, one lowercase
         letter, one number, and one special character.
       </Text>
@@ -78,7 +135,11 @@ export default function PasswordCard({
         value={confirmPassword}
         onChangeText={setConfirmPassword}
       />
-      <SolidButton title="Set Password & Continue" onPress={handleSignup} />
+      <SolidButton
+        title={isLoading ? "Creating Account..." : "Create Account"}
+        onPress={handleSignup}
+        disabled={isLoading}
+      />
 
       {/* Show error message if any */}
       {errorMessage ? (

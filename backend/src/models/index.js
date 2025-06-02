@@ -9,6 +9,9 @@ const Verification = require("./Verification");
 const Referral = require("./Referral");
 const Wallet = require("./Wallet");
 const Transaction = require("./Transaction");
+const AutoInvest = require("./AutoInvest");
+const AutoReinvest = require("./AutoReinvest");
+const RentalPayout = require("./RentalPayout");
 const setupAssociations = require("./associations");
 
 // Set up model associations
@@ -39,4 +42,7 @@ module.exports = {
   Referral,
   Wallet,
   Transaction,
+  AutoInvest,
+  AutoReinvest,
+  RentalPayout,
 };

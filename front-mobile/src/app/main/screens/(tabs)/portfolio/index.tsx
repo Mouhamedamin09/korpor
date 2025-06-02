@@ -27,6 +27,8 @@ import { fetchAccountData, fetchUserSettings } from "@main/services/api";
 import {
   fetchPortfolioTotals,
   fetchAutomationStatus,
+  type PortfolioTotals,
+  type AutomationStatus,
 } from "@/app/main/services/portfolio";
 
 const { width } = Dimensions.get("window");
@@ -60,8 +62,16 @@ const PortfolioScreen: React.FC = () => {
   }, []);
 
   /* ---------------- portfolio data ---------------- */
-  const [totals, setTotals] = useState({ usd: 0, local: 0 });
-  const [automation, setAutomation] = useState({
+  const [portfolioTotals, setPortfolioTotals] = useState<PortfolioTotals>({
+    usd: 0,
+    local: 0,
+    currency: "TND",
+    totalInvested: 0,
+    totalReturns: 0,
+    monthlyIncome: 0,
+    averageYield: 6.5,
+  });
+  const [automation, setAutomation] = useState<AutomationStatus>({
     autoInvestSetup: false,
     autoReinvestSetup: false,
   });
@@ -70,11 +80,17 @@ const PortfolioScreen: React.FC = () => {
   const loadPortfolioData = useCallback(async () => {
     setLoadingPortfolio(true);
     try {
-      const [tot, auto] = await Promise.all([
+      console.log("Loading portfolio data...");
+
+      const [totals, auto] = await Promise.all([
         fetchPortfolioTotals(),
         fetchAutomationStatus(),
       ]);
-      setTotals(tot);
+
+      console.log("Portfolio totals:", totals);
+      console.log("Automation status:", auto);
+
+      setPortfolioTotals(totals);
       setAutomation(auto);
     } catch (e) {
       console.warn("Failed to load portfolio data", e);
@@ -119,14 +135,14 @@ const PortfolioScreen: React.FC = () => {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         <PortfolioValueCard
-          usdValue={totals.usd}
+          usdValue={portfolioTotals.usd}
           localCurrencyCode={cur.code}
-          localValue={totals.local}
+          localValue={portfolioTotals.local}
           loading={loadingPortfolio}
         />
 
         <Card extraStyle="p-6 bg-white rounded-2xl shadow-sm mx-4">
-          {/* existing “Start earning” block (unchanged) */}
+          {/* existing "Start earning" block (unchanged) */}
           <View className="flex-row items-center mb-4">
             <View className="w-20 h-20 rounded-2xl bg-green-100 items-center justify-center mr-4">
               <Image
@@ -158,9 +174,16 @@ const PortfolioScreen: React.FC = () => {
             </View>
           ))}
 
-          <TouchableOpacity className="flex-row items-center mt-4 pt-4 border-t border-gray-200">
+          <TouchableOpacity
+            onPress={() =>
+              router.push(
+                "/main/components/profileScreens/profile/GetHelpScreen"
+              )
+            }
+            className="flex-row items-center mt-4 pt-4 border-t border-gray-200"
+          >
             <Text className="text-base font-semibold text-green-700 flex-1">
-              Learn more about Stake
+              Learn more about Korpor
             </Text>
             <Feather name="chevron-right" size={20} color="#10B981" />
           </TouchableOpacity>
@@ -176,6 +199,65 @@ const PortfolioScreen: React.FC = () => {
         <Text className="ml-5 text-xl font-semibold mt-4">Automations</Text>
         <AutoInvest isSetup={automation.autoInvestSetup} />
         <AutoReinvest isSetup={automation.autoReinvestSetup} />
+
+        {/* Portfolio Performance Summary */}
+        {(portfolioTotals.totalInvested > 0 ||
+          portfolioTotals.totalReturns > 0) && (
+          <>
+            <Text className="ml-5 text-xl font-semibold mt-4">Performance</Text>
+            <Card extraStyle="p-6 bg-white rounded-2xl shadow-sm mx-4 mt-2">
+              <View className="flex-row justify-between mb-4">
+                <Text className="text-base font-semibold text-gray-900">
+                  Portfolio Summary
+                </Text>
+                <TouchableOpacity
+                  onPress={() => console.log("View detailed performance")}
+                >
+                  <Feather name="external-link" size={18} color="#10B981" />
+                </TouchableOpacity>
+              </View>
+
+              <View className="space-y-3">
+                <View className="flex-row justify-between">
+                  <Text className="text-sm text-gray-600">Total Invested</Text>
+                  <Text className="text-sm font-semibold text-gray-900">
+                    {cur.symbol}{" "}
+                    {portfolioTotals.totalInvested.toLocaleString()}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between">
+                  <Text className="text-sm text-gray-600">Total Returns</Text>
+                  <Text
+                    className={`text-sm font-semibold ${
+                      portfolioTotals.totalReturns >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {portfolioTotals.totalReturns >= 0 ? "+" : ""}
+                    {cur.symbol} {portfolioTotals.totalReturns.toLocaleString()}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between">
+                  <Text className="text-sm text-gray-600">Monthly Income</Text>
+                  <Text className="text-sm font-semibold text-gray-900">
+                    {cur.symbol}{" "}
+                    {portfolioTotals.monthlyIncome.toLocaleString()}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between">
+                  <Text className="text-sm text-gray-600">Average Yield</Text>
+                  <Text className="text-sm font-semibold text-green-600">
+                    {portfolioTotals.averageYield.toFixed(2)}%
+                  </Text>
+                </View>
+              </View>
+            </Card>
+          </>
+        )}
 
         <Text className="ml-5 text-xl font-semibold my-4">
           Learn about our security
@@ -195,31 +277,46 @@ const PortfolioScreen: React.FC = () => {
               icon: "credit-card",
               title: "Learn about deposits\nand withdrawals",
               read: true,
-              onPress: () => console.log("open article 1"),
+              onPress: () =>
+                router.push(
+                  "/main/components/profileScreens/profile/DepositsWithdrawalsGuide"
+                ),
             },
             {
               icon: "shield",
-              title: "How does DFSA\nprotect my money?",
+              title: "How does CMF\nprotect my money?",
               read: false,
-              onPress: () => console.log("open article 2"),
+              onPress: () =>
+                router.push(
+                  "/main/components/profileScreens/profile/DFSAProtectionGuide"
+                ),
             },
             {
               icon: "user",
-              title: "How does DFSA protect user Money?",
+              title: "How does AMF protect user Money?",
               read: false,
-              onPress: () => console.log("open article 3"),
+              onPress: () =>
+                router.push(
+                  "/main/components/profileScreens/profile/UserMoneyProtectionGuide"
+                ),
             },
             {
               icon: "lock",
               title: "How does Korpor protect my data?",
               read: false,
-              onPress: () => console.log("open article 4"),
+              onPress: () =>
+                router.push(
+                  "/main/components/profileScreens/profile/DataProtectionGuide"
+                ),
             },
             {
               icon: "info",
               title: "What is DIFC?",
               read: false,
-              onPress: () => console.log("open article 5"),
+              onPress: () =>
+                router.push(
+                  "/main/components/profileScreens/profile/DIFCGuide"
+                ),
             },
           ].map(({ icon, title, read, onPress }, idx, arr) => (
             <View

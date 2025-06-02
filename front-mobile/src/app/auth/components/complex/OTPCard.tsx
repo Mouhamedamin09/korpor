@@ -6,49 +6,74 @@ import { useState } from "react";
 
 interface OTPCardProps {
   email: string;
+  userId: string;
 }
 
-export default function OTPCard({ email }: OTPCardProps) {
+export default function OTPCard({ email, userId }: OTPCardProps) {
   const router = useRouter();
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleVerify = async () => {
     // Reset error message on each attempt
     setErrorMessage("");
+    setIsLoading(true);
 
     const code = otp.join(""); // e.g. ["1","2","3","4"] => "1234"
     if (code.length < 4) {
       setErrorMessage("Please enter the 4-digit code.");
+      setIsLoading(false);
       return;
     }
 
     try {
+      console.log("Verifying email with:", { email, code });
       await verifySignUp(email, code);
-      // If successful, route to next screen
-      router.replace("/Login/login");
+      console.log("Email verification successful");
+
+      // If successful, route to phone verification screen
+      router.push({
+        pathname: "/auth/screens/Signup/verifyPhone",
+        params: { userId },
+      });
     } catch (error: any) {
-      console.error(error);
-      setErrorMessage(
-        error?.message || "Verification failed. Please try again."
-      );
+      console.error("Email verification error:", error);
+
+      // Handle different types of errors
+      let errorMessage = "Verification failed. Please try again.";
+
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      console.log("Setting error message:", errorMessage);
+      setErrorMessage(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <View className="w-[90%] h-auto bg-[#09090b] rounded-2xl border border-[#3f3f46] p-5">
-      <Text className="text-4xl font-bold text-[#fafafa] mb-1 ml-1">
-        Verify Your Account
+    <View className="w-[90%] h-auto bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+      <Text className="text-3xl font-bold text-gray-900 mb-1">
+        Verify Your Email
       </Text>
-      <Text className="ml-1 text-[#a1a1aa] mb-6 text-small">
-        We've sent a 4-digit code to your email. Enter it below to continue.
+      <Text className="text-gray-500 mb-6">
+        We've sent a 4-digit code to {email}. Enter it below to continue.
       </Text>
 
       <View className="items-center mb-3">
         <OTPInput otp={otp} setOtp={setOtp} />
       </View>
 
-      <SolidButton title="Verify & Continue" onPress={handleVerify} />
+      <SolidButton
+        title={isLoading ? "Verifying..." : "Verify Email"}
+        onPress={handleVerify}
+        disabled={isLoading}
+      />
 
       {/* Show error message if any */}
       {errorMessage ? (
@@ -56,7 +81,7 @@ export default function OTPCard({ email }: OTPCardProps) {
       ) : null}
 
       <View className="flex-row justify-center items-center pt-4 mb-3">
-        <Text className="ml-2 text-gray-400 text-xs font-semibold">
+        <Text className="text-gray-500 text-sm font-medium">
           Didn't receive any code?
         </Text>
         <PressableText
@@ -64,7 +89,6 @@ export default function OTPCard({ email }: OTPCardProps) {
           onPress={() => {
             // Optionally call an endpoint to resend the code
             console.log("Resend Code pressed");
-            router.push("auth/screens/Signup/signupDone.tsx");
           }}
         />
       </View>

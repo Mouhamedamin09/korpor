@@ -5,13 +5,13 @@ interface SignupData {
   name: string;
   surname: string;
   email: string;
+  phone: string;
   birthdate: string;
   password: string;
   // phone: string; // omitted or never used
 }
 
 export const signupUser = async (data: SignupData) => {
-  // No phone in the payload
   const response = await axios.post(`${API_URL}/api/auth/sign-up`, data, {
     headers: {
       "Content-Type": "application/json",
@@ -21,7 +21,7 @@ export const signupUser = async (data: SignupData) => {
 };
 
 export const verifySignUp = async (email: string, code: string) => {
-  const response = await axios.post(`${API_URL}/auth/verifysign`, {
+  const response = await axios.post(`${API_URL}/api/auth/verify-email`, {
     email,
     code,
   });

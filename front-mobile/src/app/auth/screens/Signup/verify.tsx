@@ -7,11 +7,11 @@ const OTP = require("@assets/OTP.png");
 
 export default function VerificationScreen() {
   const router = useRouter();
-  // Only email is required to verify
-  const { email } = useLocalSearchParams();
+  // Email and userId are required to verify
+  const { email, userId } = useLocalSearchParams();
 
   return (
-    <View className="flex-1 bg-neutral-950">
+    <View className="flex-1 bg-gray-50">
       <TouchableOpacity
         onPress={() => {
           router.back();
@@ -27,7 +27,7 @@ export default function VerificationScreen() {
           style={{ width: 90, height: 90, resizeMode: "contain" }}
           className="mb-4 mt-[-40%]"
         />
-        <OTPCard email={email as string} />
+        <OTPCard email={email as string} userId={userId as string} />
       </View>
     </View>
   );

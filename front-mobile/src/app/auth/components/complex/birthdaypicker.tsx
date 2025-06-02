@@ -31,6 +31,52 @@ export default function BirthdayPicker({
     }
   }, [isBirthdayPickerVisible]);
 
+  const handleDateSelect = (date: any) => {
+    try {
+      console.log("Raw date from picker:", date, typeof date);
+
+      let formattedDate: string;
+
+      if (typeof date === "string") {
+        // If it's already a string, use it
+        formattedDate = date;
+      } else if (date && typeof date === "object") {
+        // If it's an object (moment-like), try to extract the date string
+        if (date._i) {
+          formattedDate = date._i; // moment.js initial value
+        } else if (date.toString) {
+          formattedDate = date.toString();
+        } else {
+          // Fallback to ISO date
+          formattedDate = new Date().toISOString().split("T")[0];
+        }
+      } else {
+        // Fallback to current date
+        formattedDate = new Date().toISOString().split("T")[0];
+      }
+
+      // Ensure the date is in YYYY-MM-DD format
+      if (formattedDate && !formattedDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Try to parse and reformat
+        const parsedDate = new Date(formattedDate);
+        if (!isNaN(parsedDate.getTime())) {
+          formattedDate = parsedDate.toISOString().split("T")[0];
+        } else {
+          // If parsing fails, use current date
+          formattedDate = new Date().toISOString().split("T")[0];
+        }
+      }
+
+      console.log("Formatted date:", formattedDate);
+      onSelectDate(formattedDate);
+    } catch (error) {
+      console.error("Error processing selected date:", error);
+      // Fallback to current date if there's an error
+      const today = new Date().toISOString().split("T")[0];
+      onSelectDate(today);
+    }
+  };
+
   return (
     <Modal
       animationType="none"
@@ -44,18 +90,18 @@ export default function BirthdayPicker({
           <TouchableWithoutFeedback>
             <Animated.View
               style={{
-                transform: [{ translateY: slideAnim }], //TODO: the animation has a slight issue when sliding in
+                transform: [{ translateY: slideAnim }],
                 padding: 16,
                 borderRadius: 10,
               }}
             >
               <DatePicker
-                onSelectedChange={(date) => {
-                  onSelectDate(date);
-                }}
+                onSelectedChange={handleDateSelect}
                 mode="calendar"
                 style={datePickerStyles}
                 options={datePickerOptions}
+                current="2000-01-01"
+                selected="2000-01-01"
               />
             </Animated.View>
           </TouchableWithoutFeedback>

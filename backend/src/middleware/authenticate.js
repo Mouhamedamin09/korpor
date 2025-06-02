@@ -44,34 +44,6 @@ exports.authenticate = async (req, res, next) => {
     // Extract the token
     const token = authHeader.split(" ")[1];
 
-    // Handle mock tokens in development
-    if (process.env.NODE_ENV === "development" && token.startsWith("mock-token-user-")) {
-      const userId = parseInt(token.replace("mock-token-user-", ""));
-      console.log(`[AUTH] Using mock token for user ID: ${userId}`);
-      
-      // Find user
-      const user = await User.findByPk(userId);
-      if (!user) {
-        console.log(`[AUTH] Mock user with ID ${userId} not found in database`);
-        return res.status(401).json({
-          success: false,
-          message: "Authentication failed. User not found.",
-          error: "user_not_found",
-        });
-      }
-
-      // Attach user info to request
-      req.user = {
-        id: user.id,
-        userId: user.id,
-        email: user.email,
-        roleId: user.roleId,
-      };
-
-      console.log(`[AUTH] Mock authentication successful for user ID: ${user.id}, email: ${user.email}`);
-      return next();
-    }
-
     // Debug info for token issues
     const tokenInfo = decodeToken(token);
     console.log(`[AUTH] Token info:`, JSON.stringify(tokenInfo, null, 2));
@@ -82,7 +54,9 @@ exports.authenticate = async (req, res, next) => {
       const timeUntilExpiry = tokenInfo.decoded.exp - Date.now() / 1000;
       if (timeUntilExpiry > 0 && timeUntilExpiry < tenMinutesInSeconds) {
         console.log(
-          `[AUTH] Token will expire soon: ${Math.floor(timeUntilExpiry)} seconds remaining`,
+          `[AUTH] Token will expire soon: ${Math.floor(
+            timeUntilExpiry
+          )} seconds remaining`
         );
       }
     }
@@ -122,7 +96,7 @@ exports.authenticate = async (req, res, next) => {
     const user = await User.findByPk(decoded.userId);
     if (!user) {
       console.log(
-        `[AUTH] User with ID ${decoded.userId} from token not found in database`,
+        `[AUTH] User with ID ${decoded.userId} from token not found in database`
       );
       return res.status(401).json({
         success: false,
@@ -133,7 +107,7 @@ exports.authenticate = async (req, res, next) => {
 
     // Log authentication success
     console.log(
-      `[AUTH] Authentication successful for user ID: ${user.id}, email: ${user.email}`,
+      `[AUTH] Authentication successful for user ID: ${user.id}, email: ${user.email}`
     );
 
     // Attach user info to request

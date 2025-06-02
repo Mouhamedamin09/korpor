@@ -7,7 +7,6 @@ import React from "react";
 import { Pressable, View, Text, Image, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Feather from "react-native-vector-icons/Feather";
-import { useRouter } from "expo-router";
 export type ThemeKey = "diversified" | "growth" | "income";
 
 interface Props {
@@ -39,23 +38,10 @@ const ThemeCard: React.FC<Props> = ({
   amount,
 }) => {
   const fadeTint = accentColor + "33"; // 20 % alpha tint
-  const router = useRouter();
-
-  const handlePress = () => {
-    // Build URL with theme and optional amount
-    const params = new URLSearchParams({ theme: id });
-    if (amount !== undefined) {
-      params.append("amount", amount.toString());
-    }
-
-    router.push(
-      `/main/components/wallet/walletscreens/ThemeDetails?${params.toString()}`
-    );
-  };
 
   return (
     <TouchableOpacity
-      onPress={handlePress}
+      onPress={() => onSelect(id)}
       className={`rounded-2xl mb-4 overflow-hidden ${
         selected ? "border-2 border-[#10B981]" : "border border-gray-200"
       }`}
