@@ -1,7 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import API_URL from "../../../shared/constants/api";
-import { authService } from "./authService";
 import axios from "axios";
+import { authService } from "./authService";
 import { authStore } from "./authStore";
 
 interface SignInCredentials {
@@ -10,50 +9,30 @@ interface SignInCredentials {
 }
 
 interface SignInResponse {
-  message: string;
   accessToken: string;
   refreshToken: string;
-  user: {
-    id: number;
-    accountNo: string;
-    name: string;
-    surname: string;
-    email: string;
-    profilePicture: string;
-    lastLogin: string;
-  };
-  role: string;
-  privileges: string[];
-  deviceInfo: {
-    deviceId: string;
-    browser: string;
-    os: string;
-    location: string;
-  };
-  dashboardRoute: string;
+  user: any;
+  role?: string;
+  requires2FA?: boolean;
+  userId?: string;
+  email?: string;
+  message?: string;
 }
 
-interface TwoFactorRequiredResponse {
-  message: string;
-  requires2FA: boolean;
-  userId: number;
-  email: string;
-  tempSession: boolean;
-}
-
-// Custom error class for 2FA required
-export class TwoFactorRequiredError extends Error {
-  public requires2FA: boolean = true;
-  public userId: number;
+class TwoFactorRequiredError extends Error {
+  public requires2FA = true;
+  public userId: string;
   public email: string;
 
-  constructor(message: string, userId: number, email: string) {
+  constructor(message: string, userId: string, email: string) {
     super(message);
     this.name = "TwoFactorRequiredError";
     this.userId = userId;
     this.email = email;
   }
 }
+
+export { TwoFactorRequiredError };
 
 export const signin = async (
   credentials: SignInCredentials
@@ -96,87 +75,43 @@ export const signin = async (
       throw error;
     }
 
-    // Store authentication data using the new AuthService (primary method)
+    // Store complete authentication data using authService for consistency
     await authService.storeAuthData({
       accessToken: data.accessToken,
       refreshToken: data.refreshToken,
       user: data.user,
-      role: data.role,
+      role: data.role || "user",
     });
 
-    // Also store in authStore for compatibility with new backend features
-    try {
-      const store = authStore.getState();
-      await store.setTokens(data.accessToken, data.refreshToken);
-    } catch (storeError) {
-      console.warn("Warning: Could not store tokens in authStore:", storeError);
-      // Continue since authService storage succeeded
-    }
-
-    console.log("✅ SIGNIN SERVICE: Authentication data stored successfully");
+    console.log(
+      "✅ SIGNIN SERVICE: Complete authentication data stored in SecureStore successfully"
+    );
 
     return data;
-  } catch (error: any) {
-    console.error("🔥 SIGNIN SERVICE: Error in signin service:", error);
-    console.log("🔍 SIGNIN SERVICE: Error type check:", {
-      name: error.name,
-      requires2FA: error.requires2FA,
-      isInstance: error instanceof TwoFactorRequiredError,
-      typeof: typeof error,
-    });
-
-    // Re-throw TwoFactorRequiredError as-is with additional property checks
-    if (
-      error instanceof TwoFactorRequiredError ||
-      error?.requires2FA ||
-      error?.name === "TwoFactorRequiredError"
-    ) {
-      console.log("🔄 Re-throwing 2FA error:", {
-        name: error.name,
-        requires2FA: error.requires2FA,
-        userId: error.userId,
-        email: error.email,
-      });
-      console.log("🚀 SIGNIN SERVICE: Re-throwing 2FA error to LoginCard");
+  } catch (error) {
+    if (error instanceof TwoFactorRequiredError) {
+      // Re-throw 2FA errors
       throw error;
     }
 
-    // Handle axios errors
+    console.error("❌ SIGNIN SERVICE: Error during signin:", error);
+
     if (axios.isAxiosError(error)) {
       if (error.response) {
-        // Server responded with error status
-        const status = error.response.status;
-        const message = error.response.data?.message || error.message;
-
-        if (status === 401) {
-          throw new Error("Invalid email or password");
-        } else if (status === 403) {
-          throw new Error(
-            message || "Account not verified or pending approval"
-          );
-        } else if (status === 423) {
-          throw new Error(
-            "Account temporarily locked. Please try again later."
-          );
-        }
-        throw new Error(message || "Sign in failed");
+        throw error.response.data || { message: "Signin failed" };
       } else if (error.request) {
-        // Network error
-        console.log("🌐 SIGNIN SERVICE: Network error detected");
-        throw new Error(
-          "Unable to connect to the server. Please check your internet connection."
-        );
+        throw { message: "Network error - please check your connection" };
       }
     }
 
-    console.log("⚠️ SIGNIN SERVICE: Throwing generic error");
-    throw error;
+    throw { message: "Signin failed - please try again" };
   }
 };
 
-// Function to retrieve the token (compatibility function)
-export const getAuthToken = async () => {
+// Function to retrieve the token from SecureStore
+export const getAuthToken = async (): Promise<string | null> => {
   try {
+    // Use authService to get valid access token
     return await authService.getValidAccessToken();
   } catch (error) {
     console.error("Error retrieving auth token:", error);
@@ -184,11 +119,12 @@ export const getAuthToken = async () => {
   }
 };
 
-// Function to remove the token (Logout)
-export const removeAuthToken = async () => {
+// Function to clear tokens (logout)
+export const clearAuthTokens = async (): Promise<void> => {
   try {
     await authService.logout();
+    console.log("✅ Auth tokens cleared from SecureStore");
   } catch (error) {
-    console.error("Error removing auth token:", error);
+    console.error("Error clearing auth tokens:", error);
   }
 };

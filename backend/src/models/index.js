@@ -12,10 +12,11 @@ const Transaction = require("./Transaction");
 const AutoInvest = require("./AutoInvest");
 const AutoReinvest = require("./AutoReinvest");
 const RentalPayout = require("./RentalPayout");
+const Investment = require("./Investment");
 const setupAssociations = require("./associations");
 
-// Set up model associations
-setupAssociations();
+// Note: setupAssociations is called in server.js after database connection
+// to avoid duplicate association errors
 
 // Function to sync all models with database
 const syncModels = async (force = false) => {
@@ -45,4 +46,5 @@ module.exports = {
   AutoInvest,
   AutoReinvest,
   RentalPayout,
+  Investment,
 };

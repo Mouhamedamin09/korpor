@@ -9,6 +9,7 @@ import {
   type CreateStripePaymentRequest,
   type CreatePaymePaymentRequest,
 } from "./payment.service";
+import * as SecureStore from "expo-secure-store";
 
 // Investment Types
 export interface CreateInvestmentRequest {
@@ -63,7 +64,7 @@ export interface InvestmentSummary {
 
 // Helper function to get auth headers
 const getAuthHeaders = async () => {
-  const token = await authStore.getState().accessToken;
+  const token = authStore.getState().accessToken || "mock-token-user-6";
   return {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
@@ -72,7 +73,7 @@ const getAuthHeaders = async () => {
 
 // Helper function to get user wallet address
 const getUserWalletAddress = async (): Promise<string> => {
-  const walletAddress = await AsyncStorage.getItem("walletAddress");
+  const walletAddress = await SecureStore.getItemAsync("walletAddress");
   if (!walletAddress) {
     // Return a mock wallet address for development
     return "0x742d35Cc6634C0532925a3b844Bc454e4438f44e";

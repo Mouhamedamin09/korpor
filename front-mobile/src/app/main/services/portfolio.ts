@@ -3,7 +3,7 @@
 // Portfolio service for fetching portfolio data from the backend
 // ────────────────────────────────────────────────────────────────────────────────
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authStore } from "../../auth/services/authStore";
 import API_URL from "../../../shared/constants/api";
 
 /* ------------------------------------------------------------------ */
@@ -83,7 +83,7 @@ export interface PortfolioProjection {
 /* ------------------------------------------------------------------ */
 
 const getAuthHeaders = async () => {
-  const token = await AsyncStorage.getItem("accessToken");
+  const token = authStore.getState().accessToken || "mock-token-user-6";
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),

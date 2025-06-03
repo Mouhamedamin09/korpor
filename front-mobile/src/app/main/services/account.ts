@@ -1,9 +1,7 @@
 // services/account.ts
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authStore } from "@auth/services/authStore";
 import API_URL from "../../../shared/constants/api";
 import { apiService } from "../../services/apiService";
-import { authService } from "../../auth/services/authService";
 
 export interface VerificationProgress {
   completed: number;
@@ -34,12 +32,23 @@ export interface CloseAccountResponse {
   warnings?: string[];
 }
 
-/** API call using the new ApiService with automatic token refresh */
+// Get authentication token from SecureStore
+const getAuthToken = async (): Promise<string | null> => {
+  try {
+    await authStore.getState().loadTokens();
+    return authStore.getState().accessToken;
+  } catch (error) {
+    console.error("Error getting auth token:", error);
+    return null;
+  }
+};
+
+/** API call using SecureStore authentication */
 export const fetchAccountData = async (): Promise<AccountData> => {
   try {
     console.log("[Account] Fetching profile data...");
 
-    // Use your robust apiService implementation as primary method
+    // Use apiService with SecureStore token
     const data = await apiService.get<AccountData>("/api/user/profile");
 
     console.log("[Account] ✅ Profile data received");
@@ -65,8 +74,7 @@ export const fetchAccountData = async (): Promise<AccountData> => {
     try {
       console.log("[Account] Trying fallback API call...");
 
-      // Get the JWT token from authStore as fallback
-      const token = authStore.getState().accessToken;
+      const token = await getAuthToken();
       console.log(
         "Token from authStore:",
         token ? "Token exists" : "No token found"
@@ -124,7 +132,7 @@ export const fetchAccountData = async (): Promise<AccountData> => {
   }
 };
 
-/** Update account data using the new ApiService */
+/** Update account data using apiService */
 export const updateAccountData = async (
   updates: Partial<AccountData>
 ): Promise<AccountData> => {
@@ -146,7 +154,7 @@ export const updateAccountData = async (
   }
 };
 
-/** Upload profile picture using the new ApiService */
+/** Upload profile picture using apiService */
 export const uploadProfilePicture = async (
   imageFile: FormData
 ): Promise<{ profilePicture: string }> => {
@@ -168,26 +176,6 @@ export const uploadProfilePicture = async (
         : "Failed to upload profile picture"
     );
   }
-};
-
-/** Get current user from AuthService */
-export const getCurrentUser = async (): Promise<any | null> => {
-  return await authService.getCurrentUser();
-};
-
-/** Get current user role from AuthService */
-export const getCurrentUserRole = async (): Promise<string | null> => {
-  return await authService.getCurrentUserRole();
-};
-
-/** Check if user is authenticated using AuthService */
-export const isUserAuthenticated = async (): Promise<boolean> => {
-  return await authService.isAuthenticated();
-};
-
-// Legacy function for backward compatibility
-const getAuthToken = async (): Promise<string | null> => {
-  return await authService.getValidAccessToken();
 };
 
 // Helper function to format currency
@@ -252,13 +240,7 @@ export async function closeAccount(
     console.log("✅ Account closed successfully");
 
     // Clear all stored authentication data
-    await AsyncStorage.multiRemove([
-      "accessToken",
-      "refreshToken",
-      "userData",
-      "userRole",
-      "2fa_backup_codes",
-    ]);
+    await authStore.getState().clearTokens();
 
     return {
       success: true,
@@ -271,3 +253,18 @@ export async function closeAccount(
     );
   }
 }
+
+export const logout = async (): Promise<{ success: boolean }> => {
+  try {
+    console.log("🔐 Starting logout process...");
+
+    // Clear all authentication data using authStore
+    await authStore.getState().clearTokens();
+
+    console.log("✅ Logout completed successfully");
+    return { success: true };
+  } catch (error) {
+    console.error("❌ Logout error:", error);
+    return { success: false };
+  }
+};

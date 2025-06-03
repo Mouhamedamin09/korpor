@@ -4,11 +4,13 @@ const Project = require("./Project");
 const PropertyImage = require("./PropertyImage");
 const ProjectDocument = require("./ProjectDocument");
 const Verification = require("./Verification");
+const Referral = require("./Referral");
 const Wallet = require("./Wallet");
 const Transaction = require("./Transaction");
 const AutoInvest = require("./AutoInvest");
 const AutoReinvest = require("./AutoReinvest");
 const RentalPayout = require("./RentalPayout");
+const Investment = require("./Investment");
 
 // Set up associations
 const setupAssociations = () => {
@@ -22,6 +24,31 @@ const setupAssociations = () => {
   Role.hasMany(User, {
     foreignKey: "role_id",
     as: "users",
+  });
+
+  // ========== REFERRAL ASSOCIATIONS ==========
+  // User has many Referrals as referrer
+  User.hasMany(Referral, {
+    foreignKey: "referrer_id",
+    as: "referralsAsReferrer",
+  });
+
+  // User has many Referrals as referee
+  User.hasMany(Referral, {
+    foreignKey: "referee_id",
+    as: "referralsAsReferee",
+  });
+
+  // Referral belongs to User (referrer)
+  Referral.belongsTo(User, {
+    foreignKey: "referrer_id",
+    as: "referrer",
+  });
+
+  // Referral belongs to User (referee)
+  Referral.belongsTo(User, {
+    foreignKey: "referee_id",
+    as: "referee",
   });
 
   // User has one Verification
@@ -70,6 +97,43 @@ const setupAssociations = () => {
   Transaction.belongsTo(Wallet, {
     foreignKey: "wallet_id",
     as: "wallet",
+  });
+
+  // Investment Associations
+  // User has many Investments
+  User.hasMany(Investment, {
+    foreignKey: "user_id",
+    as: "investments",
+  });
+
+  // Investment belongs to User
+  Investment.belongsTo(User, {
+    foreignKey: "user_id",
+    as: "investor",
+  });
+
+  // Project has many Investments
+  Project.hasMany(Investment, {
+    foreignKey: "project_id",
+    as: "investments",
+  });
+
+  // Investment belongs to Project
+  Investment.belongsTo(Project, {
+    foreignKey: "project_id",
+    as: "project",
+  });
+
+  // Investment belongs to Transaction (wallet deduction)
+  Investment.belongsTo(Transaction, {
+    foreignKey: "transaction_id",
+    as: "transaction",
+  });
+
+  // Transaction can have one Investment
+  Transaction.hasOne(Investment, {
+    foreignKey: "transaction_id",
+    as: "investment",
   });
 
   // User has many AutoInvest plans
@@ -210,7 +274,7 @@ const setupAssociations = () => {
     as: "documentCreator",
   });
 
-  console.log("Model associations have been set up");
+  console.log("✅ All model associations set up successfully");
 };
 
 module.exports = setupAssociations;

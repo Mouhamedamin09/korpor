@@ -16,10 +16,8 @@ export default function Signup() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Back Button Header */}
-
       {/* Main Content */}
-      <View className="flex-1 justify-center items-center px-4">
+      <View className="flex-1 justify-center items-center px-4 mt-8">
         <Image
           source={Logo}
           className="w-28 h-28 mb-6"

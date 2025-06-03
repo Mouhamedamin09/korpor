@@ -67,7 +67,7 @@ export default function OTPInput({ otp, setOtp }: OTPInputProps) {
   /* ────────────── render ────────────── */
 
   return (
-    <View className="flex-row justify-center gap-x-3">
+    <View className="flex-row justify-center ">
       {otp.map((digit, idx) => (
         <TextInput
           key={idx}

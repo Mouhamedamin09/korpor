@@ -1,10 +1,15 @@
-import { View, Text } from "react-native";
-import { CartHeader, CartItem } from "../components/complex";
+import { View, Text, SafeAreaView } from "react-native";
+import { router } from "expo-router";
+import TopBar from "@/app/main/components/profileScreens/components/ui/TopBar";
+import { CartItem } from "../components/complex";
+
 export default function CartScreen() {
   return (
-    <View className="bg-primary-foreground">
-      <CartHeader />
-      <CartItem />
-    </View>
+    <SafeAreaView className="flex-1 bg-primary-foreground">
+      <TopBar title="Shopping Cart" onBackPress={() => router.back()} />
+      <View className="flex-1">
+        <CartItem />
+      </View>
+    </SafeAreaView>
   );
 }

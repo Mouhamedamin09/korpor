@@ -1,6 +1,7 @@
 // @main/services/TwoFactor.ts
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authStore } from "../../auth/services/authStore";
+import * as SecureStore from "expo-secure-store";
 import API_URL from "../../../shared/constants/api";
 
 export interface AuthSetupResponse {
@@ -8,6 +9,11 @@ export interface AuthSetupResponse {
   otpauthUrl: string; // otpauth:// URL for QR
   qrCode?: string; // Base64 encoded QR code image
   manualEntryKey?: string; // Manual entry key
+}
+
+export interface AuthVerifyResponse {
+  success: boolean;
+  backupCodes?: string[];
 }
 
 export interface TwoFactorStatus {
@@ -18,10 +24,11 @@ export interface TwoFactorStatus {
 // Get authentication token
 const getAuthToken = async (): Promise<string | null> => {
   try {
-    return await AsyncStorage.getItem("accessToken");
+    const token = authStore.getState().accessToken;
+    return token || "mock-token-user-6"; // Fallback for development
   } catch (error) {
     console.error("Error getting auth token:", error);
-    return null;
+    return "mock-token-user-6";
   }
 };
 
@@ -106,7 +113,7 @@ export async function verifyAuthCode(
 
     // Store backup codes if provided
     if (data.data && data.data.backupCodes) {
-      await AsyncStorage.setItem(
+      await SecureStore.setItemAsync(
         "2fa_backup_codes",
         JSON.stringify(data.data.backupCodes)
       );
@@ -232,7 +239,7 @@ export async function regenerateBackupCodes(
 
     // Store new backup codes
     if (data.data && data.data.backupCodes) {
-      await AsyncStorage.setItem(
+      await SecureStore.setItemAsync(
         "2fa_backup_codes",
         JSON.stringify(data.data.backupCodes)
       );
@@ -250,7 +257,7 @@ export async function regenerateBackupCodes(
  */
 export async function getBackupCodes(): Promise<string[]> {
   try {
-    const codes = await AsyncStorage.getItem("2fa_backup_codes");
+    const codes = await SecureStore.getItemAsync("2fa_backup_codes");
     return codes ? JSON.parse(codes) : [];
   } catch (error) {
     console.error("❌ Error getting backup codes:", error);

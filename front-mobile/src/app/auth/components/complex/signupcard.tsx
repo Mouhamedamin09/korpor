@@ -23,33 +23,30 @@ import BirthdayPicker from "./birthdaypicker";
 export default function SignupCard() {
   const router = useRouter();
 
-  /* ────────────── state ────────────── */
   const [isBirthdayPickerVisible, setIsBirthdayPickerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  /* ────────────── helpers ────────────── */
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const phoneRegex = /^\+\d{1,4}\s?\d{4,}$/; // e.g. +216 12345678
+  const phoneRegex = /^\+\d{1,4}\s?\d{4,}$/;
 
   const handleSignup = () => {
-    // reset any previous error
     setErrorMessage("");
 
-    // trim once
     const trimmed = {
       name: name.trim(),
       surname: surname.trim(),
       email: email.trim(),
       phone: phone.trim(),
       birthdate: selectedDate.trim(),
+      referralCode: referralCode.trim(),
     };
 
-    // required checks
     if (
       !trimmed.name ||
       !trimmed.surname ||
@@ -71,14 +68,12 @@ export default function SignupCard() {
       return;
     }
 
-    // all good → next step
     router.push({
       pathname: "/auth/screens/Signup/password",
       params: trimmed,
     });
   };
 
-  /* ────────────── render ────────────── */
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -88,16 +83,10 @@ export default function SignupCard() {
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        /* Center children horizontally */
         contentContainerStyle={{ alignItems: "center" }}
         className="px-4"
       >
-        {/* Card */}
-        <View
-          className="w-full max-w-[420px] mt-8 mb-10 bg-white rounded-2xl
-                     border border-gray-200 shadow-sm p-6 self-center"
-        >
-          {/* Headline */}
+        <View className="w-full max-w-[420px] mt-8 mb-10 bg-white rounded-2xl border border-gray-200 shadow-sm p-6 self-center">
           <Text className="text-3xl font-bold text-gray-900 mb-1">
             Create an account
           </Text>
@@ -105,14 +94,12 @@ export default function SignupCard() {
             Enter your information below to get started
           </Text>
 
-          {/* Names */}
           <View className="flex-row justify-between">
             <View className="flex-1">
               <Input
                 placeholder="First name"
                 value={name}
                 onChangeText={setName}
-                autoCapitalize="words"
               />
             </View>
             <View className="w-4" />
@@ -121,77 +108,70 @@ export default function SignupCard() {
                 placeholder="Last name"
                 value={surname}
                 onChangeText={setSurname}
-                autoCapitalize="words"
               />
             </View>
           </View>
 
-          {/* Email */}
           <EmailInput
             placeholder="Email"
             value={email}
             onChangeText={setEmail}
-            keyboardType="email-address"
           />
 
-          {/* Phone */}
-          <PhoneNumberInput
-            placeholder="+216 12345678"
-            value={phone}
-            onChangeText={setPhone}
-          />
+          <PhoneNumberInput value={phone} onChangeText={setPhone} />
 
-          {/* Birthday */}
           <DateInput
             value={selectedDate}
             placeholder="Birthday"
             onPress={() => setIsBirthdayPickerVisible(true)}
           />
 
-          {/* Call-to-action */}
-          <OutlinedButtonSm
-            title="Continue"
-            onPress={handleSignup}
-            extraStyle="mt-2"
+          <Input
+            placeholder="Referral Code (Optional)"
+            value={referralCode}
+            onChangeText={setReferralCode}
           />
 
-          {/* Validation / API error */}
+          <OutlinedButtonSm title="Continue" onPress={handleSignup} />
+
           {errorMessage ? (
             <Text className="text-red-500 text-sm mt-2">{errorMessage}</Text>
           ) : null}
 
-          {/* Divider */}
           <DividerWithText text="OR" />
 
-          {/* Google sign-in */}
           <GoogleButton
             text="Continue with Google"
             onPress={() => console.log("Google sign-in")}
           />
 
-          {/* Birthday modal */}
           <BirthdayPicker
             isBirthdayPickerVisible={isBirthdayPickerVisible}
-            onSelectDate={(date) => {
-              setSelectedDate(date);
+            onSelectDate={(rawDate) => {
+              const d = new Date(rawDate);
+              d.setDate(d.getDate() + 1);
+              const year = d.getFullYear();
+              const month = String(d.getMonth() + 1).padStart(2, "0");
+              const day = String(d.getDate()).padStart(2, "0");
+              const localString = `${year}-${month}-${day}`;
+              setSelectedDate(localString);
               setIsBirthdayPickerVisible(false);
             }}
             setIsBirthdayPickerVisible={setIsBirthdayPickerVisible}
           />
 
-          {/* Terms */}
           <Text className="text-gray-500 text-sm text-center mt-4">
             By continuing you agree to our{" "}
           </Text>
           <View className="flex-row justify-center">
             <PressableText
               text="Terms of Service"
-              onPress={() => console.log("ToS")}
+              onPress={() => console.log("still working on it")}
             />
             <Text className="text-gray-500 text-sm mx-1">and</Text>
             <PressableText
               text="Privacy Policy"
-              onPress={() => console.log("PP")}
+              onPress={() => console.log("still working on it")}
             />
           </View>
         </View>

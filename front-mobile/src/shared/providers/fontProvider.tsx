@@ -1,33 +1,37 @@
-import { useFonts } from 'expo-font';
-import { View, Text } from 'react-native';
-import * as SplashScreen from 'expo-splash-screen';
-import { useCallback } from 'react';
-import {
-  Inter_100Thin,
-  Inter_200ExtraLight,
-  Inter_300Light,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  Inter_800ExtraBold,
-  Inter_900Black,
-} from '@expo-google-fonts/inter';
+import { useFonts } from "expo-font";
+import { View, Text } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
+import { useCallback } from "react";
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
 export function FontProvider({ children }: { children: React.ReactNode }) {
   const [fontsLoaded, fontError] = useFonts({
-    'Inter-Thin': Inter_100Thin,
-    'Inter-ExtraLight': Inter_200ExtraLight,
-    'Inter-Light': Inter_300Light,
-    'Inter-Regular': Inter_400Regular,
-    'Inter-Medium': Inter_500Medium,
-    'Inter-SemiBold': Inter_600SemiBold,
-    'Inter-Bold': Inter_700Bold,
-    'Inter-ExtraBold': Inter_800ExtraBold,
-    'Inter-Black': Inter_900Black,
+    // Poppins font family - perfect for real estate apps
+    "Poppins-Thin": require("../../assets/fonts/poppins/Poppins-Thin.ttf"),
+    "Poppins-ExtraLight": require("../../assets/fonts/poppins/Poppins-ExtraLight.ttf"),
+    "Poppins-Light": require("../../assets/fonts/poppins/Poppins-Light.ttf"),
+    "Poppins-Regular": require("../../assets/fonts/poppins/Poppins-Regular.ttf"),
+    "Poppins-Medium": require("../../assets/fonts/poppins/Poppins-Medium.ttf"),
+    "Poppins-SemiBold": require("../../assets/fonts/poppins/Poppins-SemiBold.ttf"),
+    "Poppins-Bold": require("../../assets/fonts/poppins/Poppins-Bold.ttf"),
+    "Poppins-ExtraBold": require("../../assets/fonts/poppins/Poppins-ExtraBold.ttf"),
+    "Poppins-Black": require("../../assets/fonts/poppins/Poppins-Black.ttf"),
+
+    // Italic variants for emphasis
+    "Poppins-ThinItalic": require("../../assets/fonts/poppins/Poppins-ThinItalic.ttf"),
+    "Poppins-ExtraLightItalic": require("../../assets/fonts/poppins/Poppins-ExtraLightItalic.ttf"),
+    "Poppins-LightItalic": require("../../assets/fonts/poppins/Poppins-LightItalic.ttf"),
+    "Poppins-Italic": require("../../assets/fonts/poppins/Poppins-Italic.ttf"),
+    "Poppins-MediumItalic": require("../../assets/fonts/poppins/Poppins-MediumItalic.ttf"),
+    "Poppins-SemiBoldItalic": require("../../assets/fonts/poppins/Poppins-SemiBoldItalic.ttf"),
+    "Poppins-BoldItalic": require("../../assets/fonts/poppins/Poppins-BoldItalic.ttf"),
+    "Poppins-ExtraBoldItalic": require("../../assets/fonts/poppins/Poppins-ExtraBoldItalic.ttf"),
+    "Poppins-BlackItalic": require("../../assets/fonts/poppins/Poppins-BlackItalic.ttf"),
+
+    // Keep Arial Rounded for special accents if needed
+    ArialRoundedBold: require("../../assets/fonts/arialroundedmtbold.ttf"),
   });
 
   const onLayoutRootView = useCallback(async () => {
@@ -41,9 +45,9 @@ export function FontProvider({ children }: { children: React.ReactNode }) {
   }
 
   if (fontError) {
-    console.error('Error loading fonts:', fontError);
+    console.error("Error loading fonts:", fontError);
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <Text>Error loading fonts</Text>
       </View>
     );
@@ -54,4 +58,4 @@ export function FontProvider({ children }: { children: React.ReactNode }) {
       {children}
     </View>
   );
-} 
+}

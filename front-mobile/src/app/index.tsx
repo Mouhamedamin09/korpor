@@ -23,7 +23,7 @@ export default function App() {
   useEffect(() => {
     const checkAuthentication = async () => {
       try {
-        console.log("🔍 App: Checking authentication status...");
+        //is user already authenticated?
 
         const isAuthenticated = await authService.isAuthenticated();
 
@@ -33,11 +33,12 @@ export default function App() {
           return;
         }
 
-        console.log("❌ App: User not authenticated, showing landing page");
+        console.log("App: User not authenticated, showing landing page");
       } catch (error) {
-        console.error("❌ App: Error checking authentication:", error);
-        // On error, show landing page
+        console.error("App: Error checking authentication:", error);
+        // if error, show landing page
       } finally {
+        // set is checking auth to false
         setIsCheckingAuth(false);
       }
     };
@@ -59,17 +60,9 @@ export default function App() {
     );
   }
 
-  const testBiometric = async () => {
-    const result = await handleBiometricAuth();
-    if (result.success) {
-      // Navigate or perform action on success
-      router.push("main/screens/(tabs)/properties");
-    }
-  };
-
   return (
     <View className="flex-1 bg-background justify-between items-center">
-      <StatusBar style="dark" translucent backgroundColor="transparent" />
+      <StatusBar style="dark" backgroundColor="transparent" />
       <View className="flex-1">
         <View className="my-auto pb-80">
           <Image
@@ -84,16 +77,6 @@ export default function App() {
       </View>
 
       <View className="w-[90%]">
-        {/* Biometric Test Button */}
-        <SolidButtonLg title="biometric test" onPress={testBiometric} />
-
-        {/* Other Navigation Buttons */}
-        <SolidButtonLg
-          title="main app(temp)"
-          onPress={() => {
-            router.replace("main/screens/(tabs)/properties");
-          }}
-        />
         <SolidButtonLg
           title="Signup"
           onPress={() => {

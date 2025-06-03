@@ -74,7 +74,7 @@ const PhoneNumberInput: FC<PhoneNumberInputProps> = ({
     setShowCountryPicker(false);
 
     // Update the formatted number with new country code
-    const formattedNumber = `${country.dialCode} ${phoneNumber}`.trim();
+    const formattedNumber = `${country.dialCode}${phoneNumber}`.trim();
     onChangeText(formattedNumber);
   };
 
@@ -110,7 +110,7 @@ const PhoneNumberInput: FC<PhoneNumberInputProps> = ({
 
           {/* Phone Number Input */}
           <TextInput
-            className="flex-1 px-3 text-base text-text bg-background"
+            className="flex-1 px-3 pb-2 text-base text-text bg-background"
             placeholder="12 345 678"
             placeholderTextColor="#A0A0A0"
             value={phoneNumber}
@@ -140,9 +140,7 @@ const PhoneNumberInput: FC<PhoneNumberInputProps> = ({
                 onPress={() => setShowCountryPicker(false)}
                 className="px-4 py-2"
               >
-                <Text className="text-blue-500 text-base font-medium">
-                  Done
-                </Text>
+                <Text className="text-black text-base font-medium">Done</Text>
               </TouchableOpacity>
             </View>
 

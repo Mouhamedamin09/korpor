@@ -34,7 +34,7 @@ class AutoInvestScheduler {
       },
       {
         scheduled: true,
-        timezone: "Europe/Tunis", // Adjust timezone as needed
+        timezone: "Africa/Tunis", // Tunisia timezone
       }
     );
 

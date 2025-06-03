@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const moment = require("moment");
 const User = require("../models/User");
 const Role = require("../models/Role");
+const Referral = require("../models/Referral");
 const { generateOTP } = require("../middleware/otpMiddleware");
 const { blacklistToken } = require("../middleware/auth");
 const {
@@ -12,6 +13,29 @@ const {
 } = require("../middleware/loginLimiter");
 const { Buffer } = require("buffer");
 const { sendVerificationEmail } = require("../config/email.config");
+const crypto = require("crypto");
+const {
+  checkAndProcessPendingReferralRewards,
+} = require("../services/referralRewardService");
+
+// Helper: Generate unique referral code
+const generateReferralCode = async () => {
+  let code;
+  let isUnique = false;
+
+  while (!isUnique) {
+    // Generate a random 8-character alphanumeric code (uppercase + numbers)
+    code = crypto.randomBytes(4).toString("hex").toUpperCase();
+
+    // Check if it's unique
+    const existingUser = await User.findOne({ where: { referralCode: code } });
+    if (!existingUser) {
+      isUnique = true;
+    }
+  }
+
+  return code;
+};
 
 // Helper: Generate tokens (access and refresh)
 const generateTokens = (user) => {
@@ -54,8 +78,16 @@ const generateTokens = (user) => {
  */
 exports.signUp = async (req, res) => {
   try {
-    const { name, surname, email, password, birthdate, phone, requestedRole } =
-      req.body;
+    const {
+      name,
+      surname,
+      email,
+      password,
+      birthdate,
+      phone,
+      requestedRole,
+      referralCode,
+    } = req.body;
 
     // Validate inputs
     if (!name || !surname || !email || !password || !birthdate) {
@@ -70,7 +102,7 @@ exports.signUp = async (req, res) => {
     });
 
     if (existingUser) {
-      // Check if user exists but never verified their email
+      // Check if user exists but never verified thierr email
       if (!existingUser.isVerified) {
         // Check if verification code is expired
         const isExpired =
@@ -99,7 +131,6 @@ exports.signUp = async (req, res) => {
             { where: { email } }
           );
 
-          // Try to send verification email, but don't block the response
           sendVerificationEmail(
             email,
             verificationCode,
@@ -117,6 +148,7 @@ exports.signUp = async (req, res) => {
               id: existingUser.id,
               email: existingUser.email,
               phone: existingUser.phone,
+              //aprovel state is where the user is in the approval process (pending, approved, rejected)
               approval_status: existingUser.approvalStatus,
             },
           });
@@ -140,14 +172,20 @@ exports.signUp = async (req, res) => {
     // New user registration
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate account number (example: current timestamp last 8 digits)
+    //genarete account number
     const accountNo = parseInt(Date.now().toString().slice(-8));
 
-    // Generate verification code
+    //generate verification code
     const { otp: verificationCode, expiry: expiryTime } = generateOTP({
       digits: 4,
       expiryMinutes: 10,
     });
+
+    // Generate unique referral code for the new user
+    const newUserReferralCode = await generateReferralCode();
+    console.log(
+      `✅ Generated referral code for new user: ${newUserReferralCode}`
+    );
 
     // Find requested role ID or default to the user role
     let roleId = null;
@@ -182,10 +220,63 @@ exports.signUp = async (req, res) => {
       signupVerificationCode: verificationCode,
       signupVerificationExpires: expiryTime,
       roleId,
+      referralCode: newUserReferralCode,
       approvalStatus: "unverified",
       isVerified: false,
       phoneVerified: false,
     });
+
+    // Process referral code if provided
+    let referralProcessed = false;
+    if (referralCode && referralCode.trim()) {
+      try {
+        console.log(
+          `Processing referral code: ${referralCode} for user: ${newUser.id}`
+        );
+
+        // Find referrer by code
+        const referrer = await User.findOne({
+          where: { referralCode: referralCode.trim() },
+          attributes: ["id", "currency"],
+        });
+
+        if (referrer) {
+          // Update new user with referrer information
+          await User.update(
+            { referredBy: referrer.id },
+            { where: { id: newUser.id } }
+          );
+
+          // Create referral record
+          const referralAmounts = {
+            TND: { referrerReward: 125, refereeReward: 125 },
+            EUR: { referrerReward: 50, refereeReward: 50 },
+          };
+
+          const amounts =
+            referralAmounts[referrer.currency] || referralAmounts.TND;
+
+          await Referral.create({
+            referrerId: referrer.id,
+            refereeId: newUser.id,
+            currency: referrer.currency || "TND",
+            referrerReward: amounts.referrerReward,
+            refereeReward: amounts.refereeReward,
+            status: "pending",
+          });
+
+          referralProcessed = true;
+          console.log(
+            `Referral processed successfully for user ${newUser.id} referred by ${referrer.id}`
+          );
+        } else {
+          console.log(`Invalid referral code: ${referralCode}`);
+        }
+      } catch (referralError) {
+        console.error("Error processing referral:", referralError);
+        // Don't fail the signup process if referral processing fails
+      }
+    }
 
     // Try to send verification email, but don't block the response
     sendVerificationEmail(
@@ -207,6 +298,7 @@ exports.signUp = async (req, res) => {
         email: newUser.email,
         phone: newUser.phone,
         approval_status: newUser.approvalStatus,
+        referralProcessed: referralProcessed,
       },
     });
   } catch (error) {
@@ -226,10 +318,10 @@ exports.verifyEmail = async (req, res) => {
   try {
     const { email, code } = req.body;
 
-    console.log("📧 Email verification attempt:", { email, code });
+    console.log("Email verification attempt:", { email, code });
 
     if (!email || !code) {
-      console.log("❌ Missing email or code");
+      console.log(" email or code");
       return res
         .status(400)
         .json({ message: "Email and verification code are required" });
@@ -240,11 +332,11 @@ exports.verifyEmail = async (req, res) => {
     });
 
     if (!user) {
-      console.log("❌ User not found for email:", email);
+      console.log("User not found for email:", email);
       return res.status(400).json({ message: "User not found" });
     }
 
-    console.log("✅ User found:", {
+    console.log("User found:", {
       id: user.id,
       email: user.email,
       isVerified: user.isVerified,
@@ -253,13 +345,13 @@ exports.verifyEmail = async (req, res) => {
     });
 
     if (user.isVerified) {
-      console.log("❌ Email already verified");
+      console.log("Email already verified");
       return res.status(400).json({ message: "Email already verified" });
     }
 
     if (user.signupVerificationCode !== code) {
       console.log(
-        "❌ Invalid verification code. Expected:",
+        "Invalid verification code. Expected:",
         user.signupVerificationCode,
         "Got:",
         code
@@ -269,7 +361,7 @@ exports.verifyEmail = async (req, res) => {
 
     if (new Date() > new Date(user.signupVerificationExpires)) {
       console.log(
-        "❌ Verification code expired. Expires:",
+        "Verification code expired. Expires:",
         user.signupVerificationExpires,
         "Current:",
         new Date()
@@ -277,7 +369,7 @@ exports.verifyEmail = async (req, res) => {
       return res.status(400).json({ message: "Verification code has expired" });
     }
 
-    console.log("✅ Verification successful, updating user...");
+    console.log("Verification successful, updating user...");
 
     // Update user to verified status but still pending approval
     await User.update(
@@ -292,7 +384,7 @@ exports.verifyEmail = async (req, res) => {
       }
     );
 
-    console.log("✅ User updated successfully");
+    console.log("User updated successfully");
 
     res.json({
       message:
@@ -990,10 +1082,10 @@ exports.verifyPhone = async (req, res) => {
   try {
     const { userId, verificationCode } = req.body;
 
-    console.log("📱 Phone verification attempt:", { userId, verificationCode });
+    console.log("Phone verification attempt:", { userId, verificationCode });
 
     if (!userId || !verificationCode) {
-      console.log("❌ Missing userId or verificationCode");
+      console.log("Missing userId or verificationCode");
       return res.status(400).json({
         message: "User ID and verification code are required",
       });
@@ -1002,11 +1094,11 @@ exports.verifyPhone = async (req, res) => {
     // Find the user
     const user = await User.findByPk(userId);
     if (!user) {
-      console.log("❌ User not found for ID:", userId);
+      console.log("User not found for ID:", userId);
       return res.status(404).json({ message: "User not found" });
     }
 
-    console.log("✅ User found:", {
+    console.log("User found:", {
       id: user.id,
       email: user.email,
       phone: user.phone,
@@ -1018,7 +1110,7 @@ exports.verifyPhone = async (req, res) => {
 
     // Check if email is verified first
     if (!user.isVerified) {
-      console.log("❌ Email not verified");
+      console.log("Email not verified");
       return res.status(400).json({
         message: "Please verify your email address first",
         status: "email_not_verified",
@@ -1027,7 +1119,7 @@ exports.verifyPhone = async (req, res) => {
 
     // Check if phone is already verified
     if (user.phoneVerified) {
-      console.log("❌ Phone already verified");
+      console.log(" Phone already verified");
       return res.status(400).json({
         message: "Phone number is already verified",
         status: "phone_already_verified",
@@ -1036,7 +1128,7 @@ exports.verifyPhone = async (req, res) => {
 
     // Check if verification code exists and is not expired
     if (!user.phoneVerificationCode || !user.verificationCodeExpires) {
-      console.log("❌ No verification code or expiry found");
+      console.log("No verification code or expiry found");
       return res.status(400).json({
         message: "No verification code found. Please request a new one.",
         status: "no_verification_code",
@@ -1046,7 +1138,7 @@ exports.verifyPhone = async (req, res) => {
     // Check if code is expired
     if (new Date() > new Date(user.verificationCodeExpires)) {
       console.log(
-        "❌ Verification code expired. Expires:",
+        "Verification code expired. Expires:",
         user.verificationCodeExpires,
         "Current:",
         new Date()
@@ -1060,7 +1152,7 @@ exports.verifyPhone = async (req, res) => {
     // Verify the code
     if (user.phoneVerificationCode !== verificationCode) {
       console.log(
-        "❌ Invalid verification code. Expected:",
+        "Invalid verification code. Expected:",
         user.phoneVerificationCode,
         "Got:",
         verificationCode
@@ -1071,7 +1163,7 @@ exports.verifyPhone = async (req, res) => {
       });
     }
 
-    console.log("✅ Phone verification successful, updating user...");
+    console.log("Phone verification successful, updating user...");
 
     // Mark phone as verified and clear verification data
     await User.update(
@@ -1084,7 +1176,7 @@ exports.verifyPhone = async (req, res) => {
       { where: { id: userId } }
     );
 
-    console.log("✅ User updated successfully - phone verified and approved");
+    console.log("User updated successfully - phone verified and approved");
 
     // Get updated user with role information for token generation
     const updatedUser = await User.findOne({
@@ -1534,6 +1626,8 @@ exports.closeAccount = async (req, res) => {
 
       // Delete other potential related records
       const tablesToCheck = [
+        "auto_invest_plans",
+        "auto_reinvest_plans",
         "investments",
         "notifications",
         "user_sessions",

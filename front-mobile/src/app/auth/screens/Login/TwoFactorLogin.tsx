@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { View, Text, Alert, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import API_URL from "@shared/constants/api";
 import { OTPInput, SolidButton, PressableText } from "@auth/components/ui";
+import { authStore } from "../../services/authStore";
 
 export default function TwoFactorLogin() {
   const router = useRouter();
@@ -41,17 +41,15 @@ export default function TwoFactorLogin() {
 
       console.log("2FA verification successful:", response.data);
 
-      // Store authentication tokens and user data
+      // Store authentication tokens using SecureStore only
       if (response.data.accessToken && response.data.refreshToken) {
-        await AsyncStorage.setItem("accessToken", response.data.accessToken);
-        await AsyncStorage.setItem("refreshToken", response.data.refreshToken);
-        await AsyncStorage.setItem(
-          "userData",
-          JSON.stringify(response.data.user)
-        );
-        await AsyncStorage.setItem("userRole", response.data.role || "user");
+        await authStore
+          .getState()
+          .setTokens(response.data.accessToken, response.data.refreshToken);
 
-        console.log("✅ Authentication tokens stored successfully");
+        console.log(
+          "✅ Authentication tokens stored in SecureStore successfully"
+        );
       }
 
       Alert.alert("Success", "You have successfully logged in!", [

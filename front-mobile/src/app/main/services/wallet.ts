@@ -1,5 +1,6 @@
-import { authStore } from "@auth/services/authStore";
+import { authStore } from "../../auth/services/authStore";
 import API_URL from "../../../shared/constants/api";
+import { apiService } from "../../services/apiService";
 
 export interface WalletBalance {
   id: number;
@@ -59,17 +60,6 @@ export interface AddRewardsRequest {
   reference?: string;
   type?: "reward" | "referral_bonus" | "rent_payout";
 }
-
-const getAuthHeaders = async () => {
-  const token = authStore.getState().accessToken;
-  if (!token) {
-    throw new Error("No authentication token found");
-  }
-  return {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  };
-};
 
 /**
  * Currency exchange rates (base currency: TND)
@@ -135,21 +125,88 @@ export const formatBalance = (
     maximumFractionDigits: 2,
   })}`;
 };
-
-/**
- * Fetch user wallet with balances
- */
-export const fetchWalletBalance = async (): Promise<WalletBalance> => {
+// Get authentication token from SecureStore
+const getAuthToken = async (): Promise<string | null> => {
   try {
-    const headers = await getAuthHeaders();
+    await authStore.getState().loadTokens();
+    const token = authStore.getState().accessToken;
+    console.log(
+      "[Wallet] Token from authStore:",
+      token ? "Token exists" : "No token found"
+    );
+    return token;
+  } catch (error) {
+    console.error("Error getting auth token:", error);
+    return null;
+  }
+};
 
-    console.log("Fetching wallet from:", `${API_URL}/api/wallet`);
+export const getWalletBalance = async () => {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
+    console.log("[Wallet] Fetching wallet balance...");
+
     const response = await fetch(`${API_URL}/api/wallet`, {
       method: "GET",
-      headers,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     });
 
-    console.log("Wallet response status:", response.status);
+    console.log("[Wallet] Balance response status:", response.status);
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Token expired or invalid
+        await authStore.getState().clearTokens();
+        throw new Error("Session expired. Please login again.");
+      }
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("[Wallet] ✅ Balance data received:", result);
+
+    // Return the data property since backend returns {success: true, data: {...}}
+    return result.success ? result.data : result;
+  } catch (error) {
+    console.error("[Wallet] ❌ Error fetching wallet balance:", error);
+    throw error;
+  }
+};
+
+// Export with the alias for backward compatibility
+export const fetchWalletBalance = getWalletBalance;
+
+export const getWalletTransactions = async (page = 1, limit = 20) => {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
+    console.log(
+      `[Wallet] Fetching transactions (page ${page}, limit ${limit})...`
+    );
+
+    const response = await fetch(
+      `${API_URL}/api/wallet/transactions?page=${page}&limit=${limit}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("[Wallet] Transactions response status:", response.status);
+
     if (!response.ok) {
       if (response.status === 401) {
         await authStore.getState().clearTokens();
@@ -159,223 +216,177 @@ export const fetchWalletBalance = async (): Promise<WalletBalance> => {
     }
 
     const result = await response.json();
-    console.log("Wallet data received:", result);
+    console.log("[Wallet] ✅ Transactions data received:", result);
 
-    if (!result.success || !result.data) {
-      throw new Error("Invalid response format");
-    }
-
-    return result.data;
+    // Return the data property since backend returns {success: true, data: {...}}
+    return result.success ? result.data : result;
   } catch (error) {
-    console.error("Error fetching wallet balance:", error);
-    throw new Error(
-      error instanceof Error ? error.message : "Failed to fetch wallet balance"
-    );
+    console.error("[Wallet] ❌ Error fetching wallet transactions:", error);
+    throw error;
   }
 };
 
-/**
- * Fetch transaction history
- */
-export const fetchTransactionHistory = async (
-  page: number = 1,
-  limit: number = 20,
-  type?: string,
-  status?: string
-): Promise<TransactionHistoryResponse> => {
+// Export with the alias for backward compatibility
+export const fetchTransactionHistory = getWalletTransactions;
+
+export const depositFunds = async (depositRequest: DepositRequest) => {
   try {
-    const headers = await getAuthHeaders();
-
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-
-    if (type) params.append("type", type);
-    if (status) params.append("status", status);
-
-    const url = `${API_URL}/api/wallet/transactions?${params.toString()}`;
-    console.log("Fetching transactions from:", url);
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers,
-    });
-
-    console.log("Transactions response status:", response.status);
-    if (!response.ok) {
-      if (response.status === 401) {
-        await authStore.getState().clearTokens();
-        throw new Error("Session expired. Please login again.");
-      }
-      throw new Error(`Server error: ${response.status}`);
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token found");
     }
 
-    const result = await response.json();
-    console.log("Transactions data received:", result);
+    console.log(`[Wallet] Depositing ${depositRequest.amount}...`);
 
-    if (!result.success || !result.data) {
-      throw new Error("Invalid response format");
-    }
-
-    return result.data;
-  } catch (error) {
-    console.error("Error fetching transaction history:", error);
-    throw new Error(
-      error instanceof Error
-        ? error.message
-        : "Failed to fetch transaction history"
-    );
-  }
-};
-
-/**
- * Deposit funds to wallet
- */
-export const depositFunds = async (
-  depositData: DepositRequest
-): Promise<any> => {
-  try {
-    const headers = await getAuthHeaders();
-
-    console.log("Making deposit request:", depositData);
     const response = await fetch(`${API_URL}/api/wallet/deposit`, {
       method: "POST",
-      headers,
-      body: JSON.stringify(depositData),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: depositRequest.amount,
+        description: depositRequest.description,
+        reference: depositRequest.reference,
+      }),
     });
 
-    console.log("Deposit response status:", response.status);
+    console.log("[Wallet] Deposit response status:", response.status);
+
     if (!response.ok) {
       if (response.status === 401) {
         await authStore.getState().clearTokens();
         throw new Error("Session expired. Please login again.");
       }
-
-      const errorData = await response.json();
-      throw new Error(errorData.message || `Server error: ${response.status}`);
+      throw new Error(`Server error: ${response.status}`);
     }
 
-    const result = await response.json();
-    console.log("Deposit successful:", result);
-
-    return result;
+    const data = await response.json();
+    console.log("[Wallet] ✅ Deposit successful");
+    return data;
   } catch (error) {
-    console.error("Error making deposit:", error);
-    throw new Error(
-      error instanceof Error ? error.message : "Failed to deposit funds"
-    );
+    console.error("[Wallet] ❌ Error depositing funds:", error);
+    throw error;
   }
 };
 
-/**
- * Withdraw funds from wallet
- */
 export const withdrawFunds = async (
-  withdrawData: WithdrawRequest
-): Promise<any> => {
+  amount: number,
+  paymentMethod: string,
+  destination: string
+) => {
   try {
-    const headers = await getAuthHeaders();
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
 
-    console.log("Making withdrawal request:", withdrawData);
+    console.log(`[Wallet] Withdrawing ${amount} to ${destination}...`);
+
     const response = await fetch(`${API_URL}/api/wallet/withdraw`, {
       method: "POST",
-      headers,
-      body: JSON.stringify(withdrawData),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount,
+        paymentMethod,
+        destination,
+      }),
     });
 
-    console.log("Withdrawal response status:", response.status);
+    console.log("[Wallet] Withdraw response status:", response.status);
+
     if (!response.ok) {
       if (response.status === 401) {
         await authStore.getState().clearTokens();
         throw new Error("Session expired. Please login again.");
       }
-
-      let errorMessage = `Server error: ${response.status}`;
-      try {
-        const errorData = await response.json();
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        }
-
-        // Handle specific withdrawal errors
-        if (response.status === 400) {
-          if (errorMessage.toLowerCase().includes("insufficient")) {
-            errorMessage = "Insufficient funds for this withdrawal amount.";
-          } else if (errorMessage.toLowerCase().includes("amount")) {
-            errorMessage =
-              "Invalid withdrawal amount. Please check the minimum and maximum limits.";
-          } else if (errorMessage.toLowerCase().includes("wallet")) {
-            errorMessage = "Wallet not found. Please contact support.";
-          }
-        } else if (response.status === 404) {
-          errorMessage = "Wallet not found. Please contact support.";
-        } else if (response.status >= 500) {
-          errorMessage =
-            "Server temporarily unavailable. Please try again later.";
-        }
-      } catch (parseError) {
-        console.warn("Could not parse error response:", parseError);
-      }
-
-      throw new Error(errorMessage);
+      throw new Error(`Server error: ${response.status}`);
     }
 
-    const result = await response.json();
-    console.log("Withdrawal successful:", result);
-
-    if (!result.success) {
-      throw new Error(result.message || "Withdrawal failed");
-    }
-
-    return result;
+    const data = await response.json();
+    console.log("[Wallet] ✅ Withdrawal successful");
+    return data;
   } catch (error) {
-    console.error("Error making withdrawal:", error);
-
-    // Re-throw the error with a more user-friendly message if it's a generic error
-    if (error instanceof Error) {
-      throw error;
-    } else {
-      throw new Error("Failed to process withdrawal. Please try again.");
-    }
+    console.error("[Wallet] ❌ Error withdrawing funds:", error);
+    throw error;
   }
 };
 
-/**
- * Add rewards to wallet
- */
-export const addRewards = async (
-  rewardsData: AddRewardsRequest
-): Promise<any> => {
+export const getPaymentMethods = async () => {
   try {
-    const headers = await getAuthHeaders();
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
 
-    console.log("Adding rewards:", rewardsData);
-    const response = await fetch(`${API_URL}/api/wallet/rewards`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(rewardsData),
+    console.log("[Wallet] Fetching payment methods...");
+
+    const response = await fetch(`${API_URL}/api/wallet/payment-methods`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     });
 
-    console.log("Add rewards response status:", response.status);
+    console.log("[Wallet] Payment methods response status:", response.status);
+
     if (!response.ok) {
       if (response.status === 401) {
         await authStore.getState().clearTokens();
         throw new Error("Session expired. Please login again.");
       }
-
-      const errorData = await response.json();
-      throw new Error(errorData.message || `Server error: ${response.status}`);
+      throw new Error(`Server error: ${response.status}`);
     }
 
-    const result = await response.json();
-    console.log("Rewards added successfully:", result);
-
-    return result;
+    const data = await response.json();
+    console.log("[Wallet] ✅ Payment methods data received");
+    return data;
   } catch (error) {
-    console.error("Error adding rewards:", error);
-    throw new Error(
-      error instanceof Error ? error.message : "Failed to add rewards"
+    console.error("[Wallet] ❌ Error fetching payment methods:", error);
+    throw error;
+  }
+};
+
+export const addPaymentMethod = async (paymentData: any) => {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
+    console.log("[Wallet] Adding payment method...");
+
+    const response = await fetch(`${API_URL}/api/wallet/payment-methods`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(paymentData),
+    });
+
+    console.log(
+      "[Wallet] Add payment method response status:",
+      response.status
     );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        await authStore.getState().clearTokens();
+        throw new Error("Session expired. Please login again.");
+      }
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("[Wallet] ✅ Payment method added successfully");
+    return data;
+  } catch (error) {
+    console.error("[Wallet] ❌ Error adding payment method:", error);
+    throw error;
   }
 };

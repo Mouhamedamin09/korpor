@@ -73,13 +73,8 @@ exports.createAutoInvest = async (req, res) => {
       });
     }
 
-    // Verify sufficient funds for first deposit
-    if (wallet.cashBalance < monthlyAmount) {
-      return res.status(400).json({
-        success: false,
-        message: `Insufficient funds. You need at least ${monthlyAmount} ${wallet.currency} in your wallet for the first investment.`,
-      });
-    }
+    // Payment methods are flexible - users can pay with card or PayMe
+    // No need to validate wallet balance for plan creation
 
     // Calculate next deposit date
     const nextDepositDate = calculateNextDepositDate(depositDay);
@@ -88,7 +83,7 @@ exports.createAutoInvest = async (req, res) => {
     const autoInvestPlan = await AutoInvest.create({
       userId,
       monthlyAmount: parseFloat(monthlyAmount),
-      currency: wallet.currency,
+      currency: wallet?.currency || "TND",
       theme,
       depositDay: parseInt(depositDay),
       paymentMethodId,

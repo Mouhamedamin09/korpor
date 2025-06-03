@@ -225,6 +225,12 @@ router.use(authLimiter);
  *               birthdate:
  *                 type: string
  *                 format: date
+ *               phone:
+ *                 type: string
+ *                 description: Phone number (optional)
+ *               referralCode:
+ *                 type: string
+ *                 description: Referral code from another user (optional)
  *     responses:
  *       201:
  *         description: Registration successful - Waiting for admin approval

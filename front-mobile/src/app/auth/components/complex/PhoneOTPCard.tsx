@@ -2,7 +2,7 @@ import { View, Text } from "react-native";
 import { SolidButton, OTPInput, PressableText } from "../ui";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authService } from "../../services/authService";
 import axios from "axios";
 import API_URL from "@shared/constants/api";
 
@@ -52,7 +52,7 @@ export default function PhoneOTPCard({ userId }: PhoneOTPCardProps) {
     setErrorMessage("");
     setIsLoading(true);
 
-    const code = otp.join(""); // e.g. ["1","2","3","4","5","6"] => "123456"
+    const code = otp.join(""); //["1","2","3","4","5","6"] => "123456"
     if (code.length < 6) {
       setErrorMessage("Please enter the 6-digit code.");
       setIsLoading(false);
@@ -67,17 +67,15 @@ export default function PhoneOTPCard({ userId }: PhoneOTPCardProps) {
 
       console.log("Phone verified successfully:", response.data);
 
-      // Store authentication tokens and user data locally
+      // Store complete authentication data using authService
       if (response.data.accessToken && response.data.refreshToken) {
-        await AsyncStorage.setItem("accessToken", response.data.accessToken);
-        await AsyncStorage.setItem("refreshToken", response.data.refreshToken);
-        await AsyncStorage.setItem(
-          "userData",
-          JSON.stringify(response.data.user)
-        );
-        await AsyncStorage.setItem("userRole", response.data.role || "user");
-
-        console.log("✅ Authentication tokens stored successfully");
+        await authService.storeAuthData({
+          accessToken: response.data.accessToken,
+          refreshToken: response.data.refreshToken,
+          user: response.data.user,
+          role: response.data.role || "user",
+        });
+        console.log("✅ Complete authentication data stored successfully");
       }
 
       // Navigate to onboarding instead of success screen

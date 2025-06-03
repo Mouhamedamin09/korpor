@@ -116,6 +116,10 @@ app.use("/api/referrals", require("./routes/referralRoutes")); // Add referral r
 app.use("/api/preferences", preferencesRoutes); // Add preferences routes
 app.use("/api/2fa", twoFactorRoutes); // Add 2FA routes
 app.use("/api/wallet", walletRoutes); // Add wallet routes
+app.use(
+  "/api/real-estate-investment",
+  require("./routes/realEstateInvestmentRoutes")
+); // Add real estate investment routes
 app.use("/api/autoinvest", require("./routes/autoInvestRoutes")); // Add AutoInvest routes
 app.use("/api/autoreinvest", require("./routes/autoReinvestRoutes")); // Add AutoReinvest routes
 app.use("/api/backers", backerRoutes); // Add backer routes

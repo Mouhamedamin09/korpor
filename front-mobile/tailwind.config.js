@@ -6,27 +6,42 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter-Regular'],
-        thin: ['Inter-Thin'],
-        extralight: ['Inter-ExtraLight'],
-        light: ['Inter-Light'],
-        regular: ['Inter-Regular'],
-        medium: ['Inter-Medium'],
-        semibold: ['Inter-SemiBold'],
-        bold: ['Inter-Bold'],
-        extrabold: ['Inter-ExtraBold'],
-        black: ['Inter-Black'],
+        // Poppins font family - perfect for real estate apps
+        sans: ["Poppins-Regular"],
+        thin: ["Poppins-Thin"],
+        extralight: ["Poppins-ExtraLight"],
+        light: ["Poppins-Light"],
+        regular: ["Poppins-Regular"],
+        medium: ["Poppins-Medium"],
+        semibold: ["Poppins-SemiBold"],
+        bold: ["Poppins-Bold"],
+        extrabold: ["Poppins-ExtraBold"],
+        black: ["Poppins-Black"],
+
+        // Italic variants
+        "thin-italic": ["Poppins-ThinItalic"],
+        "extralight-italic": ["Poppins-ExtraLightItalic"],
+        "light-italic": ["Poppins-LightItalic"],
+        "regular-italic": ["Poppins-Italic"],
+        "medium-italic": ["Poppins-MediumItalic"],
+        "semibold-italic": ["Poppins-SemiBoldItalic"],
+        "bold-italic": ["Poppins-BoldItalic"],
+        "extrabold-italic": ["Poppins-ExtraBoldItalic"],
+        "black-italic": ["Poppins-BlackItalic"],
+
+        // Special fonts for accents
+        "arial-rounded": ["ArialRoundedBold"],
       },
       fontWeight: {
-        thin: '100',
-        extralight: '200',
-        light: '300',
-        normal: '400',
-        medium: '500',
-        semibold: '600',
-        bold: '700',
-        extrabold: '800',
-        black: '900',
+        thin: "100",
+        extralight: "200",
+        light: "300",
+        normal: "400",
+        medium: "500",
+        semibold: "600",
+        bold: "700",
+        extrabold: "800",
+        black: "900",
       },
       colors: {
         // Core surfaces

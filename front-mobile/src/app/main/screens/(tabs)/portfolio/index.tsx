@@ -141,6 +141,41 @@ const PortfolioScreen: React.FC = () => {
           loading={loadingPortfolio}
         />
 
+        {/* My Investments Card */}
+        <Card extraStyle="p-6 bg-white rounded-2xl shadow-sm mx-4 mt-4">
+          <TouchableOpacity
+            onPress={() =>
+              router.push("/main/components/portfolio/screens/investments")
+            }
+            className="flex-row items-center justify-between"
+          >
+            <View className="flex-row items-center flex-1">
+              <View className="w-16 h-16 rounded-2xl bg-green-100 items-center justify-center mr-4">
+                <Feather name="pie-chart" size={24} color="#10B981" />
+              </View>
+              <View className="flex-1">
+                <Text className="font-bold text-lg text-gray-900 mb-1">
+                  My Investments
+                </Text>
+                <Text className="text-sm text-gray-600">
+                  View and manage your real estate investments
+                </Text>
+                <View className="flex-row items-center mt-2">
+                  <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                  <Text className="text-xs text-green-700 font-medium">
+                    Track portfolio performance
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <View className="items-center">
+              <View className="w-10 h-10 rounded-full bg-black items-center justify-center">
+                <Feather name="arrow-right" size={18} color="white" />
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Card>
+
         <Card extraStyle="p-6 bg-white rounded-2xl shadow-sm mx-4">
           {/* existing "Start earning" block (unchanged) */}
           <View className="flex-row items-center mb-4">

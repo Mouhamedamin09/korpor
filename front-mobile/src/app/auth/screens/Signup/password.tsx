@@ -14,13 +14,15 @@ export default function PasswordSignupInput() {
   const router = useRouter();
 
   /* params passed from the first signup step */
-  const { name, surname, email, phone, birthdate } = useLocalSearchParams<{
-    name?: string;
-    surname?: string;
-    email?: string;
-    phone?: string;
-    birthdate?: string;
-  }>();
+  const { name, surname, email, phone, birthdate, referralCode } =
+    useLocalSearchParams<{
+      name?: string;
+      surname?: string;
+      email?: string;
+      phone?: string;
+      birthdate?: string;
+      referralCode?: string;
+    }>();
 
   /* hide the top-level lock icon while keyboard is visible */
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -37,26 +39,10 @@ export default function PasswordSignupInput() {
     };
   }, []);
 
-  /* debug log — remove if no longer needed */
-  useEffect(() => {
-    console.log("Password screen received params:", {
-      name,
-      surname,
-      email,
-      phone,
-      birthdate,
-    });
-  }, [name, surname, email, phone, birthdate]);
-
   return (
     <View className="flex-1 bg-gray-50">
-      {/* ─── Back button ────────────────────────────────────── */}
-      <TouchableOpacity onPress={() => router.back()} className="mt-2">
-        <Image source={BackButton} className="h-12 w-12" />
-      </TouchableOpacity>
-
       {/* ─── Main content ──────────────────────────────────── */}
-      <View className="flex-1 items-center justify-center">
+      <View className="flex-1 items-center justify-center mt-8">
         {!isKeyboardVisible && (
           <Image
             source={Lock}
@@ -71,6 +57,7 @@ export default function PasswordSignupInput() {
           email={email as string}
           phone={phone as string}
           birthdate={birthdate as string}
+          referralCode={referralCode as string}
         />
       </View>
     </View>

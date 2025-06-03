@@ -1,112 +1,44 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { View, ScrollView, Text, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
 import {
   Notification,
-  AdjustableHeader,
   NotificationSkeleton,
 } from "@main/components/complex/index";
+import TopBar from "@main/components/profileScreens/components/ui/TopBar";
 import type { NotificationItem } from "@/shared/types/notification";
 
 type Option = "All" | "Unread";
 
+/* ────────────── mock data (3 welcome items) ────────────── */
 const sampleNotifications: NotificationItem[] = [
   {
     id: 1,
-    description: "New listing: 3‑bed apartment in Berlin",
-    datetime: new Date("2025-05-08T19:45:00"),
+    description: "🎉 Welcome to Korpor! Explore your first investment today.",
+    datetime: new Date(), // now
     read: false,
     type: "new_property",
     propertyId: 1,
   },
   {
     id: 2,
-    description: "Your KYC document has been approved.",
-    datetime: new Date("2025-05-07T09:15:00"),
-    read: true,
-    type: "funding",
+    description: "👋 Hi there! Complete your profile to unlock full features.",
+    datetime: new Date(Date.now() - 60 * 60 * 1000), // 1 h ago
+    read: false,
+    type: "new_property",
     propertyId: 1,
   },
   {
     id: 3,
-    description: "Price drop on your watched property in Hamburg.",
-    datetime: new Date("2025-05-06T13:22:00"),
+    description:
+      "📚 Tips: Check out our beginner's guide to real-estate investing.",
+    datetime: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 h ago
     read: false,
-    type: "rent",
-    propertyId: 1,
-  },
-  {
-    id: 4,
-    description: "New property: Modern loft in Munich.",
-    datetime: new Date("2025-05-05T18:05:00"),
-    read: true,
-    type: "exit_window",
-    propertyId: 1,
-  },
-  {
-    id: 5,
-    description: "New property: Modern loft in Munich.",
-    datetime: new Date("2025-05-08T18:05:00"),
-    read: true,
     type: "new_property",
-    propertyId: 1,
-  },
-  {
-    id: 6,
-    description: "New property: Modern loft in Munich.",
-    datetime: new Date("2025-05-05T18:05:00"),
-    read: true,
-    type: "new_property",
-    propertyId: 1,
-  },
-  {
-    id: 7,
-    description: "New property: Modern loft in Munich.",
-    datetime: new Date("2025-05-05T18:05:00"),
-    read: true,
-    type: "document",
-    propertyId: 1,
-  },
-  {
-    id: 8,
-    description: "New property: Modern loft in Munich.",
-    datetime: new Date("2025-05-05T18:05:00"),
-    read: true,
-    type: "funding",
-    propertyId: 1,
-  },
-  {
-    id: 9,
-    description: "New property: Modern loft in Munich.",
-    datetime: new Date("2025-05-08T18:05:00"),
-    read: true,
-    type: "new_property",
-    propertyId: 1,
-  },
-  {
-    id: 10,
-    description: "New property: Modern loft in Munich.",
-    datetime: new Date("2025-04-05T18:05:00"),
-    read: true,
-    type: "exit_window",
-    propertyId: 1,
-  },
-  {
-    id: 11,
-    description: "New property: Modern loft in Munich.",
-    datetime: new Date("2025-05-05T18:05:00"),
-    read: true,
-    type: "rent",
-    propertyId: 1,
-  },
-  {
-    id: 12,
-    description: "New property: Modern loft in Munich.",
-    datetime: new Date("2025-02-05T18:05:00"),
-    read: false,
-    type: "document",
     propertyId: 1,
   },
 ];
+
 const isSameDay = (d1: Date, d2: Date) =>
   d1.toDateString() === d2.toDateString();
 const msInDay = 86_400_000;
@@ -114,35 +46,34 @@ const msInDay = 86_400_000;
 export default function NotificationsMenu() {
   const [selectedCategory, setSelectedCategory] = useState<Option>("All");
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    const timeout = setTimeout(() => setLoading(false), 3000); // 3s delay
+    const timeout = setTimeout(() => setLoading(false), 3000);
     return () => clearTimeout(timeout);
   }, []);
 
-  const filtered = useMemo(() => {
-    return selectedCategory === "Unread"
-      ? sampleNotifications.filter((n) => !n.read)
-      : sampleNotifications;
-  }, [selectedCategory]);
+  const filtered = useMemo(
+    () =>
+      selectedCategory === "Unread"
+        ? sampleNotifications.filter((n) => !n.read)
+        : sampleNotifications,
+    [selectedCategory]
+  );
 
   const { today, week, earlier } = useMemo(() => {
     const todayArr: NotificationItem[] = [];
     const weekArr: NotificationItem[] = [];
     const earlierArr: NotificationItem[] = [];
-
     const now = new Date();
 
     [...filtered]
       .sort((a, b) => b.datetime.getTime() - a.datetime.getTime())
       .forEach((n) => {
-        if (isSameDay(now, n.datetime)) {
-          todayArr.push(n);
-        } else if (now.getTime() - n.datetime.getTime() < 7 * msInDay) {
+        if (isSameDay(now, n.datetime)) todayArr.push(n);
+        else if (now.getTime() - n.datetime.getTime() < 7 * msInDay)
           weekArr.push(n);
-        } else {
-          earlierArr.push(n);
-        }
+        else earlierArr.push(n);
       });
 
     return { today: todayArr, week: weekArr, earlier: earlierArr };
@@ -162,14 +93,38 @@ export default function NotificationsMenu() {
       </>
     );
 
+  // Category selector component for TopBar rightComponent
+  const CategorySelector = () => (
+    <View className="flex-row bg-gray-100 rounded-lg p-1">
+      {(["All", "Unread"] as Option[]).map((option) => (
+        <TouchableOpacity
+          key={option}
+          onPress={() => setSelectedCategory(option)}
+          className={`px-3 py-1 rounded-md ${
+            selectedCategory === option
+              ? "bg-white shadow-sm"
+              : "bg-transparent"
+          }`}
+        >
+          <Text
+            className={`text-sm font-medium ${
+              selectedCategory === option ? "text-gray-900" : "text-gray-600"
+            }`}
+          >
+            {option}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
   return (
     <View className="bg-primary-foreground flex-1">
-      <View style={{ zIndex: 20, position: "relative" }}>
-        <AdjustableHeader
-          selectedCategory={selectedCategory}
-          onChangeCategory={setSelectedCategory}
-        />
-      </View>
+      <TopBar
+        title="Notifications"
+        onBackPress={() => router.back()}
+        rightComponent={<CategorySelector />}
+      />
 
       <View style={{ zIndex: 1, flex: 1 }}>
         <ScrollView

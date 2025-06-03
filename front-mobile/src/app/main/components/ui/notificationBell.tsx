@@ -18,7 +18,7 @@ export default function NotificationBell({ onPress }: Props) {
     >
       <Feather name="bell" size={24} color="#000" />
       <View className="bg-red-500 rounded-xl items-center justify-center w-7 h-5 absolute bottom-4 left-2">
-        <Text className="text-white text-sm">99+</Text>
+        <Text className="text-white text-sm">3+</Text>
       </View>
     </TouchableOpacity>
   );

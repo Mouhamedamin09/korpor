@@ -44,7 +44,10 @@ const AmountInputCard: FC<AmountInputCardProps> = ({
         }`}
       >
         <View className="flex-row items-center">
-          <Text className="text-2xl font-bold text-black mr-2">
+          <Text
+            className="text-2xl font-bold text-black mr-2"
+            style={{ lineHeight: 36 }}
+          >
             {currencySymbol}
           </Text>
           <TextInput
@@ -53,7 +56,12 @@ const AmountInputCard: FC<AmountInputCardProps> = ({
             keyboardType="decimal-pad"
             placeholder="0.00"
             placeholderTextColor="#9CA3AF"
-            className="flex-1 text-2xl font-semibold text-black p-0"
+            className="flex-1 text-2xl font-semibold text-black"
+            style={{
+              paddingTop: 7,
+
+              lineHeight: 36,
+            }}
           />
         </View>
       </View>

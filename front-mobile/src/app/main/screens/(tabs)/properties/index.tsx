@@ -1,6 +1,12 @@
 import React, { useRef, useState, useEffect, useMemo } from "react";
-import { View, Animated } from "react-native";
-import type { NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  RefreshControl,
+  FlatList,
+  ScrollView,
+} from "react-native";
 import {
   TopMenu,
   PropertyCard,
@@ -19,84 +25,149 @@ export default function MainApp() {
   const [propertyData, setPropertyData] = useState<CategorizedProperty[]>([]);
   const [selectedCategory, setSelectedCategory] =
     useState<PropertyCategory>("Available");
-  const [loading, setLoading] = useState(true); // <== Add loading state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchProperties = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+
+      console.log("🔄 Fetching properties...");
+      const data = await getAllProperties();
+      console.log(`✅ Fetched ${data.length} properties`);
+
+      // Debug logging
+      if (data.length > 0) {
+        console.log("🔍 Property data preview:");
+        data.slice(0, 3).forEach((prop, index) => {
+          console.log(`${index + 1}. ${prop.name}:`);
+          console.log(`   - status: ${prop.status}`);
+          console.log(`   - category: ${prop.category}`);
+          console.log(`   - funding: ${prop.funding_percentage}%`);
+        });
+      }
+
+      setPropertyData(data as CategorizedProperty[]);
+    } catch (err) {
+      console.error("❌ Failed to fetch properties:", err);
+      setError("Failed to load properties. Using offline data.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await getAllProperties();
-        setPropertyData(data as CategorizedProperty[]);
-      } catch (err) {
-        console.error("Failed to fetch projects:", err);
-      } finally {
-        setLoading(false); // <== Mark loading complete
-      }
-    })();
+    fetchProperties();
   }, []);
 
-  const filtered = useMemo(
-    () => filterByCategory(propertyData, selectedCategory),
-    [propertyData, selectedCategory]
-  );
+  const onRefresh = () => {
+    fetchProperties(true);
+  };
 
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const lastScrollY = useRef(0);
-  const headerVisible = useRef(true);
-  const translateY = useRef(new Animated.Value(0)).current;
+  const filtered = useMemo(() => {
+    const result = filterByCategory(propertyData, selectedCategory);
+    console.log(
+      `🔍 Filtering by category "${selectedCategory}": ${result.length}/${propertyData.length} properties`
+    );
 
-  const handleScroll = Animated.event(
-    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    {
-      useNativeDriver: true,
-      listener: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const y = e.nativeEvent.contentOffset.y;
-        if (y > lastScrollY.current + 5 && headerVisible.current) {
-          Animated.timing(translateY, {
-            toValue: -100,
-            duration: 200,
-            useNativeDriver: true,
-          }).start();
-          headerVisible.current = false;
-        } else if (y < lastScrollY.current - 15 && !headerVisible.current) {
-          Animated.timing(translateY, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }).start();
-          headerVisible.current = true;
-        }
-        lastScrollY.current = y;
-      },
+    if (result.length === 0 && propertyData.length > 0) {
+      console.log("⚠️ No properties match the selected category!");
+      console.log("Available categories in data:");
+      const categories = Array.from(
+        new Set(propertyData.map((p) => p.category))
+      );
+      categories.forEach((cat) => {
+        const count = propertyData.filter((p) => p.category === cat).length;
+        console.log(`  - ${cat}: ${count} properties`);
+      });
     }
+
+    return result;
+  }, [propertyData, selectedCategory]);
+
+  // Empty state component
+  const EmptyState = () => (
+    <View
+      className="flex-1 justify-center items-center px-6"
+      style={{ paddingTop: 140 }}
+    >
+      <Text className="text-xl font-bold text-gray-800 mb-2">
+        No Properties Found
+      </Text>
+      <Text className="text-gray-600 text-center mb-4">
+        {error
+          ? "There was an issue loading properties. Please check your connection and try again."
+          : `No properties available in the "${selectedCategory}" category at the moment.`}
+      </Text>
+      <TouchableOpacity
+        onPress={onRefresh}
+        className="bg-blue-500 px-6 py-3 rounded-lg"
+      >
+        <Text className="text-white font-semibold">Retry</Text>
+      </TouchableOpacity>
+
+      {/* Debug info */}
+      {propertyData.length > 0 && (
+        <View className="mt-4 p-3 bg-gray-100 rounded">
+          <Text className="text-sm text-gray-600">
+            Debug: {propertyData.length} total properties loaded
+          </Text>
+          <Text className="text-sm text-gray-600">
+            Categories available:{" "}
+            {Array.from(new Set(propertyData.map((p) => p.category))).join(
+              ", "
+            )}
+          </Text>
+        </View>
+      )}
+    </View>
   );
 
   return (
     <View className="bg-white flex-1">
       <TopMenu
-        translateY={translateY}
         selectedCategory={selectedCategory}
         onChangeCategory={setSelectedCategory}
       />
-      <View className="my-6" />
+
+      {/* Error banner */}
+      {error && (
+        <View
+          className="bg-yellow-100 border-l-4 border-yellow-500 p-3 mx-4 mb-2"
+          style={{ marginTop: 110 }}
+        >
+          <Text className="text-yellow-800 text-sm">{error}</Text>
+        </View>
+      )}
 
       {loading ? (
-        <Animated.ScrollView
-          contentContainerStyle={{ paddingTop: 120, paddingBottom: 40 }}
-          scrollEventThrottle={16}
-          onScroll={handleScroll}
-        >
+        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
           {Array.from({ length: 6 }).map((_, i) => (
             <PropertyCardSkeleton key={i} />
           ))}
-        </Animated.ScrollView>
+        </ScrollView>
+      ) : filtered.length === 0 ? (
+        <EmptyState />
       ) : (
-        <Animated.FlatList
+        <FlatList
           data={filtered}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => <PropertyCard data={item} />}
-          contentContainerStyle={{ paddingTop: 80, paddingBottom: 40 }}
-          scrollEventThrottle={16}
-          onScroll={handleScroll}
+          contentContainerStyle={{ paddingBottom: 40 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              progressViewOffset={110}
+            />
+          }
         />
       )}
     </View>

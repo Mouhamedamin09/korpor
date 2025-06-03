@@ -2,7 +2,7 @@ import { View, Text } from "react-native";
 import { SolidButton, PasswordBarInput } from "../ui";
 import { useState } from "react";
 import { useRouter } from "expo-router";
-import { signupUser } from "@auth/services/signup";
+import { signup } from "@auth/services/signup";
 
 interface PasswordCardProps {
   name: string;
@@ -10,6 +10,7 @@ interface PasswordCardProps {
   email: string;
   phone: string;
   birthdate: string;
+  referralCode?: string;
 }
 
 export default function PasswordCard({
@@ -18,6 +19,7 @@ export default function PasswordCard({
   email,
   phone,
   birthdate,
+  referralCode,
 }: PasswordCardProps) {
   const router = useRouter();
 
@@ -57,8 +59,9 @@ export default function PasswordCard({
         return;
       }
 
-      // Password strength validation - Updated regex for stronger requirements
+      // Password regex for testing
       const passwordRegex = /^.{6,}$/;
+      // const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
       if (!passwordRegex.test(password)) {
         setErrorMessage(
@@ -76,12 +79,14 @@ export default function PasswordCard({
         phone: String(phone).trim(),
         birthdate: String(birthdate).trim(),
         password: password.trim(),
+        accountType: "user",
+        referralCode: referralCode?.trim() || null,
       };
 
       console.log("Signup data:", signupData);
 
       // Call the signup API
-      const response = await signupUser(signupData);
+      const response = await signup(signupData);
 
       console.log("Signup response:", response);
 

@@ -1,4 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
+import { authStore } from "./authStore";
 import { router } from "expo-router";
 import API_URL from "../../../shared/constants/api";
 
@@ -15,16 +16,32 @@ interface TokenInfo {
   role?: string;
 }
 
+export interface User {
+  id: number;
+  accountNo: string;
+  name: string;
+  surname: string;
+  email: string;
+  profilePicture?: string;
+  lastLogin?: string;
+}
+
+export interface AuthData {
+  accessToken: string;
+  refreshToken: string;
+  user: User;
+  role: string;
+}
+
 // Constants
 const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes in milliseconds
-const STORAGE_KEYS = {
-  ACCESS_TOKEN: "accessToken",
-  REFRESH_TOKEN: "refreshToken",
-  USER_DATA: "userData",
-  USER_ROLE: "userRole",
-} as const;
 
 class AuthService {
+  private readonly ACCESS_TOKEN_KEY = "accessToken";
+  private readonly REFRESH_TOKEN_KEY = "refreshToken";
+  private readonly USER_KEY = "user";
+  private readonly ROLE_KEY = "role";
+
   private refreshPromise: Promise<string> | null = null;
   private isRefreshing = false;
 
@@ -32,6 +49,8 @@ class AuthService {
    * Decode JWT token to extract payload information
    */
   private decodeToken(token: string): TokenInfo | null {
+    //decoding token (header.payload.signature) Each part is Base64-encoded.
+    //Base64 encoding is a way to represent binary data as text.
     try {
       const parts = token.split(".");
       if (parts.length !== 3) {
@@ -90,8 +109,8 @@ class AuthService {
    */
   private async refreshAccessToken(): Promise<string> {
     try {
-      const refreshToken = await AsyncStorage.getItem(
-        STORAGE_KEYS.REFRESH_TOKEN
+      const refreshToken = await SecureStore.getItemAsync(
+        this.REFRESH_TOKEN_KEY
       );
 
       if (!refreshToken) {
@@ -118,10 +137,7 @@ class AuthService {
       const data: RefreshTokenResponse = await response.json();
 
       // Store new tokens
-      await Promise.all([
-        AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.accessToken),
-        AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken),
-      ]);
+      await this.updateTokens(data.accessToken, data.refreshToken);
 
       console.log("[AuthService] ✅ Access token refreshed successfully");
       return data.accessToken;
@@ -137,10 +153,10 @@ class AuthService {
   private async handleAuthFailure(
     reason: string = "Session expired"
   ): Promise<void> {
-    console.log(`[AuthService] 🚪 Handling auth failure: ${reason}`);
+    console.log(`[AuthService] Handling auth failure: ${reason}`);
 
     // Clear all authentication data
-    await this.clearAuthData();
+    await this.clearAllData();
 
     // Reset refresh state
     this.isRefreshing = false;
@@ -155,106 +171,29 @@ class AuthService {
   }
 
   /**
-   * Clear all authentication data from storage
-   */
-  private async clearAuthData(): Promise<void> {
-    try {
-      const keys = Object.values(STORAGE_KEYS);
-      await Promise.all(keys.map((key) => AsyncStorage.removeItem(key)));
-      console.log("[AuthService] 🧹 Authentication data cleared");
-    } catch (error) {
-      console.error("[AuthService] Error clearing auth data:", error);
-    }
-  }
-
-  /**
    * Get a valid access token, refreshing if necessary
    */
   public async getValidAccessToken(): Promise<string | null> {
     try {
-      let accessToken = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-
-      if (!accessToken) {
-        console.log("[AuthService] No access token found");
-        await this.handleAuthFailure("No access token");
-        return null;
-      }
-
-      // Check if token is completely expired
-      if (this.isTokenExpired(accessToken)) {
-        console.log("[AuthService] Access token is expired");
-
-        // If already refreshing, wait for the existing refresh
-        if (this.isRefreshing && this.refreshPromise) {
-          try {
-            accessToken = await this.refreshPromise;
-            return accessToken;
-          } catch (error) {
-            console.error("[AuthService] Concurrent refresh failed:", error);
-            await this.handleAuthFailure("Token refresh failed");
-            return null;
-          }
-        }
-
-        // Start refresh process
-        this.isRefreshing = true;
-        this.refreshPromise = this.refreshAccessToken()
-          .then((newToken) => {
-            this.isRefreshing = false;
-            this.refreshPromise = null;
-            return newToken;
-          })
-          .catch(async (error) => {
-            this.isRefreshing = false;
-            this.refreshPromise = null;
-
-            if (error.message === "REFRESH_TOKEN_EXPIRED") {
-              await this.handleAuthFailure(
-                "Session expired - please login again"
-              );
-            } else {
-              await this.handleAuthFailure("Token refresh failed");
-            }
-            throw error;
-          });
-
-        try {
-          accessToken = await this.refreshPromise;
-        } catch (error) {
-          return null;
-        }
-      }
-      // Check if token is expiring soon
-      else if (this.isTokenExpiringSoon(accessToken)) {
-        console.log(
-          "[AuthService] Access token expiring soon, refreshing proactively"
-        );
-
-        // Don't block the current request, refresh in background
-        if (!this.isRefreshing) {
-          this.isRefreshing = true;
-          this.refreshAccessToken()
-            .then(() => {
-              this.isRefreshing = false;
-              console.log("[AuthService] Background refresh completed");
-            })
-            .catch(async (error) => {
-              this.isRefreshing = false;
-              console.error("[AuthService] Background refresh failed:", error);
-
-              if (error.message === "REFRESH_TOKEN_EXPIRED") {
-                await this.handleAuthFailure(
-                  "Session expired - please login again"
-                );
-              }
-            });
-        }
-      }
-
-      return accessToken;
+      // Load tokens from SecureStore into authStore state
+      await authStore.getState().loadTokens();
+      return authStore.getState().accessToken;
     } catch (error) {
-      console.error("[AuthService] Error getting valid access token:", error);
+      console.error("Error getting access token:", error);
       await this.handleAuthFailure("Authentication error");
+      return null;
+    }
+  }
+
+  /**
+   * Get refresh token from SecureStore
+   */
+  public async getRefreshToken(): Promise<string | null> {
+    try {
+      await authStore.getState().loadTokens();
+      return authStore.getState().refreshToken;
+    } catch (error) {
+      console.error("Error getting refresh token:", error);
       return null;
     }
   }
@@ -345,20 +284,10 @@ class AuthService {
    */
   public async isAuthenticated(): Promise<boolean> {
     try {
-      const accessToken = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-      const refreshToken = await AsyncStorage.getItem(
-        STORAGE_KEYS.REFRESH_TOKEN
-      );
-
-      if (!accessToken || !refreshToken) {
-        return false;
-      }
-
-      // Check if access token is valid or can be refreshed
-      const validToken = await this.getValidAccessToken();
-      return !!validToken;
+      const token = await this.getValidAccessToken();
+      return !!token;
     } catch (error) {
-      console.error("[AuthService] Error checking authentication:", error);
+      console.error("Error checking authentication:", error);
       return false;
     }
   }
@@ -368,81 +297,59 @@ class AuthService {
    */
   public async logout(): Promise<void> {
     try {
-      console.log("[AuthService] Starting logout process...");
+      console.log("🔄 AUTHSERVICE: Starting logout...");
 
-      // Get the access token for the logout request
-      const accessToken = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      // Clear tokens using authStore (which clears SecureStore)
+      await authStore.getState().clearTokens();
 
-      // Call backend logout endpoint if token exists
-      if (accessToken) {
-        try {
-          await fetch(`${API_URL}/api/auth/logout`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${accessToken}`,
-            },
-          });
-          console.log("[AuthService] ✅ Backend logout successful");
-        } catch (error) {
-          console.warn(
-            "[AuthService] ⚠️ Backend logout failed, continuing with local cleanup"
-          );
-        }
-      }
+      // Clear user and role data from SecureStore
+      await SecureStore.deleteItemAsync(this.USER_KEY);
+      await SecureStore.deleteItemAsync(this.ROLE_KEY);
 
-      // Clear all authentication data
-      await this.clearAuthData();
-
-      // Reset refresh state
-      this.isRefreshing = false;
-      this.refreshPromise = null;
-
-      console.log("[AuthService] ✅ Logout completed");
+      console.log("✅ AUTHSERVICE: Logout completed successfully");
     } catch (error) {
-      console.error("[AuthService] Error during logout:", error);
-      throw error;
+      console.error("❌ AUTHSERVICE: Error during logout:", error);
+      // Don't throw error for logout to prevent blocking user
     }
   }
 
   /**
    * Store authentication data after successful login
    */
-  public async storeAuthData(authData: {
-    accessToken: string;
-    refreshToken: string;
-    user: any;
-    role?: string;
-  }): Promise<void> {
+  public async storeAuthData(authData: AuthData): Promise<void> {
     try {
-      await Promise.all([
-        AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, authData.accessToken),
-        AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, authData.refreshToken),
-        AsyncStorage.setItem(
-          STORAGE_KEYS.USER_DATA,
-          JSON.stringify(authData.user)
-        ),
-        ...(authData.role
-          ? [AsyncStorage.setItem(STORAGE_KEYS.USER_ROLE, authData.role)]
-          : []),
-      ]);
+      console.log("🔄 AUTHSERVICE: Storing auth data in SecureStore...");
 
-      console.log("[AuthService] ✅ Authentication data stored successfully");
+      // Use authStore for token storage (which uses SecureStore)
+      await authStore
+        .getState()
+        .setTokens(authData.accessToken, authData.refreshToken);
+
+      // Store user and role data in SecureStore directly
+      await SecureStore.setItemAsync(
+        this.USER_KEY,
+        JSON.stringify(authData.user)
+      );
+      await SecureStore.setItemAsync(this.ROLE_KEY, authData.role);
+
+      console.log(
+        "✅ AUTHSERVICE: Auth data stored successfully in SecureStore"
+      );
     } catch (error) {
-      console.error("[AuthService] Error storing auth data:", error);
-      throw error;
+      console.error("❌ AUTHSERVICE: Error storing auth data:", error);
+      throw new Error("Failed to store authentication data");
     }
   }
 
   /**
    * Get current user data from storage
    */
-  public async getCurrentUser(): Promise<any | null> {
+  public async getCurrentUser(): Promise<User | null> {
     try {
-      const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
-      return userData ? JSON.parse(userData) : null;
+      const userString = await SecureStore.getItemAsync(this.USER_KEY);
+      return userString ? JSON.parse(userString) : null;
     } catch (error) {
-      console.error("[AuthService] Error getting current user:", error);
+      console.error("Error getting current user:", error);
       return null;
     }
   }
@@ -452,10 +359,70 @@ class AuthService {
    */
   public async getCurrentUserRole(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem(STORAGE_KEYS.USER_ROLE);
+      return await SecureStore.getItemAsync(this.ROLE_KEY);
     } catch (error) {
-      console.error("[AuthService] Error getting current user role:", error);
+      console.error("Error getting user role:", error);
       return null;
+    }
+  }
+
+  /**
+   * Update stored tokens
+   */
+  public async updateTokens(
+    accessToken: string,
+    refreshToken: string
+  ): Promise<void> {
+    try {
+      await authStore.getState().setTokens(accessToken, refreshToken);
+      console.log("✅ AUTHSERVICE: Tokens updated successfully");
+    } catch (error) {
+      console.error("❌ AUTHSERVICE: Error updating tokens:", error);
+      throw new Error("Failed to update tokens");
+    }
+  }
+
+  /**
+   * Clear all stored data (for account deletion, etc.)
+   */
+  public async clearAllData(): Promise<void> {
+    try {
+      console.log("🔄 AUTHSERVICE: Clearing all auth data...");
+
+      await this.logout(); // This will clear tokens, user, and role
+
+      // Clear any additional SecureStore items if needed
+      // Add any other keys that might be stored
+
+      console.log("✅ AUTHSERVICE: All auth data cleared");
+    } catch (error) {
+      console.error("❌ AUTHSERVICE: Error clearing all data:", error);
+    }
+  }
+
+  /**
+   * Update user data in SecureStore
+   */
+  public async updateUser(user: User): Promise<void> {
+    try {
+      await SecureStore.setItemAsync(this.USER_KEY, JSON.stringify(user));
+      console.log("✅ AUTHSERVICE: User data updated");
+    } catch (error) {
+      console.error("❌ AUTHSERVICE: Error updating user:", error);
+      throw new Error("Failed to update user data");
+    }
+  }
+
+  /**
+   * Update user role in SecureStore
+   */
+  public async updateRole(role: string): Promise<void> {
+    try {
+      await SecureStore.setItemAsync(this.ROLE_KEY, role);
+      console.log("✅ AUTHSERVICE: User role updated");
+    } catch (error) {
+      console.error("❌ AUTHSERVICE: Error updating role:", error);
+      throw new Error("Failed to update user role");
     }
   }
 }

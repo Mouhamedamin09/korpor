@@ -119,10 +119,6 @@ const AutoInvestDashboard = ({
       })
     : "N/A";
 
-  // Check if user has sufficient funds for next deposit
-  const hasSufficientFunds = walletData
-    ? walletData.cashBalance >= plan.monthlyAmount
-    : false;
   const isAccountVerified = accountData?.isVerified || false;
 
   return (
@@ -189,14 +185,6 @@ const AutoInvestDashboard = ({
           <Text className="text-base font-semibold text-gray-900 mt-1">
             {nextDepositDate || "—"}
           </Text>
-          {!hasSufficientFunds && plan.status === "active" && (
-            <View className="flex-row items-center mt-2">
-              <Feather name="alert-triangle" size={14} color="#F59E0B" />
-              <Text className="text-xs text-yellow-600 ml-1">
-                Insufficient funds
-              </Text>
-            </View>
-          )}
         </View>
 
         {/* Action Buttons */}
@@ -283,32 +271,17 @@ const AutoInvestDashboard = ({
             </View>
           )}
 
-          {/* Funding Status */}
-          <View
-            className={`mt-4 p-3 rounded-lg ${
-              hasSufficientFunds
-                ? "bg-green-50 border border-green-200"
-                : "bg-red-50 border border-red-200"
-            }`}
-          >
+          {/* Payment Methods Notice */}
+          <View className="mt-4 p-3 rounded-lg bg-green-50 border border-green-200">
             <View className="flex-row items-center">
-              <Feather
-                name={hasSufficientFunds ? "check-circle" : "alert-circle"}
-                size={16}
-                color={hasSufficientFunds ? "#10B981" : "#EF4444"}
-              />
-              <Text
-                className={`ml-2 text-sm font-medium ${
-                  hasSufficientFunds ? "text-green-800" : "text-red-800"
-                }`}
-              >
-                {hasSufficientFunds
-                  ? "Sufficient funds for next investment"
-                  : `Need ${walletData.currency} ${formatNumber(
-                      plan.monthlyAmount - walletData.cashBalance
-                    )} more for next investment`}
+              <Feather name="credit-card" size={16} color="#10B981" />
+              <Text className="ml-2 text-sm font-medium text-green-800">
+                Multiple payment options available
               </Text>
             </View>
+            <Text className="text-xs text-green-700 mt-1">
+              Pay with wallet, card, or PayMe account
+            </Text>
           </View>
         </Card>
       )}

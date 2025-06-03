@@ -1,5 +1,8 @@
-const User = require("../models/User");
-const Role = require("../models/Role");
+const { User, Role, sequelize } = require("../models");
+const { Op } = require("sequelize");
+const {
+  checkAndProcessPendingReferralRewards,
+} = require("../services/referralRewardService");
 const { Buffer } = require("buffer");
 
 /**
@@ -133,10 +136,10 @@ exports.getPendingUsers = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     console.log(
-      `[DELETE USER] Request received to delete user ID: ${req.params.userId}`,
+      `[DELETE USER] Request received to delete user ID: ${req.params.userId}`
     );
     console.log(
-      `[DELETE USER] Request made by user ID: ${req.user.userId}, role: ${req.user.roleId}`,
+      `[DELETE USER] Request made by user ID: ${req.user.userId}, role: ${req.user.roleId}`
     );
 
     const { userId } = req.params;
@@ -168,7 +171,7 @@ exports.deleteUser = async (req, res) => {
       req.user.roleId !== 1
     ) {
       console.log(
-        `[DELETE USER] Non-superadmin user attempted to delete a superadmin account`,
+        `[DELETE USER] Non-superadmin user attempted to delete a superadmin account`
       );
       return res.status(403).json({
         success: false,
@@ -205,10 +208,10 @@ exports.approvePendingUser = async (req, res) => {
     const { roleName } = req.body;
 
     console.log(
-      `[APPROVE USER] Request to approve user ID: ${userId} with role: ${roleName}`,
+      `[APPROVE USER] Request to approve user ID: ${userId} with role: ${roleName}`
     );
     console.log(
-      `[APPROVE USER] Action by user ID: ${req.user.userId}, role from token: ${req.user.role}`,
+      `[APPROVE USER] Action by user ID: ${req.user.userId}, role from token: ${req.user.role}`
     );
 
     if (!roleName) {
@@ -250,6 +253,32 @@ exports.approvePendingUser = async (req, res) => {
     userToApprove.roleId = roleRecord.id;
     userToApprove.isVerified = true; // Mark as verified upon admin approval
     await userToApprove.save();
+
+    // Process referral rewards if user was referred
+    try {
+      console.log(
+        `🔄 Checking for referral rewards for newly approved user ${userId}`
+      );
+      const referralResult = await checkAndProcessPendingReferralRewards(
+        userId
+      );
+      if (referralResult.success) {
+        console.log(
+          `✅ Referral rewards processed for user ${userId}:`,
+          referralResult.data
+        );
+      } else {
+        console.log(
+          `ℹ️ No referral rewards to process for user ${userId}: ${referralResult.message}`
+        );
+      }
+    } catch (error) {
+      console.error(
+        `❌ Error processing referral rewards for user ${userId}:`,
+        error
+      );
+      // Don't fail the approval process if referral processing fails
+    }
 
     // Optionally, fetch the user again with role details for the response
     const updatedUser = await User.findByPk(userId, {
@@ -295,7 +324,7 @@ exports.rejectPendingUser = async (req, res) => {
 
     console.log(`[REJECT USER] Request to reject user ID: ${userId}`);
     console.log(
-      `[REJECT USER] Action by user ID: ${req.user.userId}, role from token: ${req.user.role}`,
+      `[REJECT USER] Action by user ID: ${req.user.userId}, role from token: ${req.user.role}`
     );
 
     const userToReject = await User.findByPk(userId);
@@ -374,10 +403,10 @@ exports.updateUserDetails = async (req, res) => {
 
     console.log(
       `[UPDATE USER] Request to update user ID: ${userId} with data:`,
-      req.body,
+      req.body
     );
     console.log(
-      `[UPDATE USER] Action by user ID: ${req.user.userId}, role from token: ${req.user.role}`,
+      `[UPDATE USER] Action by user ID: ${req.user.userId}, role from token: ${req.user.role}`
     );
 
     const userToUpdate = await User.findByPk(userId);
@@ -418,7 +447,7 @@ exports.updateUserDetails = async (req, res) => {
           break;
         default:
           console.warn(
-            `[UPDATE USER] Unknown status received: ${status}. approvalStatus not changed.`,
+            `[UPDATE USER] Unknown status received: ${status}. approvalStatus not changed.`
           );
       }
     }
@@ -476,7 +505,7 @@ exports.updateUserDetails = async (req, res) => {
     };
 
     console.log(
-      `[UPDATE USER] User ID: ${userId} updated successfully with new approvalStatus: ${userToUpdate.approvalStatus}`,
+      `[UPDATE USER] User ID: ${userId} updated successfully with new approvalStatus: ${userToUpdate.approvalStatus}`
     );
     return res.status(200).json({
       success: true,
@@ -529,9 +558,11 @@ exports.sendUserInvitation = async (req, res) => {
     };
 
     const inviteToken = Buffer.from(JSON.stringify(inviteData)).toString(
-      "base64",
+      "base64"
     );
-    const signupUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/auth/sign-up?invite=${inviteToken}`;
+    const signupUrl = `${
+      process.env.FRONTEND_URL || "http://localhost:3000"
+    }/auth/sign-up?invite=${inviteToken}`;
 
     // HTML template for invitation email
     const inviteTemplate = `

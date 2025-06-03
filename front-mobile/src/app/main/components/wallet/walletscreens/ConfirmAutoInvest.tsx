@@ -134,14 +134,13 @@ const ConfirmAutoInvest: React.FC<Props> = ({
   const isAccountVerified = accountData?.isVerified ?? false;
   const actualVerificationStatus = isAccountVerified ? "Verified" : "Pending";
   const availableBalance = walletData?.cashBalance ?? 0;
-  const hasSufficientFunds = availableBalance >= amount;
 
   // Check if PayMe is selected as payment method
   const isPaymeSelected = deposit.paymentMethodId === "payme";
 
   // Handle launching AutoInvest
   const handleLaunchAutoInvest = async () => {
-    if (!isAccountVerified || !hasSufficientFunds) {
+    if (!isAccountVerified) {
       return;
     }
 
@@ -384,36 +383,32 @@ const ConfirmAutoInvest: React.FC<Props> = ({
           </View>
         )}
 
-        {!hasSufficientFunds && (
-          <View className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <View className="flex-row items-start">
-              <Feather
-                name="alert-circle"
-                size={16}
-                color="#EF4444"
-                style={{ marginTop: 2, marginRight: 8 }}
-              />
-              <Text className="text-sm text-red-800 flex-1">
-                Insufficient funds for the first monthly investment. Please
-                deposit at least {currency} {amount.toLocaleString()} to your
-                wallet.
-              </Text>
-            </View>
+        {/* Payment Methods Notice */}
+        <View className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+          <View className="flex-row items-start">
+            <Feather
+              name="credit-card"
+              size={16}
+              color="#10B981"
+              style={{ marginTop: 2, marginRight: 8 }}
+            />
+            <Text className="text-sm text-green-800 flex-1 font-medium">
+              Multiple payment options available
+            </Text>
           </View>
-        )}
+          <Text className="text-xs text-green-700 mt-1 ml-6">
+            Your monthly investments can be paid with wallet funds, card, or
+            PayMe account
+          </Text>
+        </View>
 
         <View className="mb-2">
           <TouchableOpacity
             onPress={handleLaunchAutoInvest}
             className="bg-black rounded-lg p-4 items-center mb-3 flex-row justify-center"
-            disabled={
-              !isAccountVerified || !hasSufficientFunds || processingPayment
-            }
+            disabled={!isAccountVerified || processingPayment}
             style={{
-              opacity:
-                isAccountVerified && hasSufficientFunds && !processingPayment
-                  ? 1
-                  : 0.6,
+              opacity: isAccountVerified && !processingPayment ? 1 : 0.6,
             }}
           >
             {processingPayment ? (
@@ -428,8 +423,6 @@ const ConfirmAutoInvest: React.FC<Props> = ({
                 <Text className="text-white font-semibold text-base mr-2">
                   {!isAccountVerified
                     ? "Pending Verification"
-                    : !hasSufficientFunds
-                    ? "Insufficient Funds"
                     : isPaymeSelected
                     ? "Launch AutoInvest with PayMe"
                     : "Launch AutoInvest"}
