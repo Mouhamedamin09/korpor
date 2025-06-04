@@ -1,0 +1,7 @@
+# Copy this file to .env and add your actual API keys
+
+# Google Generative AI API Key (required for the chatbot)
+google_api_key=your_google_api_key_here
+
+# ElevenLabs API Key (required for voice generation)
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here 

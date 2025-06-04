@@ -1,3 +1,4 @@
+// TopMenu.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -5,11 +6,13 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   Platform,
-  StatusBar,
 } from "react-native";
-import { DropdownMenu, NotificationBell } from "../ui/index";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { DropdownMenu, NotificationBell } from "../ui";
 import { PropertyCategory } from "@/app/main/services/propertyUtils";
 import BottomSheet from "../profileScreens/components/ui/SheetIndicator";
 
@@ -21,15 +24,13 @@ interface Props {
 }
 
 export default function TopMenu({ selectedCategory, onChangeCategory }: Props) {
+  const insets = useSafeAreaInsets(); // correct top inset on any device
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
 
-  const handleNotificationPress = () => {
-    setShowNotificationSheet(true);
-  };
-
   return (
-    <SafeAreaView style={styles.safeContainer}>
-      <View style={styles.container}>
+    <SafeAreaView edges={["top"]} style={styles.safeContainer}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        {/* Logo row */}
         <View className="mx-4 flex-row items-center h-16">
           <Image
             source={Logo}
@@ -38,6 +39,7 @@ export default function TopMenu({ selectedCategory, onChangeCategory }: Props) {
           />
         </View>
 
+        {/* Dropdown + Bell */}
         <View className="ml-2 flex-row">
           <DropdownMenu
             selected={selectedCategory}
@@ -46,12 +48,14 @@ export default function TopMenu({ selectedCategory, onChangeCategory }: Props) {
 
           <View className="flex-row items-center ml-auto mr-6">
             <View className="w-3" />
-            <NotificationBell onPress={handleNotificationPress} />
+            <NotificationBell onPress={() => setShowNotificationSheet(true)} />
           </View>
         </View>
 
+        {/* Divider */}
         <View className="w-full h-0.5 bg-[#f1f1f3] mt-3" />
 
+        {/* Bottom sheet */}
         <BottomSheet
           visible={showNotificationSheet}
           onClose={() => setShowNotificationSheet(false)}
@@ -61,6 +65,7 @@ export default function TopMenu({ selectedCategory, onChangeCategory }: Props) {
               Notifications & Actions
             </Text>
 
+            {/* Cards */}
             <View className="space-y-4">
               <View className="bg-blue-50 p-4 rounded-lg">
                 <Text className="font-semibold text-blue-800 mb-2">
@@ -121,10 +126,8 @@ export default function TopMenu({ selectedCategory, onChangeCategory }: Props) {
 const styles = StyleSheet.create({
   safeContainer: {
     backgroundColor: "#fff",
-    paddingTop: 0,
   },
   container: {
-    zIndex: 10,
     backgroundColor: "#fff",
     borderBottomWidth: 0.5,
     borderBottomColor: "#f1f1f3",

@@ -1048,7 +1048,7 @@ exports.sendPhoneVerification = async (req, res) => {
 
     // Send SMS
     try {
-      const { sendSMS } = require("../config/twilio.config");
+      const { sendSMS } = require("../config/twilio-http.config");
       const message = `Your Korpor verification code is: ${phoneVerificationCode}. This code will expire in 10 minutes.`;
       await sendSMS(user.phone, message);
 
@@ -1082,10 +1082,10 @@ exports.verifyPhone = async (req, res) => {
   try {
     const { userId, verificationCode } = req.body;
 
-    console.log("Phone verification attempt:", { userId, verificationCode });
+    console.log("📱 Phone verification attempt:", { userId, verificationCode });
 
     if (!userId || !verificationCode) {
-      console.log("Missing userId or verificationCode");
+      console.log("❌ Missing userId or verificationCode");
       return res.status(400).json({
         message: "User ID and verification code are required",
       });
@@ -1094,11 +1094,11 @@ exports.verifyPhone = async (req, res) => {
     // Find the user
     const user = await User.findByPk(userId);
     if (!user) {
-      console.log("User not found for ID:", userId);
+      console.log("❌ User not found for ID:", userId);
       return res.status(404).json({ message: "User not found" });
     }
 
-    console.log("User found:", {
+    console.log("✅ User found:", {
       id: user.id,
       email: user.email,
       phone: user.phone,
@@ -1110,7 +1110,7 @@ exports.verifyPhone = async (req, res) => {
 
     // Check if email is verified first
     if (!user.isVerified) {
-      console.log("Email not verified");
+      console.log("❌ Email not verified");
       return res.status(400).json({
         message: "Please verify your email address first",
         status: "email_not_verified",
@@ -1119,7 +1119,7 @@ exports.verifyPhone = async (req, res) => {
 
     // Check if phone is already verified
     if (user.phoneVerified) {
-      console.log(" Phone already verified");
+      console.log("❌ Phone already verified");
       return res.status(400).json({
         message: "Phone number is already verified",
         status: "phone_already_verified",
@@ -1128,7 +1128,7 @@ exports.verifyPhone = async (req, res) => {
 
     // Check if verification code exists and is not expired
     if (!user.phoneVerificationCode || !user.verificationCodeExpires) {
-      console.log("No verification code or expiry found");
+      console.log("❌ No verification code or expiry found");
       return res.status(400).json({
         message: "No verification code found. Please request a new one.",
         status: "no_verification_code",
@@ -1138,7 +1138,7 @@ exports.verifyPhone = async (req, res) => {
     // Check if code is expired
     if (new Date() > new Date(user.verificationCodeExpires)) {
       console.log(
-        "Verification code expired. Expires:",
+        "❌ Verification code expired. Expires:",
         user.verificationCodeExpires,
         "Current:",
         new Date()
@@ -1152,7 +1152,7 @@ exports.verifyPhone = async (req, res) => {
     // Verify the code
     if (user.phoneVerificationCode !== verificationCode) {
       console.log(
-        "Invalid verification code. Expected:",
+        "❌ Invalid verification code. Expected:",
         user.phoneVerificationCode,
         "Got:",
         verificationCode
@@ -1163,7 +1163,7 @@ exports.verifyPhone = async (req, res) => {
       });
     }
 
-    console.log("Phone verification successful, updating user...");
+    console.log("✅ Phone verification successful, updating user...");
 
     // Mark phone as verified and clear verification data
     await User.update(
@@ -1176,7 +1176,7 @@ exports.verifyPhone = async (req, res) => {
       { where: { id: userId } }
     );
 
-    console.log("User updated successfully - phone verified and approved");
+    console.log("✅ User updated successfully - phone verified and approved");
 
     // Get updated user with role information for token generation
     const updatedUser = await User.findOne({
@@ -1244,6 +1244,137 @@ exports.verifyPhone = async (req, res) => {
     console.error("Verify phone error:", error);
     res.status(500).json({
       message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Complete 2FA Login
+ * Verifies the 2FA token and completes the login process
+ */
+exports.complete2FALogin = async (req, res) => {
+  try {
+    const { userId, token } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    if (!token) {
+      return res.status(400).json({
+        message: "2FA token is required",
+      });
+    }
+
+    // Find user with role information
+    const user = await User.findOne({
+      where: { id: userId },
+      include: [{ model: Role, as: "role" }],
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user.twoFactorEnabled) {
+      return res.status(400).json({
+        message: "2FA is not enabled for this account",
+      });
+    }
+
+    // Verify TOTP token
+    const speakeasy = require("speakeasy");
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: "base32",
+      token: token,
+      window: 2, // Allow 2 time steps tolerance
+    });
+
+    if (!verified) {
+      console.log("❌ 2FA verification failed for user:", user.email);
+      return res.status(400).json({
+        message: "Invalid 2FA code",
+      });
+    }
+
+    console.log("✅ 2FA verified using TOTP token for user:", user.email);
+    console.log("🎉 2FA login completed successfully for user:", user.email);
+
+    // Generate tokens after successful 2FA verification
+    const { accessToken, refreshToken } = generateTokens(user);
+
+    // Update user's refresh token and last login time
+    await User.update(
+      {
+        refreshToken,
+        refreshTokenExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        lastLogin: new Date(),
+      },
+      { where: { id: user.id } }
+    );
+
+    // Determine dashboard route based on role
+    let dashboardRoute = "/dashboard";
+    if (user.role) {
+      switch (user.role.name) {
+        case "superadmin":
+          dashboardRoute = "/super-admin/dashboard";
+          break;
+        case "admin":
+          dashboardRoute = "/admin/dashboard";
+          break;
+        case "agent":
+          dashboardRoute = "/agent/dashboard";
+          break;
+        default:
+          dashboardRoute = "/dashboard";
+      }
+    }
+
+    // Generate device info for security notification
+    const deviceInfo = {
+      deviceId: req.headers["user-agent"]
+        ? Buffer.from(req.headers["user-agent"])
+            .toString("base64")
+            .substring(0, 10)
+        : "unknown",
+      browser: req.headers["user-agent"]
+        ? req.headers["user-agent"].split(" ")[0]
+        : "unknown",
+      os: req.headers["user-agent"]
+        ? req.headers["user-agent"].split("(")[1]?.split(")")[0]
+        : "unknown",
+      location:
+        req.headers["x-forwarded-for"] ||
+        req.connection.remoteAddress ||
+        "unknown",
+    };
+
+    // Send complete login response
+    return res.status(200).json({
+      message: "2FA verification successful. Login completed!",
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        accountNo: user.accountNo,
+        name: user.name,
+        surname: user.surname,
+        email: user.email,
+        profilePicture: user.profilePicture,
+        lastLogin: user.lastLogin,
+      },
+      role: user.role ? user.role.name : null,
+      privileges: user.role ? user.role.privileges : [],
+      deviceInfo,
+      dashboardRoute,
+    });
+  } catch (error) {
+    console.error("Complete 2FA login error:", error);
+    return res.status(500).json({
+      message: "An error occurred during 2FA verification",
       error: error.message,
     });
   }

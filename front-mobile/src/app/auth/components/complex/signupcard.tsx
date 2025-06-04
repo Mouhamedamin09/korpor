@@ -42,7 +42,7 @@ export default function SignupCard() {
       name: name.trim(),
       surname: surname.trim(),
       email: email.trim(),
-      phone: phone.trim(),
+      phone: phone.trim().replace(/\s/g, ""), // 🔧 remove spaces
       birthdate: selectedDate.trim(),
       referralCode: referralCode.trim(),
     };

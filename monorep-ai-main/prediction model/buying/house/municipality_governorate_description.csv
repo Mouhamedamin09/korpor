@@ -1,0 +1,126 @@
+municipality,governorate,municipality_avg_price,governorate_avg_price,municipality_quality,municipality_quality_confidence,governorate_quality,governorate_quality_confidence
+Ajim (Djerba),Mednine,556674.2993630574,580727.7766850828,mid_price_housing_area,high,mid_price_housing_area,high
+Akouda,Sousse,1026490.2244999999,927922.7543356644,premium_housing_area,high,premium_housing_area,high
+Ariana,Ariana,1020923.2245882354,917271.3972689076,premium_housing_area,high,premium_housing_area,high
+Aïn Draham,Jendouba,122500.0,368467.365,affordable_housing_area,low,affordable_housing_area,high
+Bembla-Mnara,Monastir,219000.0,641574.9720430108,affordable_housing_area,low,mid_price_housing_area,high
+Ben Arous,Ben Arous,559271.8892307692,831885.7976100629,mid_price_housing_area,high,premium_housing_area,high
+Bizerte,Bizerte,513185.1669565218,534121.1009677419,mid_price_housing_area,high,affordable_housing_area,high
+Borj El Amri,Manouba,750000.0,513184.2105263158,premium_housing_area,low,affordable_housing_area,high
+Bou Arada,Siliana,91000.0,456714.28571428574,affordable_housing_area,low,affordable_housing_area,high
+Bou Argoub,Nabeul,655000.0,783799.5456266907,mid_price_housing_area,low,mid_price_housing_area,high
+Bou Mhel el-Bassatine,Ben Arous,747303.2021052631,831885.7976100629,premium_housing_area,high,premium_housing_area,high
+Bouficha,Sousse,150000.0,927922.7543356643,affordable_housing_area,low,premium_housing_area,high
+Béja,Béja,416750.0,416750.0,affordable_housing_area,high,affordable_housing_area,high
+Béni Khiar,Nabeul,642782.0582608696,783799.5456266907,mid_price_housing_area,high,mid_price_housing_area,high
+Carthage,Tunis,2180444.6730612246,1449446.8968031188,premium_housing_area,high,premium_housing_area,high
+Chebba,Mahdia,1321233.3333333333,607626.79375,premium_housing_area,high,mid_price_housing_area,high
+Dar Chaabane,Nabeul,300000.0,783799.5456266907,affordable_housing_area,high,mid_price_housing_area,high
+Djedeida,Manouba,279250.0,513184.2105263158,affordable_housing_area,high,affordable_housing_area,high
+Douar Hicher,Manouba,650000.0,513184.2105263158,mid_price_housing_area,low,affordable_housing_area,high
+Douz,Kebili,537322.9179591837,537322.9179591837,mid_price_housing_area,high,mid_price_housing_area,high
+El Ain,Sfax,3590122.526666667,1105774.472,premium_housing_area,high,premium_housing_area,high
+El Alia,Bizerte,450000.0,534121.1009677419,affordable_housing_area,low,affordable_housing_area,high
+El Fahs,Zaghouan,440000.0,527233.07,affordable_housing_area,low,affordable_housing_area,high
+El Haouaria,Nabeul,528091.5136842105,783799.5456266907,mid_price_housing_area,high,mid_price_housing_area,high
+El Kef,Kef,341502.61333333334,692148.4488888889,affordable_housing_area,high,mid_price_housing_area,high
+El Ksar,Gafsa,205000.0,488000.0,affordable_housing_area,low,affordable_housing_area,high
+El Maâmoura,Nabeul,548571.4285714285,783799.5456266907,mid_price_housing_area,high,mid_price_housing_area,high
+El Mida,Nabeul,1177994.243076923,783799.5456266907,premium_housing_area,high,mid_price_housing_area,high
+El Mourouj,Ben Arous,614259.2592592592,831885.7976100629,mid_price_housing_area,high,premium_housing_area,high
+Enfidha,Sousse,500000.0,927922.7543356643,mid_price_housing_area,low,premium_housing_area,high
+Ettadhamen-Mnihla,Ariana,349666.6666666667,917271.3972689076,affordable_housing_area,high,premium_housing_area,high
+Ezzahra,Ben Arous,1542012.4593548388,831885.7976100629,premium_housing_area,high,premium_housing_area,high
+Ezzouhour,Sousse,395000.0,927922.7543356643,affordable_housing_area,low,premium_housing_area,high
+Foussana,Kasserine,230000.0,709285.7142857143,affordable_housing_area,high,mid_price_housing_area,high
+Gabès,Gabès,440000.0,1236960.2596551725,affordable_housing_area,low,premium_housing_area,high
+Gafsa,Gafsa,676666.6666666666,488000.0,mid_price_housing_area,high,affordable_housing_area,high
+Ghar al Milh,Bizerte,437142.85714285716,534121.1009677419,affordable_housing_area,high,affordable_housing_area,high
+Ghenada,Monastir,484644.68,641574.9720430108,affordable_housing_area,low,mid_price_housing_area,high
+Grombalia,Nabeul,750000.0,783799.5456266907,premium_housing_area,low,mid_price_housing_area,high
+Hammam Chott,Ben Arous,736411.7647058824,831885.7976100629,mid_price_housing_area,high,premium_housing_area,high
+Hammam Ghezèze,Nabeul,287500.0,783799.5456266907,affordable_housing_area,high,mid_price_housing_area,high
+Hammam Lif,Ben Arous,516205.0955555556,831885.7976100629,mid_price_housing_area,high,premium_housing_area,high
+Hammamet,Nabeul,809528.7390138675,783799.5456266907,premium_housing_area,high,mid_price_housing_area,high
+Haïdra,Kasserine,952083.3333333334,709285.7142857142,premium_housing_area,high,mid_price_housing_area,high
+Hebira,Mahdia,1500000.0,607626.79375,premium_housing_area,low,mid_price_housing_area,high
+Hergla,Sousse,847410.6436363637,927922.7543356643,premium_housing_area,high,premium_housing_area,high
+Houmt El Souk (Djerba),Mednine,510761.18000000005,580727.7766850828,mid_price_housing_area,high,mid_price_housing_area,high
+Jemmal,Monastir,550000.0,641574.9720430108,mid_price_housing_area,low,mid_price_housing_area,high
+Jendouba,Jendouba,287500.0,368467.365,affordable_housing_area,low,affordable_housing_area,high
+Kairouan,Kairouan,337774.4436363636,814548.518095238,affordable_housing_area,high,premium_housing_area,high
+Kalâa Kebira,Sousse,167500.0,927922.7543356643,affordable_housing_area,low,premium_housing_area,high
+Kalâa Seghira,Sousse,552642.1685714285,927922.7543356644,mid_price_housing_area,high,premium_housing_area,high
+Kalâat el-Andalous,Ariana,412500.0,917271.3972689076,affordable_housing_area,low,premium_housing_area,high
+Kelibia,Nabeul,451934.8628125,783799.5456266907,affordable_housing_area,high,mid_price_housing_area,high
+Kerkennah,Sfax,129999.0,1105774.472,affordable_housing_area,low,premium_housing_area,high
+Kettana,Gabès,966122.5883333334,1236960.2596551725,premium_housing_area,high,premium_housing_area,high
+Korba,Nabeul,468502.50999999995,783799.5456266907,affordable_housing_area,high,mid_price_housing_area,high
+Ksar Hellal,Monastir,521875.0,641574.9720430108,mid_price_housing_area,high,mid_price_housing_area,high
+Ksibet El Mediouni,Monastir,360350.0,641574.9720430108,affordable_housing_area,high,mid_price_housing_area,high
+Ksour Essef,Mahdia,302750.0,607626.79375,affordable_housing_area,high,mid_price_housing_area,high
+La Goulette,Tunis,1118000.0,1449446.8968031188,premium_housing_area,high,premium_housing_area,high
+La Marsa,Tunis,1578293.3970945948,1449446.8968031188,premium_housing_area,high,premium_housing_area,high
+La Soukra,Ariana,1011828.5111111111,917271.3972689076,premium_housing_area,high,premium_housing_area,high
+Le Bardo,Tunis,694850.0507317072,1449446.8968031188,mid_price_housing_area,high,premium_housing_area,high
+Le Kram,Tunis,1416795.7877419356,1449446.8968031188,premium_housing_area,high,premium_housing_area,high
+M'saken,Sousse,424118.86799999996,927922.7543356644,affordable_housing_area,high,premium_housing_area,high
+Mahares,Sfax,450000.0,1105774.472,affordable_housing_area,low,premium_housing_area,high
+Mahdia,Mahdia,410765.3846153846,607626.79375,affordable_housing_area,high,mid_price_housing_area,high
+Maktar,Siliana,603000.0,456714.28571428574,mid_price_housing_area,high,affordable_housing_area,high
+Manouba,Manouba,646545.4545454546,513184.2105263157,mid_price_housing_area,high,affordable_housing_area,high
+Mareth,Gabès,1547034.0,1236960.2596551725,premium_housing_area,high,premium_housing_area,high
+Medenine,Mednine,1222488.54,580727.7766850828,premium_housing_area,high,mid_price_housing_area,high
+Menzel Abderrahmane,Bizerte,600000.0,534121.1009677419,mid_price_housing_area,low,affordable_housing_area,high
+Menzel Bourguiba,Bizerte,400000.0,534121.1009677419,affordable_housing_area,low,affordable_housing_area,high
+Menzel Bouzaiane,Sidi Bouzid,604000.0,465625.0,mid_price_housing_area,high,affordable_housing_area,high
+Menzel Bouzelfa,Nabeul,640000.0,783799.5456266907,mid_price_housing_area,low,mid_price_housing_area,high
+Menzel Jemil,Bizerte,419940.0,534121.1009677419,affordable_housing_area,high,affordable_housing_area,high
+Menzel Temime,Nabeul,357611.62727272726,783799.5456266907,affordable_housing_area,high,mid_price_housing_area,high
+Messaadine,Sousse,385000.0,927922.7543356643,affordable_housing_area,low,premium_housing_area,high
+Metline,Bizerte,530909.0909090909,534121.1009677419,mid_price_housing_area,high,affordable_housing_area,high
+Mezzouna,Sidi Bouzid,235000.0,465625.0,affordable_housing_area,high,affordable_housing_area,high
+Midoun (Djerba),Mednine,625928.45,580727.7766850828,mid_price_housing_area,low,mid_price_housing_area,high
+Monastir,Monastir,925293.5079999999,641574.9720430108,premium_housing_area,high,mid_price_housing_area,high
+Mornag,Ben Arous,529454.5454545454,831885.797610063,mid_price_housing_area,high,premium_housing_area,high
+Mégrine,Ben Arous,906315.7894736842,831885.7976100629,premium_housing_area,high,premium_housing_area,high
+Nabeul,Nabeul,994136.9111340205,783799.5456266907,premium_housing_area,high,mid_price_housing_area,high
+Nouvelle Matmata,Gabès,428142.85714285716,1236960.2596551725,affordable_housing_area,high,premium_housing_area,high
+Oued Ellil,Manouba,195000.0,513184.2105263158,affordable_housing_area,high,affordable_housing_area,high
+Ouerdanin,Monastir,983394.74,641574.9720430108,premium_housing_area,low,mid_price_housing_area,high
+Oueslatia,Kairouan,1339000.0,814548.518095238,premium_housing_area,high,premium_housing_area,high
+Radès,Ben Arous,477254.9476923077,831885.7976100629,affordable_housing_area,high,premium_housing_area,high
+Raf Raf,Bizerte,299946.6666666667,534121.1009677419,affordable_housing_area,high,affordable_housing_area,high
+Raoued,Ariana,499150.58999999997,917271.3972689076,mid_price_housing_area,high,premium_housing_area,high
+Ras Jebel,Bizerte,487846.1538461539,534121.1009677419,affordable_housing_area,high,affordable_housing_area,high
+Rejiche,Mahdia,375000.0,607626.79375,affordable_housing_area,high,mid_price_housing_area,high
+Sahline Moôtmar,Monastir,611065.7495652174,641574.9720430108,mid_price_housing_area,high,mid_price_housing_area,high
+Sakiet Eddaïer,Sfax,280000.0,1105774.472,affordable_housing_area,low,premium_housing_area,high
+Sakiet Ezzit,Sfax,350000.0,1105774.472,affordable_housing_area,low,premium_housing_area,high
+Sayada,Monastir,1494533.4333333333,641574.9720430108,premium_housing_area,high,mid_price_housing_area,high
+Sejnane,Bizerte,1876666.6666666667,534121.1009677419,premium_housing_area,high,affordable_housing_area,high
+Sers,Kef,1393440.1199999999,692148.4488888889,premium_housing_area,high,mid_price_housing_area,high
+Sfax,Sfax,544027.7777777778,1105774.472,mid_price_housing_area,high,premium_housing_area,high
+Sidi Alouane,Mahdia,840707.4,607626.79375,premium_housing_area,low,mid_price_housing_area,high
+Sidi El Hani,Sousse,1200000.0,927922.7543356643,premium_housing_area,low,premium_housing_area,high
+Sidi Hassine,Tunis,104500.0,1449446.8968031188,affordable_housing_area,high,premium_housing_area,high
+Sidi Thabet,Ariana,518012.26,917271.3972689076,mid_price_housing_area,high,premium_housing_area,high
+Soliman,Nabeul,627104.5516666666,783799.5456266907,mid_price_housing_area,high,mid_price_housing_area,high
+Sousse,Sousse,1015812.9829508197,927922.7543356643,premium_housing_area,high,premium_housing_area,high
+Tabarka,Jendouba,401160.838,368467.365,affordable_housing_area,high,affordable_housing_area,high
+Tamerza,Tozeur,1353241.9085714284,1250438.6644444445,premium_housing_area,high,premium_housing_area,high
+Tataouine,Tataouine,267047.04,267047.04,affordable_housing_area,low,affordable_housing_area,low
+Tazerka,Nabeul,700000.0,783799.5456266907,mid_price_housing_area,low,mid_price_housing_area,high
+Teboulbou,Gabès,580000.0,1236960.2596551725,mid_price_housing_area,low,premium_housing_area,high
+Tebourba,Manouba,310714.28571428574,513184.2105263158,affordable_housing_area,high,affordable_housing_area,high
+Thala,Kasserine,510000.0,709285.7142857143,mid_price_housing_area,high,mid_price_housing_area,high
+Thyna,Sfax,350000.0,1105774.472,affordable_housing_area,low,premium_housing_area,high
+Tinja,Bizerte,680000.0,534121.1009677419,mid_price_housing_area,high,affordable_housing_area,high
+Touza,Monastir,498633.64,641574.9720430108,mid_price_housing_area,low,mid_price_housing_area,high
+Tozeur,Tozeur,890627.31,1250438.6644444445,premium_housing_area,low,premium_housing_area,high
+Tunis,Tunis,1047495.4257471263,1449446.8968031188,premium_housing_area,high,premium_housing_area,high
+Téboulba,Monastir,362886.7866666666,641574.9720430108,affordable_housing_area,high,mid_price_housing_area,high
+Zaghouan,Zaghouan,560000.0,527233.07,mid_price_housing_area,high,affordable_housing_area,high
+Zaouiet Sousse,Sousse,197814.5,927922.7543356643,affordable_housing_area,low,premium_housing_area,high
+Zarzis,Mednine,2055800.0,580727.7766850828,premium_housing_area,low,mid_price_housing_area,high
+Zriba,Zaghouan,548932.28,527233.07,mid_price_housing_area,low,affordable_housing_area,high

@@ -1,0 +1,26 @@
+The pd.cut() function divides continuous data into discrete categories (or "bins").
+Municipality A: 150,000 TND
+Municipality B: 300,000 TND
+Municipality C: 450,000 TND
+Municipality D: 600,000 TND
+And let's assume:
+- low_threshold = 200,000 TND (33rd percentile)
+- high_threshold = 500,000 TND (67th percentile)
+Here's what happens:
+
+1. Define the bins : [0, low_threshold, high_threshold, float('inf')]
+   
+   - This creates 3 ranges:
+     - 0 to 200,000 TND
+     - 200,000 to 500,000 TND
+     - 500,000 to infinity
+2. Assign labels : ['low_income_area', 'middle_income_area', 'high_income_area']
+   
+   - Each range gets a corresponding label
+3. Categorize each municipality :
+   
+   - Municipality A (150,000 TND) → falls in first bin → 'low_income_area'
+   - Municipality B (300,000 TND) → falls in second bin → 'middle_income_area'
+   - Municipality C (450,000 TND) → falls in second bin → 'middle_income_area'
+   - Municipality D (600,000 TND) → falls in third bin → 'high_income_area'
+The result is a new column price_tier in the reliable_municipalities dataframe that contains these categorical labels instead of the original numeric values.

@@ -1,0 +1,5 @@
+https://www.irjet.net/archives/V11/i4/IRJET-V11I4226.pdf
+https://medium.com/@yash.shejwal20/house-price-prediction-system-using-ml-algorithms-e7ef83ded562
+overiftting soltuion : https://www.analyticssteps.com/blogs/5-machine-learning-techniques-solve-overfitting
+how to choose :
+https://machinelearningmastery.com/practical-guide-choosing-right-algorithm-your-problem/
