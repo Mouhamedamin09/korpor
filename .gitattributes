@@ -1,2 +1,0 @@
-"monorep-ai-main/prediction model/apis/house_buying_full.pkl" filter=lfs diff=lfs merge=lfs -text
-"monorep-ai-main/prediction model/apis/house_buying_half.pkl" filter=lfs diff=lfs merge=lfs -text
