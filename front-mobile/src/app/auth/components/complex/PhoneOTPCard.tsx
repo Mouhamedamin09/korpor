@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import API_URL from "@shared/constants/api";
+import { authStore } from "../../services/authStore";
 
 interface PhoneOTPCardProps {
   userId: string;
@@ -67,17 +68,22 @@ export default function PhoneOTPCard({ userId }: PhoneOTPCardProps) {
 
       console.log("Phone verified successfully:", response.data);
 
-      // Store authentication tokens and user data locally
+      // Store authentication tokens using authStore (SecureStore)
       if (response.data.accessToken && response.data.refreshToken) {
-        await AsyncStorage.setItem("accessToken", response.data.accessToken);
-        await AsyncStorage.setItem("refreshToken", response.data.refreshToken);
+        await authStore
+          .getState()
+          .setTokens(response.data.accessToken, response.data.refreshToken);
+
+        // Also store user data in AsyncStorage for compatibility
         await AsyncStorage.setItem(
           "userData",
           JSON.stringify(response.data.user)
         );
         await AsyncStorage.setItem("userRole", response.data.role || "user");
 
-        console.log("✅ Authentication tokens stored successfully");
+        console.log(
+          "✅ Authentication tokens stored in authStore successfully"
+        );
       }
 
       // Navigate to onboarding instead of success screen

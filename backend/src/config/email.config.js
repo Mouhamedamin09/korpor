@@ -1,21 +1,25 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 // Create reusable transporter object using SMTP transport
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: parseInt(process.env.SMTP_PORT, 10) || 587,
   secure: false, // Use TLS (STARTTLS) on port 587
   auth: {
     user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
+    pass: process.env.SMTP_PASS,
   },
   tls: {
-    rejectUnauthorized: false // Optional: avoid self-signed cert error in dev
-  }
+    rejectUnauthorized: false, // Optional: avoid self-signed cert error in dev
+  },
 });
 
 // Professional email template matching the app's theme
-const createVerificationEmailTemplate = (verificationCode, userName = 'User', verificationType = 'email') => {
+const createVerificationEmailTemplate = (
+  verificationCode,
+  userName = "User",
+  verificationType = "email"
+) => {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -220,33 +224,44 @@ const createVerificationEmailTemplate = (verificationCode, userName = 'User', ve
 module.exports = {
   sendEmail: async (to, subject, text) => {
     try {
-      console.log('📧 Sending email to:', to);
-      console.log('📝 Subject:', subject);
+      console.log("📧 Sending email to:", to);
+      console.log("📝 Subject:", subject);
 
       const mailOptions = {
         from: process.env.SMTP_FROM || `"Korpor" <${process.env.SMTP_USER}>`,
         to,
         subject,
-        text
+        text,
       };
 
       const info = await transporter.sendMail(mailOptions);
-      console.log('✅ Email sent successfully:', info.messageId);
+      console.log("✅ Email sent successfully:", info.messageId);
       return info;
     } catch (error) {
-      console.error('❌ Error sending email:', error);
+      console.error("❌ Error sending email:", error);
       throw error;
     }
   },
 
-  sendVerificationEmail: async (to, verificationCode, userName = 'User', verificationType = 'email') => {
+  sendVerificationEmail: async (
+    to,
+    verificationCode,
+    userName = "User",
+    verificationType = "email"
+  ) => {
     try {
-      console.log('📧 Sending verification email to:', to);
-      console.log('🔐 Verification type:', verificationType);
+      console.log("📧 Sending verification email to:", to);
+      console.log("🔐 Verification type:", verificationType);
 
-      const subject = `Korpor - Your ${verificationType.charAt(0).toUpperCase() + verificationType.slice(1)} Verification Code`;
-      const htmlContent = createVerificationEmailTemplate(verificationCode, userName, verificationType);
-      
+      const subject = `Korpor - Your ${
+        verificationType.charAt(0).toUpperCase() + verificationType.slice(1)
+      } Verification Code`;
+      const htmlContent = createVerificationEmailTemplate(
+        verificationCode,
+        userName,
+        verificationType
+      );
+
       // Plain text fallback
       const textContent = `
 Hello ${userName},
@@ -266,15 +281,15 @@ The Korpor Team
         to,
         subject,
         text: textContent,
-        html: htmlContent
+        html: htmlContent,
       };
 
       const info = await transporter.sendMail(mailOptions);
-      console.log('✅ Verification email sent successfully:', info.messageId);
+      console.log("✅ Verification email sent successfully:", info.messageId);
       return info;
     } catch (error) {
-      console.error('❌ Error sending verification email:', error);
+      console.error("❌ Error sending verification email:", error);
       throw error;
     }
-  }
+  },
 };
